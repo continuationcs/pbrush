@@ -40,7 +40,7 @@ return {
     { id = "BP_Monster_ChangHong_Spear", zh = "组织高手：长鸿", en = "Chang Hong, the Thunder Spear", class = "/PBZCombatAsset/ActorData/Mobs/049_ChangHong/BP_Monster_ChangHong_Spear.BP_Monster_ChangHong_Spear_C", state = "open" },
     { id = "BP_Monster_ChangHong_P2", zh = "长鸿：雷电枪骑", en = "Chang Hong, the Thunder Lancer", class = "/PBZCombatAsset/ActorData/Mobs/053_ChangHong_P2/BP_Monster_ChangHong_P2.BP_Monster_ChangHong_P2_C", state = "open" },
     { id = "BP_Monster_LionDancer", zh = "舞狮尊主", en = "Flame, the Mask-Bound Lion Dance Grandmaster", class = "/Game/RenewalContent/Actors/Mobs/Normal/BP_Monster_LionDancer.BP_Monster_LionDancer_C", state = "open" },
-    { id = "BP_Monster_LionDancer_P2", zh = "舞狮尊主：烈焰", en = "The Lion Dance Grandmaster's Final Dance", class = "/Game/RenewalContent/Actors/Mobs/Normal/BP_Monster_LionDancer_P2.BP_Monster_LionDancer_P2_C", state = "open" },
+    { id = "BP_Monster_LionDancer_P2", zh = "舞狮尊主：烈焰", en = "The Lion Dance Grandmaster's Final Dance", class = "/Game/RenewalContent/Actors/Mobs/Normal/BP_Monster_LionDancer_P2.BP_Monster_LionDancer_P2_C", state = "anchored" },
     { id = "BP_Monster_XiaoXue", zh = "吞噬尸体的小雪", en = "Corpse-Eating Xue", class = "/PBZCombatAsset/ActorData/Mobs/027_XiaoXue/BP_Monster_XiaoXue.BP_Monster_XiaoXue_C", state = "open" },
     { id = "BP_Monster_WanJun_JinGua", zh = "巨锤客：万钧", en = "Wan Jun, the Coppermaul", class = "/PBZCombatAsset/ActorData/Mobs/057_WanJun/BP_Monster_WanJun_JinGua.BP_Monster_WanJun_JinGua_C", state = "open" },
     { id = "BP_Monster_EMei_Sword_JianZhen", zh = "七星剑阵：大师兄", en = "Chief Disciple of the Seven-Stars Formation", class = "/PBZCombatAsset/ActorData/Mobs/034_EMei/BP_Monster_EMei_Sword_JianZhen.BP_Monster_EMei_Sword_JianZhen_C", state = "open" },

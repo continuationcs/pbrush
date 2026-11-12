@@ -68,7 +68,7 @@ Edit [code]BossRush\Scripts\config.lua[/code] and restart the game: boss scaling
 
 [size=4][b]Known limitations[/b][/size]
 [list]
-[*]55 bosses are available. Bosses whose skills rely on points placed in their own level (e.g. Zuo Shang, Yuzan) are not offered yet.
+[*]54 bosses are available. Bosses whose skills rely on points placed in their own level (e.g. Zuo Shang, Yuzan, the Lion Dance Grandmaster's second phase) are not offered yet.
 [*]The roguelike Trial mode is not included yet.
 [*]Text: Simplified Chinese or English.
 [*]Made and tested on the Steam version, game build CL-302256.
@@ -109,7 +109,7 @@ Edit [code]BossRush\Scripts\config.lua[/code] and restart the game: boss scaling
 
 [b]兼容性[/b]：只增加内容，不替换游戏文件、不改存档，可与其他 UE4SS Lua mod、.pak mod 共存；只可能与改动铃铛菜单、游戏菜单、对话选项按钮或提示条的 mod 冲突；改怪物数值或难度的 mod 会连带影响挑战首领的强度。
 
-[b]已知限制[/b]：目前开放 55 位首领，依赖原关卡场景点位的首领（如左殇、玉簪）暂未开放；肉鸽玩法「试炼」暂未加入；文字为简体中文或英文。
+[b]已知限制[/b]：目前开放 54 位首领，依赖原关卡场景点位的首领（如左殇、玉簪、舞狮尊主二阶段）暂未开放；肉鸽玩法「试炼」暂未加入；文字为简体中文或英文。
 ```
 
 ## 上传前自检

@@ -53,8 +53,8 @@ COMPATIBILITY
   - Mods that bind keyboard keys are unaffected: this mod binds none.
 
 KNOWN LIMITATIONS
-  - 55 bosses are available. Bosses whose skills rely on points placed in their own level
-    (e.g. Zuo Shang, Yuzan) are not offered yet.
+  - 54 bosses are available. Bosses whose skills rely on points placed in their own level
+    (e.g. Zuo Shang, Yuzan, the Lion Dance Grandmaster's second phase) are not offered yet.
   - The roguelike "Trial" mode is not included yet.
   - Text is Simplified Chinese or English (Traditional Chinese shows Simplified for now).
   - Made and tested on the Steam version, game build CL-302256.

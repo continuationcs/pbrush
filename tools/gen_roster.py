@@ -1,8 +1,10 @@
 import json
 b = json.load(open(r'F:\C\pbzero\src\pbzero\data\bosses.json', encoding='utf-8'))['bosses']
 # Bosses whose skills need level-placed points (DESIGN 5.2) or confirmed vanishing: closed for now.
+# LionDancer_P2: its summons are placed around the level's lion-dance poles; without them the last lion head
+# (tagged HouHouHou.LastOne) cannot be killed (player report on Nexus, 0.1.1).
 anchored = ['ZuoShang', 'LengTu', 'YuZan', 'GuiChai_Red', 'QiShu', 'DuYan', 'ChiLian_P2', 'MoYuan', 'MoTian',
-            'YanQianSui', 'CanQu', 'DangHui']
+            'YanQianSui', 'CanQu', 'DangHui', 'LionDancer_P2']
 story = ['Tutorial', 'HorseCart', 'Prologue']
 
 
