@@ -65,6 +65,14 @@ shell turns them into real characters. Use the Edit/Write tools, or a Python scr
   menu's `CommonButtonGroupBase` for the selected/unselected look, and relink gamepad navigation explicitly with
   `SetNavigationRuleExplicit` (the designer's Up/Down links skip inserted buttons). UMG has no `InsertChildAt`:
   remove the following children, add yours, re-add them with their slot settings.
+- **Joining the bell menu's button group makes the inserted button the selected one**, and the menu's script then
+  turns every confirm press into 穿行 (Traverse). After inserting, select `TeleportBtn` again
+  (`group:SelectButtonAtIndex(group:FindButtonIndex(menu.TeleportBtn), false)`) and give it focus. Options that
+  were removed and re-added come back with a stale text size: call `UpdateButtonStyle()` and
+  `DoSelectedAppearance(false)` on them. (Found only in the release test with the confirm key; mouse clicks hid it.)
+- Most of the bell menu's logic lives in the game's TypeScript layer (puerts mixins), invisible to UE4SS hooks.
+- **Never hook a function that returns a value** (e.g. `BP_GetDesiredFocusTarget`): it crashed the game.
+- Test menus with the confirm key and the gamepad, not only the mouse.
 - Cross-map travel: `PBZSaveLoadSubsystem:TeleportTo(FName("/Game/Maps/..."), transform, FName("Bell_<id>"))`.
   It saves and loads, so no separate autosave handling is needed.
 - Read input with `PlayerController:IsInputKeyDown({KeyName = FName("Gamepad_FaceButton_Bottom")})`.

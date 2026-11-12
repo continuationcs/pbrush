@@ -2,7 +2,7 @@
 
 **已发布（2026-11-12）**：https://www.nexusmods.com/phantombladezero/mods/1099 ，名称 BOSS RUSH，文件 BOSS RUSH 0.1.0。页面顶部的 mod 版本号仍显示 1，需在 General 页改为 0.1.0。旧草稿 1098 已改名「BOSS RUSH old」，未发布；新版上传页没有删除入口，需要时联系 Nexus 客服删除。
 
-上传文件：`dist/BossRush-0.1.0.zip`；主图：`release/main_image.png`（1920×1080，上传到 Images，设为 primary）
+上传文件：`dist/BossRush-0.1.1.zip`（0.1.0 的铃铛菜单在用确认键时总会变成“穿行”，已在 0.1.1 修复）；主图：`release/main_image.png`（1920×1080，上传到 Images，设为 primary）
 
 ## 基本信息
 

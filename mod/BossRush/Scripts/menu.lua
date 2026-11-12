@@ -180,6 +180,24 @@ local function inject(menu, on_entry)
         box:AddChildToVerticalBox(a.w)
         pcall(function() a.w.Slot:SetPadding(a.pad) a.w.Slot:SetHorizontalAlignment(a.h) a.w.Slot:SetVerticalAlignment(a.v) end)
     end
+    -- Joining the group made our entry the selected one; the menu opens on 穿行 in the original game.
+    U.after(120, function()
+        pcall(function()
+            if cur and cur.group then cur.group:SelectButtonAtIndex(cur.group:FindButtonIndex(menu.TeleportBtn), false) end
+        end)
+        pcall(function() menu.TeleportBtn:SetFocus() end)
+    end)
+    -- Re-added options rebuild their Slate widgets and come back with a stale text size until they are
+    -- selected once: refresh their style and unselected look now.
+    U.after(100, function()
+        for _, a in ipairs(after) do
+            local t = focus_target(a.w)
+            if t and t ~= entry then
+                pcall(function() t:UpdateButtonStyle() end)
+                pcall(function() t:DoSelectedAppearance(false) end)
+            end
+        end
+    end)
     -- Gamepad: 穿行 -> 强敌挑战 -> the next visible option.
     local above = focus_target(anchor)
     local below = nil
