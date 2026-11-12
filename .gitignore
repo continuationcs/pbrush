@@ -1,0 +1,18 @@
+# Build output (tools/build_release.py)
+dist/
+
+# Personal game save backups (file names carry the Steam ID)
+save-backup/
+
+# Raw in-game test logs
+data/run*/
+
+# Local runtime data written by the mods
+records.tsv
+sdk_done.txt
+enabled.txt
+!release/**
+
+# Python
+__pycache__/
+*.pyc
