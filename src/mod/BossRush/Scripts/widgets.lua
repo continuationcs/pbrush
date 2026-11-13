@@ -161,24 +161,35 @@ function W.visible_buttons(box)
     return out
 end
 
--- Clicks on the buttons we add. One hook on CommonButtonBase's native click handler (bound to the Slate
--- button's click delegate, so mouse, Enter and the gamepad confirm all pass through it), routed by button.
+-- Clicks on the buttons we add, through two native hooks, each button routed through exactly one of them:
+-- - A button in a CommonButtonGroupBase (the bell menu's): the group's OnHandleButtonBaseClicked, which the
+--   button's OnButtonBaseClicked delegate calls for every click, whatever its source: mouse, confirm, and a
+--   triggering input action such as the back key. CommonButtonBase:HandleButtonClicked does not see the last
+--   one: CommonUI calls it directly in C++ for a triggered action (in game the back key only selected the row).
+-- - Any other button (the settings panel row): CommonButtonBase:HandleButtonClicked, bound to the Slate
+--   button's click delegate (mouse, Enter, gamepad confirm).
 -- Handlers are grouped by owner so a menu can drop all of its old ones when it is rebuilt: object names can
 -- be reused after garbage collection, and a stale entry would catch clicks on some other game button.
-local handlers = {}      -- button full name -> { fn, owner }
+local handlers = {}      -- button full name -> { fn, owner, grouped }
 
-function W.on_click(b, owner, fn) handlers[b:GetFullName()] = { fn = fn, owner = owner } end
+-- grouped: b is in a button group (its clicks come through the group's hook).
+function W.on_click(b, owner, fn, grouped)
+    handlers[b:GetFullName()] = { fn = fn, owner = owner, grouped = grouped == true }
+end
 function W.forget(b) pcall(function() handlers[b:GetFullName()] = nil end) end
 function W.forget_owner(owner)
     for k, h in pairs(handlers) do if h.owner == owner then handlers[k] = nil end end
 end
 
 -- The handler runs after the click has been handled (U.after 0): it may rebuild the very column it came from.
-U.hook("/Script/CommonUI.CommonButtonBase:HandleButtonClicked", function(self)
-    local ok, b = pcall(function() return self:get() end)
+local function dispatch(param, grouped)
+    local ok, b = pcall(function() return param:get() end)
     if not ok or not U.valid(b) then return end
     local h = handlers[b:GetFullName()]
-    if h then U.after(0, h.fn) end
-end)
+    if h and h.grouped == grouped then U.after(0, h.fn) end
+end
+
+U.hook("/Script/CommonUI.CommonButtonBase:HandleButtonClicked", function(self) dispatch(self, false) end)
+U.hook("/Script/CommonUI.CommonButtonGroupBase:OnHandleButtonBaseClicked", function(_, button) dispatch(button, true) end)
 
 return W

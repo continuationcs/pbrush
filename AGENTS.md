@@ -89,7 +89,10 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
   instance put into the game stays: reload only when no challenge is running and no bell or system menu is open
   (otherwise a spawned boss, helper points, our menu rows and the player's saved state are left behind). A new
   `loaded (...)` line in `UE4SS.log` confirms the reload. Auto-reload on file change stays off: `install.ps1`
-  wipes and copies the folder, and a reload in the middle would load half the files.
+  wipes and copies the folder, and a reload in the middle would load half the files. **Press Ctrl+R once**: the
+  game crashed in the Lua VM (corrupted memory, called from a queued callback) a minute after two reloads 3 s
+  apart (2026-11-13); UE4SS unregisters the old instance's hooks but the log shows nothing about its
+  `NotifyOnNewObject` callbacks or loops. For a test round that must be trusted, restart the game instead.
 - `python src\tools\build_release.py <version>` builds `out\BossRush-<version>.zip` with `debug = false` in the copy
   and refuses scripts that contain debug key bindings. The repo keeps `debug = true`.
 - Nexus page: mod 1099 (`doc/release/NEXUS_PAGE.md`). Updates go to the same page as a new file version. Nexus sits
@@ -113,8 +116,9 @@ shell turns them into real characters. Use the Edit/Write tools, or a Python scr
   `Default__` names.
 - **No hooks on Blueprint functions.** UE4SS registered `W_BellMenu_C:BP_OnActivated` as a *native* hook, and
   hooks on `W_BellMenu_C:Construct` / `BP_OnActivated` were followed by three crashes within a minute. The mod
-  hooks exactly one function, the native `/Script/CommonUI.CommonButtonBase:HandleButtonClicked` (in
-  `widgets.lua`); everything else is polled: menus are found with `NotifyOnNewObject` and then polled; boss and
+  hooks two native click handlers, `/Script/CommonUI.CommonButtonBase:HandleButtonClicked` and
+  `/Script/CommonUI.CommonButtonGroupBase:OnHandleButtonBaseClicked` (in `widgets.lua`, each button routed
+  through one of them); everything else is polled: menus are found with `NotifyOnNewObject` and then polled; boss and
   player deaths are polled (`IsDead`, health) in `run.lua`. Hooks cannot cancel a call anyway; they only observe.
 - **Never hook a function that returns a value** (e.g. `BP_GetDesiredFocusTarget`): it crashed the game.
 - **Never keep a UObject wrapper across calls** (timers, loops, click handlers, module state). A wrapper is a raw
@@ -193,9 +197,20 @@ shell turns them into real characters. Use the Edit/Write tools, or a Python scr
   (its display name is not reflected): label the row's entry widget (`SettingName`), found by class with its
   reflected `Setting` property.
 - **Back key in the bell menu** closes the whole menu (`W_BellMenu_C` handles it in `HandleOverrideBackInputAction`).
-  The game's own `UPBZActivatableWidget:ClearBackKey()` / `BindBackKey()` take that binding off and put it back;
-  `menu.lua` clears it while our pages are up, reads Esc / gamepad B itself (one page up) and binds it again when
-  the menu's own options come back (or when the mod stops).
+  The game's own `UPBZActivatableWidget:ClearBackKey()` / `BindBackKey()` take that binding off and put it back
+  (confirmed: with it cleared, Esc did nothing). `menu.lua` clears it while our pages are up and gives each
+  page's 返回 row the back input action (`CommonButtonBase:SetTriggeringInputAction` /
+  `SetTriggeringEnhancedInputAction`, taken from the menu's `CloseBtn` or `OverrideBackInputActionData_*`), so the
+  key clicks that row; it binds the menu's key again when the menu's own options come back.
+- **A triggering input action bypasses `HandleButtonClicked` hooks**: CommonUI calls `HandleButtonClicked()`
+  directly in C++ for it, while mouse and confirm reach it through the Slate button's dynamic delegate (a
+  UFunction call UE4SS sees). In game the back key only turned the 返回 row selected (2026-11-13). Selection is
+  no signal of a click either: in the bell menu a button is selected as soon as it gets focus (polling
+  `GetSelected()` made moving the cursor onto 返回 go back). What sees every click is the button group's
+  `OnHandleButtonBaseClicked`, bound to the button's dynamic `OnButtonBaseClicked`: buttons in a group are routed
+  through that hook, others (the settings panel row) through `HandleButtonClicked`.
+- **With a menu open the game is in UI-only input**: `PlayerController:IsInputKeyDown` sees no key (polling Esc /
+  gamepad B in the bell menu read nothing). Read keys that way only in gameplay (the result screen does).
 - Most of the bell menu's logic lives in the game's TypeScript layer (puerts mixins), invisible to UE4SS hooks.
 - Test menus with the confirm key and the gamepad, not only the mouse.
 - Cross-map travel: `PBZSaveLoadSubsystem:TeleportTo(FName("/Game/Maps/..."), transform, FName("Bell_<id>"))`.

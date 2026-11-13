@@ -5,7 +5,8 @@ UE4SS exports its C++ API, so most frames get a name), the crashing thread's nam
 return addresses on its stack, and the readable strings its stack points at (UE4SS error messages often sit there,
 e.g. "No overload found for function 'FindAllOf'").
 
-Usage: python src/tools/crash_dump.py [crash.dmp]      (default: the newest dump in the game's ue4ss folder)
+Usage: python src/tools/crash_dump.py [crash.dmp] [frames]   (default: the newest dump in the game's ue4ss folder,
+40 frames; the outermost frames show who called into Lua, e.g. an object-creation notification or a timer)
 """
 import bisect
 import re
@@ -60,7 +61,9 @@ def symbol(rva, names, fns):
 
 # ---------------------------------------------------------------- minidump
 def main():
-    path = Path(sys.argv[1]) if len(sys.argv) > 1 else max(UE4SS.glob('crash_*.dmp'), key=lambda p: p.stat().st_mtime)
+    path = Path(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1] != '-' else \
+        max(UE4SS.glob('crash_*.dmp'), key=lambda p: p.stat().st_mtime)
+    frames = int(sys.argv[2]) if len(sys.argv) > 2 else 40
     d = path.read_bytes()
     _, _, nstreams, rva_dir = struct.unpack_from('<IIII', d, 0)
     streams = {}
@@ -131,9 +134,9 @@ def main():
     rsp = vals[4]
     print('return addresses on the stack (heuristic, innermost first):')
     shown = 0
-    for k in range(0, 0x3000, 8):
+    for k in range(0, 0x8000, 8):
         b = read(rsp + k, 8)
-        if b is None or shown >= 40:
+        if b is None or shown >= frames:
             break
         w = where(struct.unpack('<Q', b)[0])
         if w and not w.startswith('ucrtbase'):

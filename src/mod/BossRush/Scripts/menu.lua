@@ -59,16 +59,18 @@ local function clear_added(L)
     cur.added = {}
 end
 
-local function add_button(L, label, fn)
-    local b = W.new_button(L.menu, L.menu.TeleportBtn)
-    W.on_click(b, OWNER, fn)
-    return b
-end
-
-local function join(L, b, label)
+-- Label a new button, join the menu's button group (selected look, and clicks: see widgets.lua) and route
+-- its clicks to fn.
+local function join(L, b, label, fn)
     W.set_label(b, label)
-    pcall(function() if L.group then L.group:AddWidget(b) end end)
+    local grouped = false
+    if L.group then
+        local ok, err = pcall(function() L.group:AddWidget(b) end)
+        grouped = ok
+        if not ok then U.log("menu: joining the button group failed: %s", tostring(err)) end
+    end
     pcall(function() b:DoSelectedAppearance(false) end)
+    W.on_click(b, OWNER, fn, grouped)
 end
 
 local function focus_later(b)
@@ -79,26 +81,42 @@ local function focus_later(b)
     end)
 end
 
--- The back key on our pages. The menu's back key closes the whole bell menu (W_BellMenu handles it in
--- HandleOverrideBackInputAction). While our pages are up the game's binding is taken off with the menu's own
--- ClearBackKey() and put back with BindBackKey() (UPBZActivatableWidget), and the keys are read here instead:
--- a press goes one page up (user request).
-local BACK_KEYS = { "Escape", "Gamepad_FaceButton_Right" }
-local BACK_MS = 50
-
-local function watch_back(menu_ref)
-    local was_down = true            -- a key still held when the page opened is not a press
-    U.every(BACK_MS, function()
-        local L = cur and cur.menu == menu_ref and cur.back_taken and live()
-        if not L then return true end
-        local down = U.any_key_down(BACK_KEYS)
-        if down and not was_down and cur.on_back then
-            U.log("menu: back key, one page up")
-            cur.on_back()
-        end
-        was_down = down
-        return false
+-- The back key on our pages goes one page up (user request) instead of closing the bell menu (W_BellMenu
+-- handles its back key in HandleOverrideBackInputAction). While our pages are up the menu's binding is taken off
+-- with its own ClearBackKey() and put back with BindBackKey() (UPBZActivatableWidget), and each page's 返回 row
+-- is given the back input action as its triggering action (CommonUI), so the key clicks that row. Reading the
+-- keys ourselves does not work here: with the menu open the game is in UI-only input and
+-- PlayerController:IsInputKeyDown sees nothing. The triggered click reaches us through the button group's
+-- click handler (widgets.lua).
+local function back_action(menu)
+    local found = nil
+    pcall(function()
+        local a = menu.CloseBtn.TriggeringEnhancedInputAction
+        if U.valid(a) then found = { enhanced = a, from = "CloseBtn enhanced " .. a:GetFName():ToString() } end
     end)
+    for _, src in ipairs({ { menu.CloseBtn, "TriggeringInputAction" }, { menu, "OverrideBackInputActionData_Game" },
+                           { menu, "OverrideBackInputActionData_Editor" } }) do
+        if found then break end
+        pcall(function()
+            local r = src[1][src[2]]
+            local row = r.RowName:ToString()
+            if row ~= "None" then found = { row = { DataTable = r.DataTable, RowName = r.RowName }, from = src[2] .. " " .. row } end
+        end)
+    end
+    if not cur.back_logged then
+        cur.back_logged = true
+        U.log("menu: back action %s", found and found.from or "not found")
+    end
+    return found
+end
+
+local function bind_back(b, action)
+    if not action then return end
+    local ok, err = pcall(function()
+        if action.enhanced then b:SetTriggeringEnhancedInputAction(action.enhanced)
+        else b:SetTriggeringInputAction(action.row) end
+    end)
+    if not ok then U.log("menu: back action not set: %s", tostring(err)) end
 end
 
 local function take_back(L)
@@ -106,23 +124,22 @@ local function take_back(L)
     local ok, err = pcall(function() L.menu:ClearBackKey() end)
     if not ok then U.log("menu: ClearBackKey failed: %s", tostring(err)) return end
     cur.back_taken = true
-    watch_back(cur.menu)
 end
 
 local function give_back(L)
     if not cur.back_taken then return end
-    cur.back_taken, cur.on_back = false, nil
+    cur.back_taken = false
     local ok, err = pcall(function() L.menu:BindBackKey() end)
     if not ok then U.log("menu: BindBackKey failed: %s", tostring(err)) end
 end
 
--- Show a page: items = { { label, fn }, ... }; focus = index of the row to focus (default 1); on_back = what the
--- back key does (one page up). The menu's own options are hidden while a page is up.
-function M.show(items, focus, on_back)
+-- Show a page: items = { { label, fn, back = true? }, ... }: the back key clicks the row marked back (one page
+-- up); focus = index of the row to focus (default 1). The menu's own options are hidden while a page is up.
+function M.show(items, focus)
     local L = live()
     if not L then return end
-    cur.on_back = on_back
     take_back(L)
+    local action = back_action(L.menu)
     if #cur.hidden == 0 then
         for _, w in ipairs(W.children(L.box)) do
             if w:IsVisible() then
@@ -134,9 +151,10 @@ function M.show(items, focus, on_back)
     clear_added(L)
     local added = {}
     for _, it in ipairs(items) do
-        local b = add_button(L, it[1], it[2])
+        local b = W.new_button(L.menu, L.menu.TeleportBtn)
         W.append(L.box, b, L.like)
-        join(L, b, it[1])
+        join(L, b, it[1], it[2])
+        if it.back then bind_back(b, action) end
         added[#added + 1] = b
         cur.added[#cur.added + 1] = U.ref(b)
     end
@@ -203,9 +221,9 @@ local function inject(menu, on_entry)
     cur = { menu = U.ref(menu), box = U.ref(box), like = U.ref(like), group = U.ref(group), hidden = {}, added = {} }
     local L = { menu = menu, box = box, like = like, group = group }
     -- 强敌挑战 goes right below 穿行 (user decision).
-    local entry = add_button(L, nil, on_entry)
+    local entry = W.new_button(menu, menu.TeleportBtn)
     local moved = W.insert(box, like, entry, like)
-    join(L, entry, i18n.t("entry"))
+    join(L, entry, i18n.t("entry"), on_entry)
     cur.entry = U.ref(entry)
     local col = W.visible_buttons(box)
     W.chain(col)

@@ -5,7 +5,7 @@
 -- its rows are UGameSettingAction items of ListView_Settings (载入游戏 / 返回至开始界面 / 返回至桌面, whose
 -- named actions UI.Setting.Exit.* the panel carries out); the panel's CurrentCollection is then "ExitCollection".
 -- Our row is a UGameSettingAction of our own with no action bound, so the game's click does nothing with it; the
--- click reaches us through the one native button hook (widgets.lua) on the row's Button_Action. The page's list
+-- click reaches us through the native button hook (widgets.lua, HandleButtonClicked: the row is in no button group) on the row's Button_Action. The page's list
 -- is rebuilt whenever the page is shown, so while a challenge runs it is checked every CHECK_MS and the row is
 -- added again; when the challenge ends the row is taken out.
 local U = require("util")
@@ -157,13 +157,24 @@ local function check_panel(panel, on_abort)
     wire_entry(row, ours, on_abort)
 end
 
+local is_active, on_abort, watching = nil, nil, false
+
 -- is_active(): a challenge is running. on_abort(): leave it.
-function M.install(is_active, on_abort)
+function M.install(active_fn, abort_fn)
+    is_active, on_abort = active_fn, abort_fn
     U.on_fail(remove_all)
+end
+
+-- Called when a challenge starts: checks the settings panel until the challenge is over, then takes the row out
+-- and stops (no loop runs outside challenges).
+function M.watch()
+    if watching then return end
+    watching = true
     U.every(CHECK_MS, function()
         if not is_active() then
             if next(rows) then remove_all() U.log("pause: leave row removed (challenge over)") end
-            return false
+            watching = false
+            return true
         end
         for _, p in ipairs(U.find_all(PANEL)) do
             if p:IsVisible() then check_panel(p, on_abort) end

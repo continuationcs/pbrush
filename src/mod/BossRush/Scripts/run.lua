@@ -542,6 +542,10 @@ end)
 -- ---------------------------------------------------------------- public
 function M.active() return run ~= nil end
 
+-- fn() runs whenever a challenge starts (the leave row in the system menu is only watched during one).
+local start_listeners = {}
+function M.on_start(fn) start_listeners[#start_listeners + 1] = fn end
+
 -- Read-only view of the running challenge for the development autotest (phase, actor ref, center, index...).
 function M.state() return run end
 
@@ -563,6 +567,7 @@ function M.start(queue, difficulty, arena, opts)
             helpers = {} }
     U.log("run: start %d boss(es), difficulty %d, arena %s, from %s / %s", #queue, difficulty, arena.key, run.origin.map, run.origin.bell)
     phase("travelling")
+    for _, fn in ipairs(start_listeners) do fn() end
     go_to_arena()
     wait_arrival()
 end

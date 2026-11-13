@@ -80,7 +80,7 @@ end
 show_bosses = function(page, focus)
     local list = duel_bosses()
     if #list == 0 then
-        menu.show({ { T("none"), function() end }, { T("back"), show_root } }, 1, show_root)
+        menu.show({ { T("none"), function() end }, { T("back"), show_root, back = true } }, 1)
         return
     end
     local pages = math.max(1, math.ceil(#list / PAGE))
@@ -99,8 +99,8 @@ show_bosses = function(page, focus)
             begin({ b }, { record_key = "duel/" .. b.id .. "/" .. U.game_difficulty(), title = T("duel") .. " · " .. i18n.name(b) })
         end }
     end
-    items[#items + 1] = { T("back"), show_root }
-    menu.show(items, focus or 1, show_root)
+    items[#items + 1] = { T("back"), show_root, back = true }
+    menu.show(items, focus or 1)
 end
 
 show_gauntlets = function()
@@ -115,23 +115,25 @@ show_gauntlets = function()
         end
     end
     if #items == 0 then items[#items + 1] = { T("none"), function() end } end
-    items[#items + 1] = { T("back"), show_root }
-    menu.show(items, 1, show_root)
+    items[#items + 1] = { T("back"), show_root, back = true }
+    menu.show(items, 1)
 end
 
--- The third argument of menu.show is where the back key (Esc / gamepad B) goes: one level up.
+-- Every page's 返回 row is marked back = true: the back key (Esc / gamepad B) clicks it, one level up.
 show_root = function()
     menu.show({
         { T("duel"), function() show_bosses(1) end },
         { T("gauntlet"), show_gauntlets },
         -- 试炼 (Trial, the roguelike) is hidden until it is built.
-        { T("back"), menu.restore },
-    }, 1, menu.restore)
+        { T("back"), menu.restore, back = true },
+    }, 1)
 end
 
 math.randomseed(os.time())
 menu.install(show_root, function() return not run.active() end)
-require("pause").install(run.active, run.abort)
+local pause = require("pause")
+pause.install(run.active, run.abort)
+run.on_start(pause.watch)
 
 -- Development only: autotest.lua is not shipped (src/tools/build_release.py leaves it out).
 if config.debug then
