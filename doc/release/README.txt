@@ -53,8 +53,9 @@ COMPATIBILITY
   - Mods that bind keyboard keys are unaffected: this mod binds none.
 
 KNOWN LIMITATIONS
-  - 54 bosses are available. Bosses whose skills rely on points placed in their own level
-    (e.g. Zuo Shang, Yuzan, the Lion Dance Grandmaster's second phase) are not offered yet.
+  - 65 bosses are available. The Lion Dance Grandmaster's second phase is fought only at its own
+    battlefield (The Sealed Lion), in Duel only. Eight bosses whose skills rely on their own level are not
+    offered yet: the four Acolytes, Dusk, Leng Tu, and Zuo Shang (first form and True Lóng).
   - The roguelike "Trial" mode is not included yet.
   - Text is Simplified Chinese or English (Traditional Chinese shows Simplified for now).
   - Made and tested on the Steam version, game build CL-302256.

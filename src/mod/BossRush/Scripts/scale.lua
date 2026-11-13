@@ -37,11 +37,12 @@ function M.target_level(difficulty)
     return M.progress_level() + (config.difficulty_offset[difficulty] or 0)
 end
 
--- difficulty: the game's EDifficultMode value (U.game_difficulty()).
-function M.apply(boss, difficulty)
+-- ch: the boss, or one of its summons (scaled the same way, as the game levels both); what: a name for the log
+-- (default: the boss). difficulty: the game's EDifficultMode value (U.game_difficulty()).
+function M.apply(ch, difficulty, what)
     if not config.scale_enabled then U.log("scale: off (原貌)") return end
     local lv = M.target_level(difficulty)
-    local s = boss.AttributeSetBase
+    local s = ch.AttributeSetBase
     local parts = {}
     for cname, attrs in pairs(CURVES) do
         local cv = curve(cname)
@@ -56,7 +57,8 @@ function M.apply(boss, difficulty)
             parts[#parts + 1] = string.format("%s x%.2f", cname, k)
         end
     end
-    U.log("scale: level %d (progress %d, difficulty %d): %s", lv, M.progress_level(), difficulty, table.concat(parts, ", "))
+    U.log("scale%s: level %d (progress %d, difficulty %d): %s", what and (" " .. what) or "", lv, M.progress_level(),
+        difficulty, table.concat(parts, ", "))
 end
 
 return M

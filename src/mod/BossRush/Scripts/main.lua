@@ -12,7 +12,7 @@ local gauntlets = require("gauntlets")
 
 local T = i18n.t
 -- Bosses per 单挑 page. With 下一页 / 上一页 / 返回 a page has 11 rows, three more than the bell menu's own column
--- (8 with 强敌挑战), which it was laid out for; 54 bosses in a release build make 7 pages.
+-- (8 with 强敌挑战), which it was laid out for; 65 bosses in a release build make 9 pages.
 local PAGE = 8
 
 -- Open bosses: not tied to level-placed points (or their points are placed by the mod), not prologue variants.
@@ -21,6 +21,8 @@ local function offered(b)
     return b.state == "open" or (b.state == "testing" and config.debug)
 end
 
+-- In roster order, which is the game's codex order: the order the player meets them (user request: 单挑 lists
+-- bosses by appearance).
 local function available()
     local out = {}
     for _, b in ipairs(roster) do
@@ -29,23 +31,16 @@ local function available()
     return out
 end
 
--- 单挑 list: the offered bosses and those fought at their original arena (单挑 only), in roster order, which is
--- the game's codex order: the order the player meets them (user request: list bosses by appearance).
-local function duel_bosses()
-    local out = {}
-    for _, b in ipairs(roster) do
-        if offered(b) or b.state == "origin" then out[#out + 1] = b end
-    end
-    return out
-end
-
--- A gauntlet's bosses that are available right now (nil when fewer than two).
+-- A gauntlet's bosses that are available right now (nil when fewer than two). Bosses fought only on their own
+-- battlefield (arenas.own) are 单挑 only: a gauntlet stays in one arena.
 local function gauntlet_queue(g, avail)
     local ok = {}
-    for _, b in ipairs(avail) do ok[b.id] = b end
+    for _, b in ipairs(avail) do
+        if not arenas.own(b.id) then ok[b.id] = b end
+    end
     local q = {}
     if g.bosses == "all" then
-        q = avail
+        for _, b in ipairs(avail) do if ok[b.id] then q[#q + 1] = b end end
     else
         for _, id in ipairs(g.bosses) do if ok[id] then q[#q + 1] = ok[id] end end
     end
@@ -60,13 +55,7 @@ local function begin(queue, opts)
     local origin_of = #queue == 1 and queue[1].id or nil
     local pos
     pcall(function() pos = U.pawn():K2_GetActorLocation() end)
-    local arena, in_place
-    if #queue == 1 and queue[1].state == "origin" then
-        -- Level-dependent boss: always its original arena.
-        arena, in_place = arenas.origin_for(queue[1].id), false
-    else
-        arena, in_place = arenas.pick(origin_of, U.active_bells(), U.world_path(), pos, config.in_place_radius)
-    end
+    local arena, in_place = arenas.pick(origin_of, U.active_bells(), U.world_path(), pos, config.in_place_radius)
     if not arena then U.log("no arena available") return end
     opts.in_place = in_place
     U.log("arena: %s (%s)", arena.key, in_place and "here" or "travel")
@@ -78,7 +67,7 @@ end
 -- then the bosses, then 返回. focus: the row to focus; 下一页 on entering (paging to find a boss is the common
 -- action, user request), and after paging the paging row just used.
 show_bosses = function(page, focus)
-    local list = duel_bosses()
+    local list = available()
     if #list == 0 then
         menu.show({ { T("none"), function() end }, { T("back"), show_root, back = true } }, 1)
         return
@@ -93,9 +82,7 @@ show_bosses = function(page, focus)
     for i = (page - 1) * PAGE + 1, math.min(page * PAGE, #list) do
         local b = list[i]
         -- Difficulty follows the game's own setting; records are kept per difficulty.
-        local label = i18n.name(b)
-        if b.state == "origin" then label = label .. " · " .. T("origin_tag") end
-        items[#items + 1] = { label, function()
+        items[#items + 1] = { i18n.name(b), function()
             begin({ b }, { record_key = "duel/" .. b.id .. "/" .. U.game_difficulty(), title = T("duel") .. " · " .. i18n.name(b) })
         end }
     end
@@ -139,5 +126,13 @@ run.on_start(pause.watch)
 if config.debug then
     local ok, at = pcall(require, "autotest")
     if ok and at then at.install(run, arenas, roster) end
+    -- A tip strip once the player is in the game, so a hot reload (Ctrl+R) can be seen to have worked; the time
+    -- tells one reload from the next. At game start mods load before there is a player: it waits for one.
+    local stamp = os.date("%H:%M:%S")
+    U.every(1000, function()
+        if not U.valid(U.pawn()) then return false end
+        require("ui").toast("强敌挑战 已载入（开发版）" .. stamp, 3)
+        return true
+    end)
 end
 U.log("loaded (debug=%s, %d bosses in roster)", tostring(config.debug), #roster)

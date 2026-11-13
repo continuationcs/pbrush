@@ -35,7 +35,7 @@ Settings live in `BossRush\Scripts\config.lua` (restart the game after editing).
 | `src/mod/BossRush/Scripts/` | The mod. `main.lua` (menu pages), `menu.lua` (Bell menu entry and pages), `widgets.lua` (helpers for the game's menus, the click hook), `run.lua` (a challenge from travel to return), `scale.lua`, `settle.lua` (result screen), `pause.lua` (game-menu entry to leave a run), `ui.lua`, `arenas.lua`, `gauntlets.lua`, `roster.lua` and `origins.lua` (generated), `records.lua`, `i18n.lua`, `config.lua`, `util.lua`; `autotest.lua` is a development test, not shipped |
 | `src/probe/BossRushProbe/` | Development probe: debug keys (F1 god mode, F2 Realm of Mirage, F3 original-arena cells, F4 mark arena, F5 bell dump, F6 arena teleport, F7 spawn boss, F8 report, F9 stats, F10 scale test) and logging |
 | `src/data/` | Bell table (`bells.tsv`, 187 bells), arena list (`arenas_final.tsv`), original-arena cells, autotest results |
-| `src/tools/` | `install.ps1` (copy mods into the game), `build_release.py` (release zip), `gen_roster.py` (boss roster), `origin_arenas.py` (original arenas), `lua_check.py` (Lua sanity check), `crash_dump.py` (read UE4SS crash dumps), `asset_scan.py` (search game assets offline), `make_cover.py` (Nexus image), `pak_locres.py` |
+| `src/tools/` | `install.ps1` (copy mods into the game), `build_release.py` (release zip), `gen_roster.py` (boss roster), `lua_check.py` (Lua sanity check), `crash_dump.py` (read UE4SS crash dumps), `asset_scan.py` (search game assets offline), `make_cover.py` (Nexus image), `pak_locres.py` |
 | `src/ue4ss/` | UE4SS memory layout and signatures for this game build (CL-302256) |
 | `src/vendor/kintaro-pbz-config/` | Third-party UE4SS config for an earlier game build |
 | `doc/DESIGN.md` | Design, findings from the game, decisions and implementation status |
@@ -51,7 +51,7 @@ powershell -File src\tools\install.ps1 -Mods BossRush
 powershell -File src\tools\install.ps1 -Mods BossRushProbe
 
 # build the release zip into out\ (debug log switched off in the copy)
-python src\tools\build_release.py 0.1.2
+python src\tools\build_release.py 0.1.4
 ```
 
 Logs go to `<game>\platform\steam\ue4ss\UE4SS.log` with the prefixes `[BossRush]` and `[BRProbe]`.

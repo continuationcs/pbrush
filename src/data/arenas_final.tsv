@@ -1,9 +1,10 @@
 key	kind	map	bell	zh	en	x	y	z	yaw	boss
 xigu_axe	scenic,origin	/Game/Maps/B02/PBZ_Xigu_WP	NLES_023	斧老大斩落处	The Axemaster's Fall	-53341	258560	-24485	0	PengMeng
 fuji_tree	scenic	/Game/Maps/B03/PBZ_Fujizhilin_WP	LZSJ_010	丝线缠绕的巨树	Threadbound Great Tree	14830	154293	-1974	318	
-camp_lady	scenic	/Game/Maps/B04_05/PBZ_Zhengdaodaying_WP	SXC_01_06	圣母雕像场	The Lady Grounds	-47348	104312	950	-18	
-camp_tower	scenic	/Game/Maps/B04_05/PBZ_Zhengdaodaying_WP	YXZR_006	高塔后方出口	Tower Rear Exit	29167	71243	6937	118	
-pz_dock	scenic	/Game/Maps/B08_09_10/PBZ_Pangzhen_WP	Bell_MGH_008	陆家村浅滩船坞	Village of Lu Shallows Dock	-70022	72581	927	57	
+camp_lady	scenic	/Game/Maps/B04_05/PBZ_Zhengdaodaying_WP	SXC_01_06	圣母雕像场	The Lady Grounds	-47348	104312	950	50	
+camp_tower	scenic	/Game/Maps/B04_05/PBZ_Zhengdaodaying_WP	YXZR_006	高塔后方出口	Tower Rear Exit	29167	71243	6937	88	
+pz_lake	scenic	/Game/Maps/B08_09_10/PBZ_Pangzhen_WP	Bell_MGH_008	陆家村湖畔	Lu Village Lakeside	-67150	80676	805	255	
+lakeside	scenic	/Game/Maps/B04_05/PBZ_Zhengdaodaying_WP	BrokenBell_LJC_02	湖畔	Lakeside	-66429	82003	911	264	
 ddsd_blade	scenic,origin	/Game/Maps/DengDingShanDao/PBZ_DengDingShanDao_WP	JJYBP_005	横刀平台	Commander's Platform	-61980	-56140	18381	81	HengDaoKe
 jhsy	jhsy	*	*	镜花水月	Realm of Mirage	8114	-27835	5000817	15	
 lyz_white	origin	/Game/Maps/B08_09_10/PBZ_Pangzhen_WP	LYZ_014	白影陨落之处	Whiteshadow's Fall	-153240	-23959	895	0	FengXueDaoKe

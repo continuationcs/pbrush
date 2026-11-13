@@ -277,9 +277,38 @@ local function max_health(ch)
     return m
 end
 
--- The boss's summons that wait at 0 HP for an execution (roster `summons`): their Kill is forced after FORCE_KILL,
--- as the boss's is. Their states (0 HP / hurt / full) are logged whenever they change, so a test shows what each
--- one does (a lion head that never takes damage shows up as "full").
+local function attr(ch, name)
+    local v = nil
+    pcall(function() v = ch.AttributeSetBase[name].CurrentValue end)
+    return v and string.format("%.0f", v) or "?"
+end
+
+-- Development log: the attributes that decide whether a summon can be hurt and executed (see check_summons).
+local function log_summon_attributes(rec)
+    if not config.debug then return end
+    local boss = run.actor and U.get(run.actor)
+    if boss then U.log("run:   boss Level %s Health %s/%s", attr(boss, "Level"), attr(boss, "Health"), attr(boss, "Health_Max")) end
+    for _, short in ipairs(rec.summons) do
+        for _, s in ipairs(U.find_all(short)) do
+            if not is_dead(s) then
+                U.log("run:   summon Level %s Health %s min %s max %s, Shachi %s/%s, execute below %s / %s (break)",
+                    attr(s, "Level"), attr(s, "Health"), attr(s, "Health_Min"), attr(s, "Health_Max"),
+                    attr(s, "Shachi"), attr(s, "Shachi_Max"), attr(s, "ExecutionTargetNormalHealthThreshold"),
+                    attr(s, "ExecutionTargetBreakHealthThreshold"))
+            end
+        end
+    end
+end
+
+-- The boss's summons (roster `summons`):
+-- - Scaled like the boss (scale.apply), once each, as soon as their attributes are set. The game sizes some of
+--   their values from the boss's: 舞狮尊主's last lion head (HouHouHou.LastOne) gets a health floor
+--   (GE_LockHealthButCanExecuted, Health_Min) of 1% of the boss's Health_Max and can be executed only below a
+--   share of its own. With only the boss scaled (x18.51) the floor was 1851 over a maximum of 500: the head could
+--   neither be hurt nor executed (2026-11-13). In the game both follow the same level curves (10000 and 500:
+--   the floor is 20% of the head's health).
+-- - Those that wait at 0 HP for an execution get their Kill forced after FORCE_KILL, as the boss does.
+-- Their states (0 HP / hurt / full) are logged whenever they change.
 local function check_summons()
     local rec = run.queue[run.index]
     if not rec.summons then return end
@@ -287,8 +316,18 @@ local function check_summons()
     for _, short in ipairs(rec.summons) do
         for _, s in ipairs(U.find_all(short)) do
             local name = s:GetFullName()
-            if not is_dead(s) then
-                local hp, m = health(s), max_health(s)
+            -- A dead summon's attributes are never read: it is being taken apart (the game crashed while a
+            -- dying lion head dissolved, right after a read of every summon's health was added, 2026-11-13).
+            -- Just spawned: attributes not set yet (Health_Max 0).
+            local alive = not is_dead(s)
+            local hp, m = 0, nil
+            if alive then hp, m = health(s), max_health(s) end
+            if alive and m and m > 0 then
+                if not run.summon_scaled[name] then
+                    run.summon_scaled[name] = true
+                    scale.apply(s, run.difficulty, short)
+                    hp, m = health(s), max_health(s)
+                end
                 states[#states + 1] = hp <= 0 and "0" or ((m and hp >= m) and "full" or "hurt")
                 if hp > 0 then
                     run.summon_zero[name] = nil
@@ -307,6 +346,7 @@ local function check_summons()
     if line ~= run.summon_line then
         run.summon_line = line
         U.log("run: summons alive: %s", line)
+        log_summon_attributes(rec)
     end
 end
 
@@ -416,7 +456,7 @@ spawn_next = function()
     if not run then return end
     run.index = run.index + 1
     run.zero_at, run.dead_at, run.killed = nil, nil, false
-    run.summon_zero, run.summon_line = {}, nil
+    run.summon_zero, run.summon_scaled, run.summon_line = {}, {}, nil
     local boss = run.queue[run.index]
     local cls = U.load_class(boss.class)
     if not U.valid(cls) then U.log("run: boss class not found %s", boss.class) finish("error") return end
@@ -454,74 +494,44 @@ spawn_next = function()
     if first then watch() end
 end
 
--- Original arena (kind "anchor"): after landing at the nearby bell, find the boss's helper point in the loaded
--- level (World Partition streams by XY, so it is there even when it sits in an interior space), move the
--- player onto it and fight there. If it never shows up the arena is gone (story state): leave.
-local function locate_helper(then_fn)
-    local a = run.arena
-    local short = a.helper:match("%.([^.]+)$")
-    pcall(function() U.load_class(a.helper) end)
-    local tries = 0
-    phase("locating")
-    U.every(1000, function()
-        if not run or run.phase ~= "locating" then return true end
-        tries = tries + 1
-        local best, bd
-        for _, h in ipairs(U.find_all(short)) do
-            local ok, l = pcall(function() return h:K2_GetActorLocation() end)
-            if ok then
-                local d = (l.X - a.hx) ^ 2 + (l.Y - a.hy) ^ 2
-                if not bd or d < bd then best, bd = l, d end
-            end
-        end
-        if best then
-            U.log("run: origin helper %s at %.0f %.0f %.0f", short, best.X, best.Y, best.Z)
-            local p = U.pawn()
-            local yaw = p:K2_GetActorRotation().Yaw
-            if a.stay then
-                -- The helper must not be stood on (e.g. lion-dance poles are special-move volumes): stay at the
-                -- bell, face the helper; the boss spawns ahead, between the player and it.
-                local pl = p:K2_GetActorLocation()
-                yaw = math.deg(math.atan(best.Y - pl.Y, best.X - pl.X))
-                pcall(function() p:K2_SetActorRotation({ Pitch = 0, Yaw = yaw, Roll = 0 }, false) end)
-                run.center = { X = pl.X, Y = pl.Y, Z = pl.Z }
-            else
-                pcall(function() p:K2_TeleportTo({ X = best.X, Y = best.Y, Z = best.Z + 120 }, { Pitch = 0, Yaw = yaw, Roll = 0 }) end)
-                run.center = { X = best.X, Y = best.Y, Z = best.Z }
-            end
-            run.face = yaw
-            phase("arrived")
-            ui.toast(i18n.t("incoming"), 2.5)
-            U.after(2000, then_fn)
-            return true
-        end
-        if tries >= 12 then
-            U.log("run: origin helper %s not found", short)
-            ui.toast(i18n.t("origin_missing"), 3)
-            finish("error")
-            return true
-        end
-        return false
-    end)
+-- Whether the game is still loading. The player is put at the destination before the loading screen goes away,
+-- so standing there is not enough: a boss spawned then attacked the moment the screen lifted (user report
+-- 2026-11-13). A bell teleport first blocks the game thread (no tick runs, ~11 s), then shows WB_AdditionalLoading
+-- (~4 s, activated while it is up). Read in game 2026-11-14 with every candidate logged; IsLoadingLevel,
+-- PBZDestinationLoadingSubsystem:IsDestinationLoadingActive and WB_TempLoadingScreen never changed.
+local LOADING_SCREEN = "WB_AdditionalLoading_C"
+local function loading()
+    for _, w in ipairs(U.find_all(LOADING_SCREEN)) do
+        local active = false
+        pcall(function() active = w:IsActivated() == true end)
+        if active then return true end
+    end
+    return false
 end
 
--- Wait for the arena to load: the player must stand near the arena centre for a moment.
+-- Time the player gets between the loading screen lifting (or arriving without one) and the boss appearing:
+-- the 「强敌将至」 notice stays up that long.
+local GRACE_MS = 3000
+
+-- Wait for the arena to load: loading finished, and the player standing near the arena centre for a moment.
 local function wait_arrival()
-    local stable, tries = 0, 0
+    local stable, tries, seen = 0, 0, nil
     U.every(500, function()
         if not run or run.phase ~= "travelling" then return true end
         tries = tries + 1
+        local busy = loading()
         local near = false
         pcall(function() near = U.dist(U.pawn():K2_GetActorLocation(), run.center) < 1500 end)
-        stable = near and stable + 1 or 0
+        local state = string.format("loading screen %s, at the arena %s", tostring(busy), tostring(near))
+        if state ~= seen then
+            seen = state
+            U.log("run: %s (tick %d)", state, tries)
+        end
+        stable = (near and not busy) and stable + 1 or 0
         if stable >= 4 then
-            if run.arena.kind == "anchor" then
-                locate_helper(spawn_next)
-            else
-                phase("arrived")
-                ui.toast(i18n.t("incoming"), 2.5)
-                U.after(1500, spawn_next)
-            end
+            phase("arrived")
+            ui.toast(i18n.t("incoming"), GRACE_MS / 1000)
+            U.after(GRACE_MS, spawn_next)
             return true
         end
         if tries > 120 then
@@ -548,6 +558,9 @@ function M.on_start(fn) start_listeners[#start_listeners + 1] = fn end
 
 -- Read-only view of the running challenge for the development autotest (phase, actor ref, center, index...).
 function M.state() return run end
+
+-- Whether the game's loading screen is up (the development arena survey waits for it too).
+M.loading = loading
 
 -- 收刃离去: leave the running challenge (counts as a defeat, no record).
 function M.abort()

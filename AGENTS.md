@@ -18,6 +18,8 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
   UI when a game widget exists. Never write into the game save.
 - The user tests in rounds ("做完一轮, 我去统一测试"): batch related changes, then give one test list. New bosses
   land as `state = "testing"` (development builds only) and become `"open"` after the user confirms in game.
+- New or moved arenas: run the arena survey (development build, Shift+F12) and grade them by the standard in
+  `doc/DESIGN.md` §5.0a before offering them.
 - A test round is expensive, so make one round answer the question: log each stage of a new integration (object
   found → page recognised → row added → row on screen → clicked) so the log shows where it stopped, and put a
   read-only description of what was found (names, classes, counts) in the debug log. A missing log line means
@@ -155,19 +157,22 @@ shell turns them into real characters. Use the Edit/Write tools, or a Python scr
   when the game does not report the boss dead). Remove `LootComp` and set
   `bExcludeFromCodex` to stop loot, Remnant Dust and codex entries.
 - Bosses whose skills look up level-placed points (Zuo Shang, Yuzan, Qishu, Du Yan, ...) teleport to (0,0,0) in
-  other arenas, or take the player to their own level (Yubi). Two ways to offer them:
-  - **补点 (preferred)**: roster `helpers` (`src/tools/gen_roster.py`): the run spawns the same marker classes in
-    the arena before the boss and destroys them after (`run.lua` `place_helpers`). Works when the markers are
-    root-only actors (Yubi confirmed 2026-11-13). The log counts original markers still loaded nearby: a skill
-    taking the nearest or the first one may pick those.
-  - **原址**: `state = "origin"`, 单挑 only, fought at its original arena (`origins.lua` from
-    `src/tools/origin_arenas.py`). The rest are `state = "anchored"` and not offered.
+  other arenas, or take the player to their own level (Yubi). They are offered with **补点**: roster `helpers`
+  (`src/tools/gen_roster.py`): the run spawns the same marker classes in the arena before the boss and destroys
+  them after (`run.lua` `place_helpers`). Works when the markers are root-only actors (eleven bosses confirmed
+  2026-11-13). The log counts original markers still loaded nearby: a skill taking the nearest or the first one
+  may pick those. The rest are `state = "anchored"` and not offered. (Fighting them at their original arena,
+  "原址", was removed: the points can sit in interior spaces, and one put the player inside a building.)
   Lookups come in two kinds: `GetActorOfClass` and the **targeting subsystem** (markers call `RegisterTarget` on
   BeginPlay, skills call `GetTargets` / `FindNearestActor`). The first scan only knew the first kind and marked
   Yubi safe. Don't confuse a class named next to `BeginDeferredActorSpawnFromClass` (the skill spawns it, no
   dependency: 魔渊's pillars, 舞狮尊主's poles) with a lookup.
-- Summons can wait at 0 HP for an execution like bosses (舞狮尊主's last lion head, `HouHouHou.LastOne`): roster
-  `summons` makes the run force their `Kill` too and log their state (0 / hurt / full).
+- **Scale a boss's summons with it**: the game sizes some summon values from the boss's. 舞狮尊主's last lion
+  head gets a health floor of 1% of the boss's `Health_Max`; with only the boss scaled (x18.51) the floor
+  (1851) was above the head's maximum (500), so it could not be hurt or executed (2026-11-13). Roster `summons`
+  lists such classes: the run scales each one like the boss (`scale.apply`), forces its `Kill` when it waits at
+  0 HP for an execution, and logs its state (0 / hurt / full; attributes in the development log). Other bosses'
+  summons are not scaled.
 - **Bell menu buttons** (`W_DialogueButton_C`): the visible label is set by `SetWidgetText`, which also plays a
   slide-in animation: call it **once**, after the button is added (calling it twice made labels jitter). Join the
   menu's `CommonButtonGroupBase` for the selected/unselected look, and relink gamepad navigation explicitly with
@@ -213,10 +218,17 @@ shell turns them into real characters. Use the Edit/Write tools, or a Python scr
   gamepad B in the bell menu read nothing). Read keys that way only in gameplay (the result screen does).
 - Most of the bell menu's logic lives in the game's TypeScript layer (puerts mixins), invisible to UE4SS hooks.
 - Test menus with the confirm key and the gamepad, not only the mouse.
+- **Arrival is not the end of loading**: the player stands at the destination while the loading screen is still
+  up, so a boss spawned then attacks as it lifts (2026-11-13). A bell teleport blocks the game thread (~11 s, no
+  tick runs), then shows `WB_AdditionalLoading_C` (~4 s, `IsActivated()` while up): `run.lua` waits for it, then
+  gives the player `GRACE_MS`. `IsLoadingLevel`, `IsDestinationLoadingActive` and `WB_TempLoadingScreen_C` never
+  changed (found by logging every candidate on each change, 2026-11-14).
+- **Never read a dying actor's attributes**: the game crashed natively while a lion head dissolved, right after the
+  run started reading every summon's health before checking `IsDead` (2026-11-13). Check `IsDead` first.
 - Cross-map travel: `PBZSaveLoadSubsystem:TeleportTo(FName("/Game/Maps/..."), transform, FName("Bell_<id>"))`.
   It saves and loads, so no separate autosave handling is needed.
 - Read input with `PlayerController:IsInputKeyDown({KeyName = FName("Gamepad_FaceButton_Bottom")})`.
-- Development keys: the probe uses F1–F10, the autotest F12 (run) and Ctrl+F12 (forced error). **Never bind F11**:
+- Development keys: the probe uses F1–F10, the autotest F12 (run), Shift+F12 (arena survey) and Ctrl+F12 (forced error). **Never bind F11**:
   the game uses it (user report). Pick new keys with a modifier on an existing F key rather than a free letter.
 - Low system memory crashes the game (pagefile); it is not the mod. System settings are the user's to change.
 - Do not install third-party binaries without asking the user.

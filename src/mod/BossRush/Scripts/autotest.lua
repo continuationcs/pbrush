@@ -1,7 +1,7 @@
 -- Development autotest (never shipped: src/tools/build_release.py leaves this file out).
--- F12: run every "origin" boss (level-dependent, fought at its original arena) through a full challenge,
--- one after another, and log what happened. F12 again stops after the current boss. Ctrl+F12 forces an error.
---   travel -> find helper point -> spawn -> watch the boss 20 s (moves, vanishing, falls) -> Kill ->
+-- F12: run every "testing" boss through a full challenge, one after another, and log what happened. F12 again
+-- stops after the current boss. Shift+F12: survey the arenas (see below). Ctrl+F12 forces an error.
+--   travel -> place helper points -> spawn -> watch the boss 20 s (moves, vanishing, falls) -> Kill ->
 --   result screen -> back at the starting bell.
 -- The player is made unkillable while it runs (Health_Max x100, refilled), and restored afterwards.
 -- Results: [BossRush] AUTOTEST lines in UE4SS.log and autotest.tsv in the mod folder.
@@ -72,16 +72,16 @@ function M.install(run, arenas, roster)
         end
         local queue = {}
         for _, b in ipairs(roster) do
-            if b.state == "origin" and (not only or only[b.id]) then queue[#queue + 1] = b end
+            if b.state == "testing" and (not only or only[b.id]) then queue[#queue + 1] = b end
         end
-        if #queue == 0 then out("no origin bosses") return end
+        if #queue == 0 then out("no testing bosses") return end
         if run.active() then out("a run is already going; try again when it ends") return end
         active, stop = true, false
         local saved_settle = config.settle_seconds
         config.settle_seconds = 3
         god_on()
         out(string.format("start: %d bosses", #queue))
-        out("boss\tresult\thelper\tmax_move_m\tmin_dz_m\tnotes")
+        out("boss\tresult\tcenter\tmax_move_m\tmin_dz_m\tnotes")
 
         local i, step, t0, rec = 0, "next", 0, nil
         U.every(1000, function()
@@ -92,7 +92,7 @@ function M.install(run, arenas, roster)
 
             if step == "next" then
                 if rec then
-                    out(string.format("%s\t%s\t%s\t%s\t%s\t%s", rec.id, rec.result, rec.helper or "-",
+                    out(string.format("%s\t%s\t%s\t%s\t%s\t%s", rec.id, rec.result, rec.center or "-",
                         rec.move and string.format("%.0f", rec.move / 100) or "-",
                         rec.dz and string.format("%.0f", rec.dz / 100) or "-", table.concat(rec.notes, "; ")))
                     rec = nil
@@ -109,16 +109,18 @@ function M.install(run, arenas, roster)
                 local b = queue[i]
                 rec = { id = b.id, result = "?", notes = {} }
                 out(string.format("[%d/%d] %s", i, #queue, b.id))
-                local arena = arenas.origin_for(b.id)
+                local pos = nil
+                pcall(function() pos = U.pawn():K2_GetActorLocation() end)
+                local arena, in_place = arenas.pick(b.id, U.active_bells(), U.world_path(), pos, config.in_place_radius)
                 if not arena then rec.result = "no-arena" step = "next" return end
-                run.start({ b }, U.game_difficulty(), arena, { title = "autotest" })
+                run.start({ b }, U.game_difficulty(), arena, { title = "autotest", in_place = in_place })
                 step, t0 = "await_fight", now
 
             elseif step == "await_fight" then
-                if not st then rec.result = "ended-before-fight (helper missing?)" step = "next" return end
+                if not st then rec.result = "ended-before-fight" step = "next" return end
                 local a = st.phase == "fighting" and U.get(st.actor)
                 if a then
-                    rec.helper = string.format("%.0f %.0f %.0f", st.center.X, st.center.Y, st.center.Z)
+                    rec.center = string.format("%.0f %.0f %.0f", st.center.X, st.center.Y, st.center.Z)
                     rec.start = a:K2_GetActorLocation()
                     rec.move, rec.dz = 0, 0
                     step, t0 = "observe", now
@@ -175,7 +177,154 @@ function M.install(run, arenas, roster)
         end)
     end
 
+    -- ------------------------------------------------------------ arena survey (Shift+F12)
+    -- Travels to every arena (not the Realm of Mirage) and measures, from where the player stands and from where
+    -- the boss appears (8 m ahead), how far the ground stays open in 16 directions: walkable (navigation mesh),
+    -- level (no step or slope over MAX_STEP_DZ between samples) and unobstructed (the path there is not more
+    -- than DETOUR times the straight line). One direction per tick. Then back to the starting bell.
+    local DIRS, STEP, REACH = 16, 200, 3000           -- cm
+    local MAX_STEP_DZ = 150
+    local DETOUR = 1.3
+    local OPEN_ENOUGH = 1500                          -- a direction counts as open from 15 m
+    local BOSS_AHEAD = 800
+    local EDGE_EXTENT = { X = 50, Y = 50, Z = 250 }   -- small: a sample off the mesh must fail, not snap back
+    local CENTER_EXTENT = { X = 200, Y = 200, Z = 500 }
+    local nav_path = "/Script/NavigationSystem.Default__NavigationSystemV1"
+
+    local function project(nav, world, p, extent)
+        local o = {}
+        local ok, found = pcall(function() return nav:K2_ProjectPointToNavigation(world, p, o, nil, nil, extent) end)
+        if ok and found and o.X then return { X = o.X, Y = o.Y, Z = o.Z } end
+        return nil
+    end
+
+    local function path_len(nav, world, a, b)
+        local len = nil
+        pcall(function()
+            local path = nav:FindPathToLocationSynchronously(world, a, b, nil, nil)
+            if U.valid(path) and path:IsValid() and not path:IsPartial() then len = path:GetPathLength() end
+        end)
+        return len
+    end
+
+    -- From p along yaw: how far it stays open (cm), why it stopped, the largest height difference to p (cm).
+    local function measure_dir(nav, world, p, yaw)
+        local r = math.rad(yaw)
+        local last, open, why, maxdz = p, 0, "30m+", 0
+        for d = STEP, REACH, STEP do
+            local want = { X = p.X + math.cos(r) * d, Y = p.Y + math.sin(r) * d, Z = last.Z }
+            local q = project(nav, world, want, EDGE_EXTENT)
+            if not q or math.sqrt((q.X - want.X) ^ 2 + (q.Y - want.Y) ^ 2) > 100 then why = "edge" break end
+            if math.abs(q.Z - last.Z) > MAX_STEP_DZ then why = "step" break end
+            local len = path_len(nav, world, p, q)
+            if not len or len > d * DETOUR then why = "obstacle" break end
+            maxdz = math.max(maxdz, math.abs(q.Z - p.Z))
+            open, last = d, q
+        end
+        return open, why, maxdz
+    end
+
+    local function summary(arena, label, res)
+        local opens, reasons, enough, maxdz = {}, {}, 0, 0
+        for _, r in ipairs(res) do
+            opens[#opens + 1] = r.open
+            if r.open >= OPEN_ENOUGH then enough = enough + 1 end
+            if r.why ~= "30m+" then reasons[r.why] = (reasons[r.why] or 0) + 1 end
+            maxdz = math.max(maxdz, r.dz)
+        end
+        table.sort(opens)
+        local why = {}
+        for k, v in pairs(reasons) do why[#why + 1] = k .. " " .. v end
+        local dirs = {}
+        for _, r in ipairs(res) do dirs[#dirs + 1] = string.format("%.0f", r.open / 100) end
+        out(string.format("survey\t%s\t%s\topen>=15m %d/%d\tmin %.0f m\tmedian %.0f m\tmax dz %.1f m\t%s\tdirs %s",
+            arena.key, label, enough, #res, opens[1] / 100, opens[math.floor(#opens / 2) + 1] / 100, maxdz / 100,
+            table.concat(why, ", "), table.concat(dirs, " ")))
+    end
+
+    local surveying = false
+    local function survey()
+        if surveying or active then return end
+        if run.active() then out("survey: a challenge is running") return end
+        local list = {}
+        for _, a in ipairs(arenas.all()) do if a.kind ~= "jhsy" then list[#list + 1] = a end end
+        local pl = U.pawn():K2_GetActorLocation()
+        local home = { map = U.world_path(), x = pl.X, y = pl.Y, z = pl.Z, bell = "None" }
+        pcall(function() home.bell = FindFirstOf("BellManager").RecentlyInteractedBellID:ToString() end)
+        surveying = true
+        god_on()
+        out(string.format("survey: %d arenas", #list))
+        -- A scenic arena is offered only once its bell is rung: show whether each bell id is in the rung set.
+        local rung = U.active_bells()
+        for _, a in ipairs(list) do
+            out(string.format("survey\t%s\tbell %s rung %s", a.key, U.bell_name(a.bell), tostring(rung[U.bell_name(a.bell)] == true)))
+        end
+        local i, step, ticks, still, jobs, res = 0, "go", 0, 0, nil, nil
+        U.every(100, function()
+            god_tick()
+            ticks = ticks + 1
+            if step == "go" then
+                i = i + 1
+                if i > #list then
+                    FindFirstOf("PBZSaveLoadSubsystem"):TeleportTo(FName(home.map), U.transform(home.x, home.y, home.z, 0), FName(home.bell))
+                    step, ticks = "home", 0
+                    return false
+                end
+                local a = list[i]
+                FindFirstOf("PBZSaveLoadSubsystem"):TeleportTo(FName(a.map), U.transform(a.x, a.y, a.z, a.yaw), FName(U.bell_name(a.bell)))
+                step, ticks, still = "wait", 0, 0
+            elseif step == "wait" then
+                local a = list[i]
+                local near = false
+                pcall(function() near = U.dist(U.pawn():K2_GetActorLocation(), { X = a.x, Y = a.y, Z = a.z }) < 1500 end)
+                still = (near and not run.loading()) and still + 1 or 0
+                if still >= 20 then
+                    local nav, world = StaticFindObject(nav_path), UEHelpers.GetWorld()
+                    local p = U.valid(nav) and project(nav, world, { X = a.x, Y = a.y, Z = a.z }, CENTER_EXTENT)
+                    if not p then out("survey\t" .. a.key .. "\tno navigation mesh at the standing point") step = "go" return false end
+                    local f = math.rad(a.yaw)
+                    local b = project(nav, world, { X = p.X + math.cos(f) * BOSS_AHEAD, Y = p.Y + math.sin(f) * BOSS_AHEAD, Z = p.Z }, CENTER_EXTENT)
+                    jobs, res = {}, { player = {}, boss = {} }
+                    for d = 0, DIRS - 1 do jobs[#jobs + 1] = { "player", p, a.yaw + d * 360 / DIRS } end
+                    if b then
+                        for d = 0, DIRS - 1 do jobs[#jobs + 1] = { "boss", b, a.yaw + d * 360 / DIRS } end
+                    else
+                        out("survey\t" .. a.key .. "\tboss point (8 m ahead) not on the navigation mesh")
+                    end
+                    step = "measure"
+                elseif ticks > 900 then
+                    out("survey\t" .. a.key .. "\tnever arrived")
+                    step = "go"
+                end
+            elseif step == "measure" then
+                local job = table.remove(jobs, 1)
+                if job then
+                    local nav, world = StaticFindObject(nav_path), UEHelpers.GetWorld()
+                    local open, why, dz = measure_dir(nav, world, job[2], job[3])
+                    table.insert(res[job[1]], { open = open, why = why, dz = dz })
+                    return false
+                end
+                summary(list[i], "player", res.player)
+                if #res.boss > 0 then summary(list[i], "boss", res.boss) end
+                step = "go"
+            elseif step == "home" then
+                local near = false
+                pcall(function() near = U.dist(U.pawn():K2_GetActorLocation(), { X = home.x, Y = home.y, Z = home.z }) < 2000 end)
+                if (near and not run.loading()) or ticks > 900 then
+                    god_off()
+                    surveying = false
+                    out("survey: done")
+                    return true
+                end
+            end
+            return false
+        end)
+    end
+
+    -- A key bound without modifiers also fires with Shift / Ctrl held: those presses belong to the other bindings.
+    local MODIFIERS = { "LeftShift", "RightShift", "LeftControl", "RightControl" }
     U.key(Key.F12, function()
+        if surveying or U.any_key_down(MODIFIERS) then return end
         if active then
             stop = true
             out("stop requested: finishing the current boss")
@@ -185,7 +334,8 @@ function M.install(run, arenas, roster)
     end)
     -- Ctrl+F12: raise an error inside the mod, to check the stop path (log, tip strip, entry removed, run ended).
     U.key(Key.F12, function() error("autotest: forced error (Ctrl+F12)") end, { ModifierKey.CONTROL })
-    U.log("autotest ready: F12 runs the origin bosses, Ctrl+F12 forces an error")
+    U.key(Key.F12, survey, { ModifierKey.SHIFT })
+    U.log("autotest ready: F12 runs the testing bosses, Shift+F12 surveys the arenas, Ctrl+F12 forces an error")
 end
 
 return M

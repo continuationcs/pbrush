@@ -2,7 +2,20 @@
 
 **已发布（2026-11-12）**：https://www.nexusmods.com/phantombladezero/mods/1099 ，名称 BOSS RUSH，文件 BOSS RUSH 0.1.0。页面顶部的 mod 版本号仍显示 1，需在 General 页改为 0.1.0。旧草稿 1098 已改名「BOSS RUSH old」，未发布；新版上传页没有删除入口，需要时联系 Nexus 客服删除。
 
-上传文件：`out/BossRush-0.1.1.zip`（0.1.0 的铃铛菜单在用确认键时总会变成“穿行”，已在 0.1.1 修复）；主图：`doc/release/main_image.png`（1920×1080，上传到 Images，设为 primary）
+上传文件：`out/BossRush-0.1.4.zip`（0.1.3 未发布，直接跳到 0.1.4）；主图：`doc/release/main_image.png`（1920×1080，上传到 Images，设为 primary）
+
+## 0.1.4 更新说明（Changelog / 文件说明）
+
+```
+0.1.4
+- 11 more bosses: Yuzan, Bi Hai, the One-Eyed Archer, Yan Qiansui, Meng Hua, Blaze (both phases), Bai Chilian's second phase, Mo Yuan, the Gold-Masked One, Zuo Shang (Silver-Haired). Their skills used points placed in their own level; the mod now places those points in the arena. 65 bosses in all.
+- The Lion Dance Grandmaster's second phase is back: fought at its own battlefield (The Sealed Lion), Duel only. Its last lion head can now be executed (the boss's summons are scaled with it).
+- Arenas reviewed for open, level ground around the player and the boss: two arenas turned, one moved (now Lu Village Lakeside), one added (Lakeside).
+- After a map change the boss appears only once the loading screen is gone, a few seconds later.
+- Bell menu: the back key (Esc / gamepad B) goes one page up; Duel pages show 8 bosses, paging first, bosses in the order you meet them.
+- Leave Challenge (System > Exit Game) now leaves with one press.
+- Errors in the mod no longer take the game down: the mod switches itself off and shows a notice.
+```
 
 ## 基本信息
 
@@ -68,7 +81,7 @@ Edit [code]BossRush\Scripts\config.lua[/code] and restart the game: boss scaling
 
 [size=4][b]Known limitations[/b][/size]
 [list]
-[*]54 bosses are available. Bosses whose skills rely on points placed in their own level (e.g. Zuo Shang, Yuzan, the Lion Dance Grandmaster's second phase) are not offered yet.
+[*]65 bosses are available. The Lion Dance Grandmaster's second phase is fought only at its own battlefield (The Sealed Lion), in Duel only. Eight bosses whose skills rely on their own level are not offered yet: the four Acolytes, Dusk, Leng Tu, and Zuo Shang (first form and True Lóng).
 [*]The roguelike Trial mode is not included yet.
 [*]Text: Simplified Chinese or English.
 [*]Made and tested on the Steam version, game build CL-302256.
@@ -109,7 +122,7 @@ Edit [code]BossRush\Scripts\config.lua[/code] and restart the game: boss scaling
 
 [b]兼容性[/b]：只增加内容，不替换游戏文件、不改存档，可与其他 UE4SS Lua mod、.pak mod 共存；只可能与改动铃铛菜单、游戏菜单、对话选项按钮或提示条的 mod 冲突；改怪物数值或难度的 mod 会连带影响挑战首领的强度。
 
-[b]已知限制[/b]：目前开放 54 位首领，依赖原关卡场景点位的首领（如左殇、玉簪、舞狮尊主二阶段）暂未开放；肉鸽玩法「试炼」暂未加入；文字为简体中文或英文。
+[b]已知限制[/b]：目前开放 65 位首领（舞狮尊主二阶段只在「尊主封印地」打、只进单挑），技能依赖原关卡的 8 位首领（灭法之法四人、荡秽、冷荼、左殇初见与龙体）暂未开放；肉鸽玩法「试炼」暂未加入；文字为简体中文或英文。
 ```
 
 ## 上传前自检

@@ -115,7 +115,7 @@
 | 场合 | 中文 | English |
 |---|---|---|
 | HUD | 连战·灭法之法　3 / 4　04:12 | GAUNTLET · The Acolytes　3 / 4　04:12 |
-| 到达场地、首领出现前 | 强敌将至，准备迎战 | A foe approaches. Steel yourself. |
+| 到达场地、首领出现前（加载界面消失后显示 3 秒，然后首领出现） | 强敌将至，准备迎战 | A foe approaches. Steel yourself. |
 | 两战之间 | 残影将至。 | Another echo stirs. |
 | 开战 | 残影现形 | THE ECHO TAKES FORM |
 | 胜利 | 残影尽散 | THE ECHOES FADE |
@@ -139,8 +139,6 @@
 | key | zh-Hans | en |
 |---|---|---|
 | arena.title | 择地 | Choose Ground |
-| arena.origin | 原址 | Where It Began |
-| arena.origin.desc | 回到当初交手之地。<br>在这位首领原本的战场开打（仅单挑）。 | Return to where you first crossed blades.<br>Fight on this boss's original battlefield (Duel only). |
 | arena.scenic.desc | 择一处山水，了却旧怨。<br>在你到过的地点中选一处开打。 | Choose your ground and settle old scores.<br>Fight at a place you have already visited. |
 | arena.jhsy | 镜花水月 | Realm of Mirage |
 | arena.jhsy.desc | 镜中无昼夜，影亦无归处。<br>在镜花水月中开打，无需加载。 | No day or night within the mirror.<br>Fight inside the Realm of Mirage; no loading needed. |
