@@ -32,24 +32,26 @@ Settings live in `BossRush\Scripts\config.lua` (restart the game after editing).
 
 | Path | What |
 |---|---|
-| `mod/BossRush/Scripts/` | The mod. `main.lua` (menu pages), `menu.lua` (Bell menu injection), `run.lua` (a challenge from travel to return), `scale.lua`, `settle.lua` (result screen), `pause.lua` («收刃离去»), `ui.lua`, `arenas.lua`, `gauntlets.lua`, `roster.lua` (generated), `vows.lua` (kept, unused), `records.lua`, `i18n.lua`, `config.lua`, `util.lua` |
-| `probe/BossRushProbe/` | Development probe: debug keys (F1 god mode, F2 Realm of Mirage, F3 result-screen preview, F4 mark arena, F5 bell dump, F6 arena teleport, F7 spawn boss, F8 report, F9 stats, F10 scale test) and logging |
-| `docs/DESIGN.md` | Design, findings from the game, decisions and implementation status |
-| `docs/COPY.md` | In-game text (zh / en) and writing rules |
-| `data/` | Bell table (`bells.tsv`, 187 bells), arena list (`arenas_final.tsv`) |
-| `tools/` | `install.ps1` (copy mods into the game), `build_release.py` (release zip), `gen_roster.py` (boss roster), `make_cover.py` (Nexus image), `pak_locres.py` |
-| `release/` | Readmes shipped in the zip, Nexus page text, description BBCode, main image |
-| `ue4ss-config/`, `ue4ss-signatures/`, `vendor/kintaro-pbz-config/` | UE4SS memory layout and signatures for this game build |
+| `src/mod/BossRush/Scripts/` | The mod. `main.lua` (menu pages), `menu.lua` (Bell menu entry and pages), `widgets.lua` (helpers for the game's menus, the click hook), `run.lua` (a challenge from travel to return), `scale.lua`, `settle.lua` (result screen), `pause.lua` («收刃离去»), `ui.lua`, `arenas.lua`, `gauntlets.lua`, `roster.lua` and `origins.lua` (generated), `records.lua`, `i18n.lua`, `config.lua`, `util.lua`; `autotest.lua` is a development test, not shipped |
+| `src/probe/BossRushProbe/` | Development probe: debug keys (F1 god mode, F2 Realm of Mirage, F3 original-arena cells, F4 mark arena, F5 bell dump, F6 arena teleport, F7 spawn boss, F8 report, F9 stats, F10 scale test) and logging |
+| `src/data/` | Bell table (`bells.tsv`, 187 bells), arena list (`arenas_final.tsv`), original-arena cells, autotest results |
+| `src/tools/` | `install.ps1` (copy mods into the game), `build_release.py` (release zip), `gen_roster.py` (boss roster), `origin_arenas.py` (original arenas), `lua_check.py` (Lua sanity check), `make_cover.py` (Nexus image), `pak_locres.py` |
+| `src/ue4ss/` | UE4SS memory layout and signatures for this game build (CL-302256) |
+| `src/vendor/kintaro-pbz-config/` | Third-party UE4SS config for an earlier game build |
+| `doc/DESIGN.md` | Design, findings from the game, decisions and implementation status |
+| `doc/COPY.md` | In-game text (zh / en) and writing rules |
+| `doc/release/` | Readmes shipped in the zip, Nexus page text, description BBCode, main image |
+| `out/` | Build output (not tracked) |
 
 ## Development
 
 ```powershell
 # copy the mod (and the probe) into the game's UE4SS Mods folder
-powershell -File tools\install.ps1 -Mods BossRush
-powershell -File tools\install.ps1 -Mods BossRushProbe
+powershell -File src\tools\install.ps1 -Mods BossRush
+powershell -File src\tools\install.ps1 -Mods BossRushProbe
 
-# build the release zip into dist\ (debug log switched off in the copy)
-python tools\build_release.py 0.1.1
+# build the release zip into out\ (debug log switched off in the copy)
+python src\tools\build_release.py 0.1.2
 ```
 
 Logs go to `<game>\platform\steam\ue4ss\UE4SS.log` with the prefixes `[BossRush]` and `[BRProbe]`.
@@ -59,7 +61,7 @@ Made against the Steam build CL-302256 with UE4SS experimental 3.0.1. See `AGENT
 
 - [RE-UE4SS](https://github.com/UE4SS-RE/RE-UE4SS) (MIT).
 - Phantom Blade Zero support for UE4SS by [KintaroModding](https://github.com/KintaroModding/ue4ss) (MIT);
-  the files under `vendor/kintaro-pbz-config/` come from there.
+  the files under `src/vendor/kintaro-pbz-config/` come from there.
 - Phantom Blade Zero by S-GAME. This repository contains no game files.
 - Code, text and images were made with an AI assistant (Claude); design, testing and tuning by the author.
 
@@ -75,4 +77,4 @@ Made against the Steam build CL-302256 with UE4SS experimental 3.0.1. See `AGENT
 - **场地**：站在场地上就原地开打，否则随机传送到一个场地，打完回到出发的铃铛。
 - **数值**：按进度用游戏自己的等级曲线提升，难度跟随游戏设置。
 - **没有副作用**：不掉落、不给意识尘埃、不写图鉴、不改存档；血量和药瓶恢复。
-- 设计和决定记录在 `docs/DESIGN.md`，文案在 `docs/COPY.md`。
+- 设计和决定记录在 `doc/DESIGN.md`，文案在 `doc/COPY.md`。

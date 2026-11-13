@@ -1,17 +1,17 @@
-# Build output (tools/build_release.py)
-dist/
+# Build output (src/tools/build_release.py)
+out/
 
 # Personal game save backups (file names carry the Steam ID)
 save-backup/
 
 # Raw in-game test logs
-data/run*/
+src/data/run*/
 
 # Local runtime data written by the mods
 records.tsv
 sdk_done.txt
 enabled.txt
-!release/**
+!doc/release/**
 
 # Python
 __pycache__/

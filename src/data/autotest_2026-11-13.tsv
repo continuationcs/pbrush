@@ -1,0 +1,23 @@
+13:00:22	start: 10 bosses
+13:00:22	boss	result	helper	max_move_m	min_dz_m	notes
+13:00:23	[1/10] BP_Monster_ChiLian_P2
+13:01:23	BP_Monster_ChiLian_P2	ok	18375 153127 -2022	22	0	Kill ignored, health set to 0; Kill ignored, health set to 0
+13:01:23	[2/10] BP_Monster_CanQu_BiHai
+13:02:32	BP_Monster_CanQu_BiHai	ok	-59099 106122 -1980	8	0	Kill ignored, health set to 0; Kill ignored, health set to 0
+13:02:32	[3/10] BP_Monster_FemaleVessel_YuZan
+13:03:34	BP_Monster_FemaleVessel_YuZan	ok	-63930 86325 -5822	18	0	Kill ignored, health set to 0; Kill ignored, health set to 0
+13:03:34	[4/10] BP_Monster_Danghui
+13:04:48	BP_Monster_Danghui	boss-would-not-die	-24680 118716 2002012	10	0	Kill ignored, health set to 0; Kill ignored, health set to 0
+13:04:48	[5/10] BP_Monster_GuiChai_Red
+13:06:03	BP_Monster_GuiChai_Red	ok	-169230 132831 -6140	8	0	Kill ignored, health set to 0; Kill ignored, health set to 0
+13:06:03	[6/10] BP_Monster_GuiChai_Red_P2
+13:07:01	BP_Monster_GuiChai_Red_P2	boss-vanished	-169230 132831 -6140	14	0	boss gone during observation
+13:07:01	[7/10] BP_Monster_LionDancer_P2
+13:07:33	BP_Monster_LionDancer_P2	boss-vanished	-271654 46666 -4563	8	-42	boss gone during observation
+13:07:33	[8/10] BP_Monster_DuYanBoss
+13:08:35	BP_Monster_DuYanBoss	ok	-9761 -1966 809	14	0	Kill ignored, health set to 0
+13:08:35	[9/10] BP_Monster_YanQianSui
+13:09:41	BP_Monster_YanQianSui	ok	-124784 72677 922	15	-1	Kill ignored, health set to 0; Kill ignored, health set to 0
+13:09:41	[10/10] BP_Monster_ZuoShang_Ending
+13:10:39	BP_Monster_ZuoShang_Ending	ok	-193018 -120175 4501307	10	-13	Kill ignored, health set to 0; Kill ignored, health set to 0
+13:10:39	done
