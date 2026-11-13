@@ -122,10 +122,10 @@ local pause = require("pause")
 pause.install(run.active, run.abort)
 run.on_start(pause.watch)
 
--- Development only: autotest.lua is not shipped (src/tools/build_release.py leaves it out).
+-- Development only: devtools.lua is not shipped (src/tools/build_release.py leaves it out).
 if config.debug then
-    local ok, at = pcall(require, "autotest")
-    if ok and at then at.install(run, arenas, roster) end
+    local ok, dev = pcall(require, "devtools")
+    if ok and dev then dev.install(run, arenas) end
     -- A tip strip once the player is in the game, so a hot reload (Ctrl+R) can be seen to have worked; the time
     -- tells one reload from the next. At game start mods load before there is a player: it waits for one.
     local stamp = os.date("%H:%M:%S")

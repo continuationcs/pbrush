@@ -556,9 +556,6 @@ function M.active() return run ~= nil end
 local start_listeners = {}
 function M.on_start(fn) start_listeners[#start_listeners + 1] = fn end
 
--- Read-only view of the running challenge for the development autotest (phase, actor ref, center, index...).
-function M.state() return run end
-
 -- Whether the game's loading screen is up (the development arena survey waits for it too).
 M.loading = loading
 

@@ -18,7 +18,7 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
   UI when a game widget exists. Never write into the game save.
 - The user tests in rounds ("做完一轮, 我去统一测试"): batch related changes, then give one test list. New bosses
   land as `state = "testing"` (development builds only) and become `"open"` after the user confirms in game.
-- New or moved arenas: run the arena survey (development build, Shift+F12) and grade them by the standard in
+- New or moved arenas: mark the spot with F2, then run the arena survey (development build, F3), and grade them by the standard in
   `doc/DESIGN.md` §5.0a before offering them.
 - A test round is expensive, so make one round answer the question: log each stage of a new integration (object
   found → page recognised → row added → row on screen → clicked) so the log shows where it stopped, and put a
@@ -49,8 +49,7 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
 
 ## Repository layout
 
-- `src/`: everything the build uses. `src/mod/BossRush` (the mod, incl. the dev-only `autotest.lua`),
-  `src/probe/BossRushProbe` (dev probe), `src/tools` (install, release build, generators, `lua_check.py`,
+- `src/`: everything the build uses. `src/mod/BossRush` (the mod, incl. the dev-only `devtools.lua`), `src/tools` (install, release build, generators, `lua_check.py`,
   `crash_dump.py`, `asset_scan.py`),
   `src/data` (bell and arena tables, test results), `src/ue4ss` (UE4SS layout and signatures for this game
   build), `src/vendor` (third-party files).
@@ -84,8 +83,7 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
 ## Build, install, release
 
 - `powershell -File src\tools\install.ps1 -Mods BossRush` (one mod per call; a comma list is passed as one string).
-  It **wipes** the target folder: the probe's `sdk_done.txt` and `arenas.tsv` must be restored after installing
-  the probe (`echo 1 > ...\BossRushProbe\sdk_done.txt`, copy `src\data\run11\arenas.tsv` back).
+  It **wipes** the target folder: files the mod writes there (`records.tsv`, `dev.tsv`, `marks.tsv`) are lost.
 - **Hot reload**: UE4SS reloads all Lua mods on **Ctrl+R** (`EnableHotReloadSystem = 1` in `UE4SS-settings.ini`),
   so after `install.ps1` the user can keep the game running. Lua has no unload callback, so whatever the old
   instance put into the game stays: reload only when no challenge is running and no bell or system menu is open
@@ -228,7 +226,9 @@ shell turns them into real characters. Use the Edit/Write tools, or a Python scr
 - Cross-map travel: `PBZSaveLoadSubsystem:TeleportTo(FName("/Game/Maps/..."), transform, FName("Bell_<id>"))`.
   It saves and loads, so no separate autosave handling is needed.
 - Read input with `PlayerController:IsInputKeyDown({KeyName = FName("Gamepad_FaceButton_Bottom")})`.
-- Development keys: the probe uses F1–F10, the autotest F12 (run), Shift+F12 (arena survey) and Ctrl+F12 (forced error). **Never bind F11**:
+- Development keys (`devtools.lua`, development builds only; user decision 2026-11-14): F1 god mode, F2 mark a
+  spot for a new arena, F3 arena survey, F4 forced error. The discovery probe mod was retired (git history has
+  it; UE4SS's own keybinds dump the CXX headers). **Never bind F11**:
   the game uses it (user report). Pick new keys with a modifier on an existing F key rather than a free letter.
 - Low system memory crashes the game (pagefile); it is not the mod. System settings are the user's to change.
 - Do not install third-party binaries without asking the user.

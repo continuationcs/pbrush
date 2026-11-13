@@ -3,9 +3,9 @@ balance, and calls to names that are neither defined in the file nor known globa
 
 Mod rule (AGENTS.md): in the mod, only util.lua may call the UE4SS entry-point APIs (RAW_ENTRY); every other
 file goes through U.after / U.every / U.on_new / U.hook / U.key, which run on the game thread and turn errors
-into a clean stop. A file breaking the rule fails the check. (The dev probe is a separate mod, not checked.)
+into a clean stop. A file breaking the rule fails the check.
 
-Usage: python src/tools/lua_check.py [file.lua ...]   (default: every script of the mod and the probe)
+Usage: python src/tools/lua_check.py [file.lua ...]   (default: every script of the mod)
 Exit code 1 when a file is unbalanced.
 """
 import re
@@ -55,7 +55,7 @@ RAW_ENTRY = ('LoopAsync', 'ExecuteWithDelay', 'ExecuteInGameThread', 'RegisterHo
              'RegisterKeyBind', 'FindAllOf')
 ENTRY_OWNER = 'util.lua'
 
-files = sys.argv[1:] or [str(p) for p in sorted(SRC.glob('mod/*/Scripts/*.lua')) + sorted(SRC.glob('probe/*/Scripts/*.lua'))]
+files = sys.argv[1:] or [str(p) for p in sorted(SRC.glob('mod/*/Scripts/*.lua'))]
 bad = False
 for path in files:
     s = strip(open(path, encoding='utf-8').read())

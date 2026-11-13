@@ -25,7 +25,7 @@ def main():
     if stage.exists():
         shutil.rmtree(stage)
     mod = stage / 'BossRush'
-    shutil.copytree(SRC, mod, ignore=shutil.ignore_patterns('records.tsv', 'enabled.txt', '*.bak', 'autotest.lua', 'autotest.tsv', 'autotest_only.txt'))
+    shutil.copytree(SRC, mod, ignore=shutil.ignore_patterns('records.tsv', 'enabled.txt', '*.bak', 'devtools.lua', 'dev.tsv', 'marks.tsv'))
 
     # Release configuration: no debug log.
     cfg = mod / 'Scripts' / 'config.lua'
@@ -46,7 +46,7 @@ def main():
         if src.exists():
             shutil.copy(src, mod / name)
 
-    # Sanity: no probe leftovers or debug key bindings in the shipped scripts. Key bindings go through U.key
+    # Sanity: no leftovers of the retired probe or debug key bindings in the shipped scripts. Key bindings go through U.key
     # (util.lua defines it on top of RegisterKeyBind; only development code calls it).
     for f in (mod / 'Scripts').glob('*.lua'):
         body = f.read_text(encoding='utf-8')
