@@ -25,14 +25,6 @@ local current = nil      -- ref (U.ref) of the result screen on screen
 -- (Not Esc / Start: those also open the game menu.)
 local CLOSE_KEYS = { "Gamepad_FaceButton_Bottom", "Gamepad_FaceButton_Right", "Enter", "SpaceBar", "LeftMouseButton" }
 
-local function any_key_down(pc)
-    for _, k in ipairs(CLOSE_KEYS) do
-        local ok, down = pcall(function() return pc:IsInputKeyDown({ KeyName = FName(k) }) end)
-        if ok and down then return true end
-    end
-    return false
-end
-
 local function widget(w, name)
     local v
     pcall(function() v = w[name] end)
@@ -92,9 +84,7 @@ function M.show(d, seconds, on_close)
         U.every(50, function()
             if closed then return true end
             if os.clock() - t0 < 1.0 then return false end
-            local pc = UEHelpers.GetPlayerController()
-            if not U.valid(pc) then return false end
-            local down = any_key_down(pc)
+            local down = U.any_key_down(CLOSE_KEYS)
             if not released then
                 released = not down
             elseif down then

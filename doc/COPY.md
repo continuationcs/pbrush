@@ -120,8 +120,8 @@
 | 开战 | 残影现形 | THE ECHO TAKES FORM |
 | 胜利 | 残影尽散 | THE ECHOES FADE |
 | 失败 | 饮恨 | UNDYING GRUDGE（原作用词） |
-| 放弃（暂停菜单） | 收刃离去 | Sheathe Your Blade |
-| 放弃确认 | 收刃离去将视为落败，确定吗？ | Leaving now counts as a defeat. Continue? |
+| 退出（游戏菜单） | 强敌挑战 · 退出挑战 | Boss Challenge · Leave |
+| 放弃结算标题 | 收刃离去 | Sheathe Your Blade |
 | 用时 | 此战用时　最佳用时　新纪录！ | Time　Best Time　NEW RECORD! |
 | 出错停用（提示条） | 强敌挑战出错，已停用，重启游戏后恢复 | Boss Challenge hit an error and is off until the game restarts |
 | 返回 | 自里武林醒转，回到铃铛之侧。 | You stir from the Discordance and wake beside the Bell. |

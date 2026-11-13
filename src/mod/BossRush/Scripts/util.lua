@@ -24,6 +24,8 @@ end
 function U.ref(o)
     if not U.valid(o) then return nil end
     local path = o:GetFullName():match("^%S+ (.+)$")
+    -- Never hand StaticFindObject a non-string: UE4SS can crash natively building the argument error.
+    if type(path) ~= "string" then U.log("ref: no path in %s", o:GetFullName()) return nil end
     local r = { path = path, addr = o:GetAddress() }
     if U.get(r) == nil then U.log("ref: %s cannot be looked up by path", tostring(path)) return nil end
     return r
@@ -31,7 +33,7 @@ end
 
 -- The live object behind a ref, or nil once it is gone.
 function U.get(r)
-    if r == nil then return nil end
+    if r == nil or type(r.path) ~= "string" then return nil end
     local ok, o = pcall(StaticFindObject, r.path)
     if ok and U.valid(o) and o:GetAddress() == r.addr then return o end
     return nil
@@ -40,6 +42,17 @@ end
 function U.pawn()
     local pc = UEHelpers.GetPlayerController()
     return U.valid(pc) and pc.Pawn or nil
+end
+
+-- Whether any of the keys (FKey names, e.g. "Escape", "Gamepad_FaceButton_Right") is held right now.
+function U.any_key_down(keys)
+    local pc = UEHelpers.GetPlayerController()
+    if not U.valid(pc) then return false end
+    for _, k in ipairs(keys) do
+        local ok, down = pcall(function() return pc:IsInputKeyDown({ KeyName = FName(k) }) end)
+        if ok and down then return true end
+    end
+    return false
 end
 
 function U.world_path()
@@ -147,8 +160,21 @@ function U.key(key, fn, modifiers)
     if modifiers then RegisterKeyBind(key, modifiers, cb) else RegisterKeyBind(key, cb) end
 end
 
+-- Live instances of a class by its short name ("BP_X_C"), class default objects left out. The only way the mod
+-- calls FindAllOf (lua_check.py enforces it): a non-string name is a Lua error here, where UE4SS's own argument
+-- check could crash natively while building its message.
+function U.find_all(class_short)
+    if type(class_short) ~= "string" then error("U.find_all: class name expected, got " .. type(class_short)) end
+    local out = {}
+    for _, o in ipairs(FindAllOf(class_short) or {}) do
+        if U.valid(o) and not o:GetFullName():find("Default__") then out[#out + 1] = o end
+    end
+    return out
+end
+
 -- Load a class by "/Pkg/Path/Asset.Asset_C".
 function U.load_class(path)
+    if type(path) ~= "string" then error("U.load_class: path expected, got " .. type(path)) end
     local c = StaticFindObject(path)
     if U.valid(c) then return c end
     pcall(LoadAsset, (path:gsub("%.[^.]+$", "")))

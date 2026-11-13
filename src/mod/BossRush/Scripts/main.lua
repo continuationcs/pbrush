@@ -11,22 +11,30 @@ local roster = require("roster")
 local gauntlets = require("gauntlets")
 
 local T = i18n.t
-local PAGE = 6
+-- Bosses per 单挑 page. With 下一页 / 上一页 / 返回 a page has 11 rows, three more than the bell menu's own column
+-- (8 with 强敌挑战), which it was laid out for; 54 bosses in a release build make 7 pages.
+local PAGE = 8
 
--- Open bosses: not tied to level-placed points, not prologue variants. All are offered (user decision).
+-- Open bosses: not tied to level-placed points (or their points are placed by the mod), not prologue variants.
+-- All are offered (user decision). Bosses still being tried ("testing") only in development builds.
+local function offered(b)
+    return b.state == "open" or (b.state == "testing" and config.debug)
+end
+
 local function available()
     local out = {}
     for _, b in ipairs(roster) do
-        if b.state == "open" then out[#out + 1] = b end
+        if offered(b) then out[#out + 1] = b end
     end
     return out
 end
 
--- 单挑 list: open bosses, then the level-dependent ones that are fought at their original arena (单挑 only).
+-- 单挑 list: the offered bosses and those fought at their original arena (单挑 only), in roster order, which is
+-- the game's codex order: the order the player meets them (user request: list bosses by appearance).
 local function duel_bosses()
-    local out = available()
+    local out = {}
     for _, b in ipairs(roster) do
-        if b.state == "origin" then out[#out + 1] = b end
+        if offered(b) or b.state == "origin" then out[#out + 1] = b end
     end
     return out
 end
@@ -66,15 +74,22 @@ local function begin(queue, opts)
     U.after(300, function() run.start(queue, U.game_difficulty(), arena, opts) end)
 end
 
-show_bosses = function(page)
+-- Page layout (user request): 下一页 / 上一页 first (both wrap around: 上一页 on the first page goes to the last),
+-- then the bosses, then 返回. focus: the row to focus; 下一页 on entering (paging to find a boss is the common
+-- action, user request), and after paging the paging row just used.
+show_bosses = function(page, focus)
     local list = duel_bosses()
     if #list == 0 then
-        menu.show({ { T("none"), function() end }, { T("back"), show_root } })
+        menu.show({ { T("none"), function() end }, { T("back"), show_root } }, 1, show_root)
         return
     end
     local pages = math.max(1, math.ceil(#list / PAGE))
     page = math.min(math.max(page or 1, 1), pages)
     local items = {}
+    if pages > 1 then
+        items[#items + 1] = { T("next"), function() show_bosses(page % pages + 1, 1) end }
+        items[#items + 1] = { T("prev"), function() show_bosses((page - 2) % pages + 1, 2) end }
+    end
     for i = (page - 1) * PAGE + 1, math.min(page * PAGE, #list) do
         local b = list[i]
         -- Difficulty follows the game's own setting; records are kept per difficulty.
@@ -84,10 +99,8 @@ show_bosses = function(page)
             begin({ b }, { record_key = "duel/" .. b.id .. "/" .. U.game_difficulty(), title = T("duel") .. " · " .. i18n.name(b) })
         end }
     end
-    if page > 1 then items[#items + 1] = { T("prev"), function() show_bosses(page - 1) end } end
-    if page < pages then items[#items + 1] = { T("next"), function() show_bosses(page + 1) end } end
     items[#items + 1] = { T("back"), show_root }
-    menu.show(items)
+    menu.show(items, focus or 1, show_root)
 end
 
 show_gauntlets = function()
@@ -103,21 +116,20 @@ show_gauntlets = function()
     end
     if #items == 0 then items[#items + 1] = { T("none"), function() end } end
     items[#items + 1] = { T("back"), show_root }
-    menu.show(items)
+    menu.show(items, 1, show_root)
 end
 
+-- The third argument of menu.show is where the back key (Esc / gamepad B) goes: one level up.
 show_root = function()
-    i18n.detect()
     menu.show({
         { T("duel"), function() show_bosses(1) end },
         { T("gauntlet"), show_gauntlets },
         -- 试炼 (Trial, the roguelike) is hidden until it is built.
         { T("back"), menu.restore },
-    })
+    }, 1, menu.restore)
 end
 
 math.randomseed(os.time())
-i18n.detect()
 menu.install(show_root, function() return not run.active() end)
 require("pause").install(run.active, run.abort)
 
@@ -126,4 +138,4 @@ if config.debug then
     local ok, at = pcall(require, "autotest")
     if ok and at then at.install(run, arenas, roster) end
 end
-U.log("loaded (%s, debug=%s, %d bosses in roster)", i18n.zh and "zh" or "en", tostring(config.debug), #roster)
+U.log("loaded (debug=%s, %d bosses in roster)", tostring(config.debug), #roster)

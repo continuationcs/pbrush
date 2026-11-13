@@ -128,6 +128,16 @@ local function go_home()
     end)
 end
 
+-- ---------------------------------------------------------------- helper points
+-- Removes the helper points placed for the current boss (place_helpers, below).
+local function clear_helpers()
+    for _, r in ipairs(run.helpers or {}) do
+        local h = U.get(r)
+        if h then pcall(function() h:K2_DestroyActor() end) end
+    end
+    run.helpers = {}
+end
+
 -- ---------------------------------------------------------------- end of run
 local function finish(result)
     if not run or run.phase == "ending" or run.phase == "returning" then return end
@@ -135,6 +145,7 @@ local function finish(result)
     U.log("run: result %s (%d/%d)", result, run.index, #run.queue)
     local boss = U.get(run.actor)
     if boss and result ~= "win" then pcall(function() boss:K2_DestroyActor() end) end
+    clear_helpers()
     if result == "error" then U.after(2500, go_home) return end
     local T = i18n.t
     local secs = os.clock() - (run.t0 or os.clock())
@@ -189,6 +200,7 @@ local function boss_down()
     if not run or run.phase ~= "fighting" then return end
     if run.index >= #run.queue then finish("win") return end
     phase("between")
+    clear_helpers()
     -- Small heal between fights.
     pcall(function()
         local a = U.pawn().AttributeSetBase
@@ -259,6 +271,45 @@ local function check_boss()
     end
 end
 
+local function max_health(ch)
+    local m = nil
+    pcall(function() m = ch.AttributeSetBase.Health_Max.CurrentValue end)
+    return m
+end
+
+-- The boss's summons that wait at 0 HP for an execution (roster `summons`): their Kill is forced after FORCE_KILL,
+-- as the boss's is. Their states (0 HP / hurt / full) are logged whenever they change, so a test shows what each
+-- one does (a lion head that never takes damage shows up as "full").
+local function check_summons()
+    local rec = run.queue[run.index]
+    if not rec.summons then return end
+    local now, states = os.clock(), {}
+    for _, short in ipairs(rec.summons) do
+        for _, s in ipairs(U.find_all(short)) do
+            local name = s:GetFullName()
+            if not is_dead(s) then
+                local hp, m = health(s), max_health(s)
+                states[#states + 1] = hp <= 0 and "0" or ((m and hp >= m) and "full" or "hurt")
+                if hp > 0 then
+                    run.summon_zero[name] = nil
+                elseif not run.summon_zero[name] then
+                    run.summon_zero[name] = now
+                elseif run.summon_zero[name] ~= true and now - run.summon_zero[name] > FORCE_KILL then
+                    run.summon_zero[name] = true          -- forced once
+                    local ok, e = pcall(function() s:Kill(0) end)
+                    U.log("run: summon %s waits at 0 HP, forced Kill -> %s", short, ok and "called" or tostring(e))
+                end
+            end
+        end
+    end
+    table.sort(states)
+    local line = #states == 0 and "none" or table.concat(states, " ")
+    if line ~= run.summon_line then
+        run.summon_line = line
+        U.log("run: summons alive: %s", line)
+    end
+end
+
 -- From the first boss to the end of the run, every 250 ms: the player's death or leaving, and the fight.
 local function watch()
     local me = run
@@ -277,27 +328,114 @@ local function watch()
             finish("abort")
             return true
         end
+        if run.phase == "fighting" then check_summons() end
         if run.phase == "fighting" then check_boss() end
         return false
     end)
+end
+
+-- Where the boss appears: on the level's navigation mesh and reachable on foot from the player, so it never
+-- starts behind an invisible wall, inside a tree or on a ledge (player report on Nexus, 0.1.2). Tries 8 m ahead
+-- along the arena facing first, then other directions, then shorter distances. Returns nil when there is no
+-- navigation data around the player.
+local NAV = "/Script/NavigationSystem.Default__NavigationSystemV1"
+local NAV_EXTENT = { X = 200, Y = 200, Z = 500 }
+local SPAWN_DIST = { 800, 600, 400 }
+local SPAWN_TURN = { 0, 30, -30, 60, -60, 90, -90, 135, -135, 180 }
+
+local function on_nav(nav, world, point)
+    local out = {}
+    local ok, found = pcall(function() return nav:K2_ProjectPointToNavigation(world, point, out, nil, nil, NAV_EXTENT) end)
+    if ok and found and out.X then return { X = out.X, Y = out.Y, Z = out.Z } end
+    return nil
+end
+
+local function walkable(nav, world, from, to, dist)
+    local ok, good = pcall(function()
+        local path = nav:FindPathToLocationSynchronously(world, from, to, nil, nil)
+        return U.valid(path) and path:IsValid() and not path:IsPartial() and path:GetPathLength() <= dist * 2
+    end)
+    return ok and good
+end
+
+local function reachable_spot(player, face)
+    local nav = StaticFindObject(NAV)
+    if not U.valid(nav) then return nil end
+    local world = UEHelpers.GetWorld()
+    local from = on_nav(nav, world, player)
+    if not from then return nil end
+    for _, dist in ipairs(SPAWN_DIST) do
+        for _, turn in ipairs(SPAWN_TURN) do
+            local r = math.rad(face + turn)
+            local spot = on_nav(nav, world, { X = from.X + math.cos(r) * dist, Y = from.Y + math.sin(r) * dist, Z = from.Z })
+            if spot and walkable(nav, world, from, spot, dist) then return spot, dist, turn end
+        end
+    end
+    return nil
+end
+
+-- ESpawnActorCollisionHandlingMethod: 1 spawn where asked (helper points have no collision); 2 move the actor
+-- out of anything it would overlap, but always spawn it (bosses).
+local ALWAYS_SPAWN, ADJUST_IF_POSSIBLE = 1, 2
+
+local function spawn_actor(cls, at, yaw, collision)
+    local xf = { Rotation = U.yaw_quat(yaw), Translation = at, Scale3D = { X = 1, Y = 1, Z = 1 } }
+    local gs = UEHelpers.GetGameplayStatics()
+    local a = gs:BeginDeferredActorSpawnFromClass(UEHelpers.GetWorld(), cls, xf, collision, nil, 0)
+    return gs:FinishSpawningActor(a, xf, 0)
+end
+
+-- Places the boss's helper points (roster `helpers`: class, fwd / right offset in cm from the arena centre along
+-- the arena facing), on the navigation mesh when there is one, facing along the arena, before the boss spawns:
+-- its skills look these up in the level (DESIGN 5.2). Instances already in the loaded level are counted in the
+-- log: a skill that takes the nearest or the first one could still pick those. Returns false when a helper
+-- cannot be placed.
+local function place_helpers(boss)
+    clear_helpers()
+    if not boss.helpers then return true end
+    local nav = StaticFindObject(NAV)
+    local world = UEHelpers.GetWorld()
+    local c, f, r = run.center, math.rad(run.face), math.rad(run.face + 90)
+    for _, hp in ipairs(boss.helpers) do
+        local want = { X = c.X + math.cos(f) * hp.fwd + math.cos(r) * hp.right,
+                       Y = c.Y + math.sin(f) * hp.fwd + math.sin(r) * hp.right, Z = c.Z }
+        local at = (U.valid(nav) and on_nav(nav, world, want)) or want
+        local short = hp.class:match("%.([^.]+)$")
+        local cls = U.load_class(hp.class)
+        local h = nil
+        if U.valid(cls) then h = spawn_actor(cls, at, run.face, ALWAYS_SPAWN) end
+        if not U.valid(h) then U.log("run: helper %s could not be placed", short) return false end
+        run.helpers[#run.helpers + 1] = U.ref(h)
+        local in_level = #U.find_all(short) - 1     -- ours not counted
+        U.log("run: helper %s placed at %.0f %.0f %.0f (%d more in the loaded level)", short, at.X, at.Y, at.Z, in_level)
+    end
+    return true
 end
 
 spawn_next = function()
     if not run then return end
     run.index = run.index + 1
     run.zero_at, run.dead_at, run.killed = nil, nil, false
+    run.summon_zero, run.summon_line = {}, nil
     local boss = run.queue[run.index]
     local cls = U.load_class(boss.class)
     if not U.valid(cls) then U.log("run: boss class not found %s", boss.class) finish("error") return end
-    -- 8 m ahead along the arena facing, turned toward the player.
-    local r = math.rad(run.face)
+    if not place_helpers(boss) then finish("error") return end
     local p = U.pawn():K2_GetActorLocation()
-    local at = { X = p.X + math.cos(r) * 800, Y = p.Y + math.sin(r) * 800, Z = p.Z + 50 }
+    local spot, dist, turn = reachable_spot(p, run.face)
+    local at
+    if spot then
+        at = { X = spot.X, Y = spot.Y, Z = spot.Z + 150 }
+        U.log("run: spawn on the navigation mesh, %d m away, %d deg off the arena facing", dist / 100, turn)
+    else
+        -- No navigation data here: 8 m ahead along the arena facing.
+        local r = math.rad(run.face)
+        at = { X = p.X + math.cos(r) * 800, Y = p.Y + math.sin(r) * 800, Z = p.Z + 50 }
+        U.log("run: no navigation data around the player, spawning 8 m ahead")
+    end
     run.spawn_at = at
-    local xf = { Rotation = U.yaw_quat(run.face + 180), Translation = at, Scale3D = { X = 1, Y = 1, Z = 1 } }
-    local gs = UEHelpers.GetGameplayStatics()
-    local a = gs:BeginDeferredActorSpawnFromClass(UEHelpers.GetWorld(), cls, xf, 1, nil, 0)
-    a = gs:FinishSpawningActor(a, xf, 0)
+    -- Facing the player.
+    local a = spawn_actor(cls, at, math.deg(math.atan(p.Y - at.Y, p.X - at.X)), ADJUST_IF_POSSIBLE)
     if not U.valid(a) then U.log("run: spawn failed") finish("error") return end
     if not U.valid(a.Controller) then pcall(function() a:SpawnDefaultController() end) end
     run.actor = U.ref(a)
@@ -329,13 +467,11 @@ local function locate_helper(then_fn)
         if not run or run.phase ~= "locating" then return true end
         tries = tries + 1
         local best, bd
-        for _, h in ipairs(FindAllOf(short) or {}) do
-            if U.valid(h) and not h:GetFullName():find("Default__") then
-                local ok, l = pcall(function() return h:K2_GetActorLocation() end)
-                if ok then
-                    local d = (l.X - a.hx) ^ 2 + (l.Y - a.hy) ^ 2
-                    if not bd or d < bd then best, bd = l, d end
-                end
+        for _, h in ipairs(U.find_all(short)) do
+            local ok, l = pcall(function() return h:K2_GetActorLocation() end)
+            if ok then
+                local d = (l.X - a.hx) ^ 2 + (l.Y - a.hy) ^ 2
+                if not bd or d < bd then best, bd = l, d end
             end
         end
         if best then
@@ -423,7 +559,8 @@ function M.start(queue, difficulty, arena, opts)
     if run then U.log("run: already running") return end
     opts = opts or {}
     run = { queue = queue, index = 0, difficulty = difficulty, arena = arena, origin = save_origin(),
-            record_key = opts.record_key, title = opts.title, in_place = opts.in_place, snap = snapshot() }
+            record_key = opts.record_key, title = opts.title, in_place = opts.in_place, snap = snapshot(),
+            helpers = {} }
     U.log("run: start %d boss(es), difficulty %d, arena %s, from %s / %s", #queue, difficulty, arena.key, run.origin.map, run.origin.bell)
     phase("travelling")
     go_to_arena()

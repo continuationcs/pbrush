@@ -15,16 +15,34 @@ function W.children(box)
     return out
 end
 
-function W.is_button(o)
+-- Whether o's class is, or derives from, the class with this short name.
+function W.is_a(o, class_name)
     local ok, r = pcall(function()
         local c = o:GetClass()
         while U.valid(c) do
-            if c:GetFName():ToString() == "CommonButtonBase" then return true end
+            if c:GetFName():ToString() == class_name then return true end
             c = c:GetSuperStruct()
         end
         return false
     end)
     return ok and r
+end
+
+function W.is_button(o) return W.is_a(o, "CommonButtonBase") end
+
+-- Close the screen a widget is on: the outermost CommonActivatableWidget among its owners (a widget's outer is
+-- its WidgetTree, whose outer is the user widget holding it), deactivated as CommonUI's own back action does.
+function W.close_screen(widget)
+    local top, o, guard = nil, widget, 0
+    while o ~= nil and guard < 24 do
+        if W.is_a(o, "CommonActivatableWidget") then top = o end
+        local ok, outer = pcall(function() return o:GetOuter() end)
+        o = (ok and U.valid(outer)) and outer or nil
+        guard = guard + 1
+    end
+    if not top then return nil end
+    pcall(function() top:DeactivateWidget() end)
+    return top:GetFName():ToString()
 end
 
 -- The focusable button inside a column entry (the entry may be a wrapper such as a border).

@@ -40,7 +40,7 @@ Fight the game's bosses again, any time, from any Bell. The mode lives in the Be
 [*]Ring any Bell and choose [b]Boss Challenge[/b] below Traverse.
 [*]The arena is chosen for you: stand at one of the arenas and the fight starts right there, otherwise you are taken to a random arena (scenic spots you have reached, or the boss's own battlefield).
 [*]Bosses are scaled to your progress with the game's own monster level curves, so early bosses are still a fight late in the game. Difficulty follows your game setting.
-[*]Leave at any time from the game menu: [b]Sheathe Your Blade[/b] (press twice).
+[*]Leave at any time from the game menu: [b]Boss Challenge · Leave[/b] (System → Exit Game).
 [*]A result screen shows your time and best time. Press confirm and you wake beside the Bell you started from, with health and remedies as they were.
 [*]No side effects: challenge kills give no loot or Remnant Dust and do not touch your codex, quests or story. The mod never writes into your save; best times are kept in the mod folder.
 [/list]
@@ -98,7 +98,7 @@ Edit [code]BossRush\Scripts\config.lua[/code] and restart the game: boss scaling
 [*]敲响任意铃铛，在“穿行”下方选择「强敌挑战」。
 [*]场地自动决定：站在场地上就原地开打，否则随机传送到一个场地。
 [*]首领数值按你的进度、用游戏自己的等级曲线提升；难度跟随游戏设置。
-[*]随时可在游戏菜单选「收刃离去」（按两次）退出。
+[*]随时可在游戏菜单选「强敌挑战 · 退出挑战」退出（系统 → 退出游戏）。
 [*]结束后显示结算画面和最佳纪录，按确认键回到出发的铃铛，血量和药瓶恢复如初。
 [*]没有副作用：不掉落、不给意识尘埃、不影响图鉴、任务和剧情；不写入存档。
 [/list]
@@ -115,7 +115,7 @@ Edit [code]BossRush\Scripts\config.lua[/code] and restart the game: boss scaling
 ## 上传前自检
 
 - [ ] 用发布包（而不是开发版）在游戏里完整跑一遍：先停用探测 mod，删掉开发版 BossRush，解压 `BossRush-0.1.0.zip` 安装，打一局单挑、一局连战。
-- [ ] 用手柄完整走一遍：进菜单、选首领、结算画面按 A 关闭、游戏菜单里的「收刃离去」。
+- [ ] 用手柄完整走一遍：进菜单、选首领、结算画面按 A 关闭、游戏菜单里的「强敌挑战 · 退出挑战」。
 - [x] 主图：`doc/release/main_image.png`
 - [ ] 再截 2~4 张实机图：铃铛菜单里的「强敌挑战」、首领列表、战斗中、结算画面。
 - [ ] 确认击杀首领后确实没有掉落和意识尘埃（目前只看到日志里“掉落组件已拆除”，还没在画面上核对）。

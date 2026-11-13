@@ -50,8 +50,9 @@ def strip(src):
     return ''.join(out)
 
 
+# FindAllOf too: U.find_all checks its argument is a string, which UE4SS's own check can crash on (AGENTS.md).
 RAW_ENTRY = ('LoopAsync', 'ExecuteWithDelay', 'ExecuteInGameThread', 'RegisterHook', 'NotifyOnNewObject',
-             'RegisterKeyBind')
+             'RegisterKeyBind', 'FindAllOf')
 ENTRY_OWNER = 'util.lua'
 
 files = sys.argv[1:] or [str(p) for p in sorted(SRC.glob('mod/*/Scripts/*.lua')) + sorted(SRC.glob('probe/*/Scripts/*.lua'))]

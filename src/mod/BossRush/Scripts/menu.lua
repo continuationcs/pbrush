@@ -20,7 +20,7 @@ local RELINK_MS = 250
 local cur = nil
 
 local function find_group(menu)
-    for _, g in ipairs(FindAllOf("CommonButtonGroupBase") or {}) do
+    for _, g in ipairs(U.find_all("CommonButtonGroupBase")) do
         local ok, idx = pcall(function() return g:FindButtonIndex(menu.TeleportBtn) end)
         if ok and idx and idx >= 0 then return g end
     end
@@ -79,11 +79,50 @@ local function focus_later(b)
     end)
 end
 
--- Show a page: items = { { label, fn }, ... }; focus = index of the row to focus (default 1).
--- The menu's own options are hidden while a page is up.
-function M.show(items, focus)
+-- The back key on our pages. The menu's back key closes the whole bell menu (W_BellMenu handles it in
+-- HandleOverrideBackInputAction). While our pages are up the game's binding is taken off with the menu's own
+-- ClearBackKey() and put back with BindBackKey() (UPBZActivatableWidget), and the keys are read here instead:
+-- a press goes one page up (user request).
+local BACK_KEYS = { "Escape", "Gamepad_FaceButton_Right" }
+local BACK_MS = 50
+
+local function watch_back(menu_ref)
+    local was_down = true            -- a key still held when the page opened is not a press
+    U.every(BACK_MS, function()
+        local L = cur and cur.menu == menu_ref and cur.back_taken and live()
+        if not L then return true end
+        local down = U.any_key_down(BACK_KEYS)
+        if down and not was_down and cur.on_back then
+            U.log("menu: back key, one page up")
+            cur.on_back()
+        end
+        was_down = down
+        return false
+    end)
+end
+
+local function take_back(L)
+    if cur.back_taken then return end
+    local ok, err = pcall(function() L.menu:ClearBackKey() end)
+    if not ok then U.log("menu: ClearBackKey failed: %s", tostring(err)) return end
+    cur.back_taken = true
+    watch_back(cur.menu)
+end
+
+local function give_back(L)
+    if not cur.back_taken then return end
+    cur.back_taken, cur.on_back = false, nil
+    local ok, err = pcall(function() L.menu:BindBackKey() end)
+    if not ok then U.log("menu: BindBackKey failed: %s", tostring(err)) end
+end
+
+-- Show a page: items = { { label, fn }, ... }; focus = index of the row to focus (default 1); on_back = what the
+-- back key does (one page up). The menu's own options are hidden while a page is up.
+function M.show(items, focus, on_back)
     local L = live()
     if not L then return end
+    cur.on_back = on_back
+    take_back(L)
     if #cur.hidden == 0 then
         for _, w in ipairs(W.children(L.box)) do
             if w:IsVisible() then
@@ -115,6 +154,7 @@ function M.restore()
         if w then pcall(function() w:SetVisibility(h.vis) end) end
     end
     cur.hidden = {}
+    give_back(L)
     relink(L.box)
     if L.entry then pcall(function() L.entry:SetFocus() end) end
 end
@@ -178,8 +218,8 @@ local function inject(menu, on_entry)
     local first_ref = U.ref(first)
     U.after(100, function() refresh_style(moved_refs) end)
     U.after(150, function() return_selection(first_ref) end)
-    U.log("menu: entry added below %s, %d options linked (group %s)", like:GetFName():ToString(), #col,
-        group and "joined" or "not found")
+    U.log("menu: entry added below %s, %d options linked (group %s, text %s)", like:GetFName():ToString(), #col,
+        group and "joined" or "not found", i18n.zh() and "zh" or "en")
     return true
 end
 
@@ -209,6 +249,7 @@ local function remove_all()
             pcall(function() if L.group then L.group:RemoveWidget(L.entry) end end)
             pcall(function() L.box:RemoveChild(L.entry) end)
         end
+        give_back(L)
         local col = W.visible_buttons(L.box)
         W.chain(col)
         if col[1] then

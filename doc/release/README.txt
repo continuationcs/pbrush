@@ -16,7 +16,7 @@ HOW IT PLAYS
     otherwise you are taken to a random arena (scenic spots you have reached, or the boss's own battlefield).
   - Bosses are scaled to your progress with the game's own monster level curves, so early bosses stay
     a real fight late in the game. Difficulty follows your game setting.
-  - Leave a run at any time from the game menu: "Sheathe Your Blade" (press it twice).
+  - Leave a run at any time from the game menu: "Boss Challenge · Leave" (System → Exit Game).
   - When it ends, a result screen shows your time and best time; press confirm to return.
     You wake beside the Bell you started from, with your health and remedies as they were.
   - No side effects: challenge kills give no loot or Remnant Dust, and do not touch your codex,

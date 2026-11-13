@@ -18,33 +18,36 @@ local S = {
     defeated     = { "击败", "Defeated" },
     going_home   = { "按确认键，自里武林醒转，回到铃铛之侧。", "Press confirm to stir from the Discordance and wake beside the Bell." },
     abort        = { "收刃离去", "Sheathe Your Blade" },
-    abort_confirm = { "再按一次：收刃离去，视为落败", "Press again: leave and accept defeat" },
+    leave        = { "强敌挑战 · 退出挑战", "Boss Challenge · Leave" },
     time         = { "用时", "Time" },
     best         = { "最佳", "Best" },
     new_record   = { "新纪录！", "NEW RECORD!" },
     failed       = { "强敌挑战出错，已停用，重启游戏后恢复", "Boss Challenge hit an error and is off until the game restarts" },
 }
 
-local M = { zh = true }
+local M = {}
 
-function M.detect()
+-- Whether the game shows Chinese right now. Asked each time, never cached: the game applies its own language
+-- setting (GameUserSettings CultureName) after mods load, so a value read at load time was the system language
+-- (an English game showed 强敌挑战; a Chinese one may have shown English).
+function M.zh()
+    local zh = true
     pcall(function()
         local lib = StaticFindObject("/Script/Engine.Default__KismetInternationalizationLibrary")
-        local lang = lib:GetCurrentLanguage():ToString()
-        M.zh = lang:sub(1, 2) == "zh"
+        zh = lib:GetCurrentLanguage():ToString():sub(1, 2) == "zh"
     end)
-    return M.zh
+    return zh
 end
 
 function M.t(key)
     local e = S[key]
     if not e then return key end
-    return M.zh and e[1] or e[2]
+    return M.zh() and e[1] or e[2]
 end
 
 -- Pick the right half of a { zh = , en = } record.
 function M.name(rec)
-    return M.zh and rec.zh or rec.en
+    return M.zh() and rec.zh or rec.en
 end
 
 return M
