@@ -9,13 +9,13 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
   user exactly what to try; read `UE4SS.log` afterwards instead of asking them to copy logs.
 - Decisions the user has made are recorded in `doc/DESIGN.md` (marked 用户决定 / 用户确认). Do not revert them:
   e.g. no arena choice (auto pick), no vows in Gauntlet, all open bosses offered (no defeat filter), difficulty
-  follows the game setting with no extra levels, curve weight 1.0, the Trial (roguelike) mode hidden, no
+  follows the game setting with no extra levels, curve weight 1.0, the 万象 / Myriad (roguelike, formerly 试炼) mode hidden, no
   top-of-screen Gauntlet HUD.
 - Copy style (`doc/COPY.md`): plain words; items of one kind keep the same character count (entry 4 chars,
   modes 2 chars); descriptions are two parts, one poetic line then one plain line. zh-Hans and English.
 - **Point out copy mistakes in the user's requests** (user rule, 2026-11-14): when text the user asks for looks
   wrong (a wrong or look-alike character, a typo, a name that clashes with an existing one), say so and ask
-  before using it, e.g. 残影试练 → 残影试炼 (练/炼), or 残影试炼 sharing 试炼 with the Trial mode. Do not
+  before using it, e.g. 残影试练 → 残影试炼 (练/炼), or 残影试炼 sharing 试炼 with the roguelike mode (renamed 万象). Do not
   silently copy it, and do not silently "fix" it either.
 - Controller first: every new UI must be reachable and usable with a gamepad.
 - Feel native: reuse the game's widgets (`W_DialogueButton`, `WB_TipsText`, `wb_settlement`), never draw custom

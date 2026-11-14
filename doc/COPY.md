@@ -33,11 +33,11 @@
 |---|---|---|---|---|
 | 单挑 | **单挑** | 择一强敌，重演旧日一战。<br>选一位已击败的首领，单独再打一次，可选难度。 | **DUEL** | Relive a duel of your choosing.<br>Pick one defeated boss and fight it again, at the difficulty you choose. |
 | 连战 | **连战** | 强敌轮番登场，一气呵成，方为胜者。<br>按主题连续挑战一组首领，两战之间少量回血，倒下即失败。 | **GAUNTLET** | Foes come one after another; only an unbroken run counts.<br>Fight a themed group of bosses in a row. A little health returns between fights; fall once and the run ends. |
-| Rogue | **试炼** | 前路无定，所悟亦无定。<br>每战之后从三条路中选一条，沿途获得随机心法，倒下即从头再来。 | **TRIAL** | No path holds still, no insight lasts.<br>After each fight, choose one of three paths and gain random Insights. Fall once and you start over. |
+| Rogue | **万象** | 前路无定，所悟亦无定。<br>每战之后从三条路中选一条，沿途获得随机心法，倒下即从头再来。 | **MYRIAD** | No path holds still, no insight lasts.<br>After each fight, choose one of three paths and gain random Insights. Fall once and you start over. |
 
 **说明文字一律两段式**（用户定稿）：第一行是文艺的一句，第二行是直白说明，讲清楚这一项做什么、有什么规则。界面上第二行用次一级的字色。
 
-命名原则（用户定稿）：用直白的字，同一类文案字数一致。入口 4 字「残影试炼」（2026-11-14 用户改名，原为「强敌挑战 / Boss Challenge」），三个玩法各 2 字「单挑 / 连战 / 试炼」，子菜单最后一项「返回」也是 2 字。「试炼」不用「轮回」，因为原作里「轮回」已经是周目（Cycle）的意思。
+命名原则（用户定稿）：用直白的字，同一类文案字数一致。入口 4 字「残影试炼」（2026-11-14 用户改名，原为「强敌挑战 / Boss Challenge」），三个玩法各 2 字「单挑 / 连战 / 万象」，子菜单最后一项「返回」也是 2 字。「万象」原名「试炼」：入口改名「残影试炼」后两者重名，2026-11-14 用户改名为「万象 / MYRIAD」（每局路线、首领、心法都不同）。不用「轮回」，因为原作里「轮回」已经是周目（Cycle）的意思。
 
 ### 单挑的难度
 直接复用原作的难度名和标语：入阵者 / 破局者 / 逆天者（WAYFARER / PATHBREAKER / HELLWALKER），运行时读游戏的本地化文本。
@@ -81,7 +81,7 @@
 
 实现说明：断药绝粮、气竭两条还没找到游戏里对应的机制，第一版先不提供。立誓页每行写成「铜皮铁骨　✓　3」（名字、开关、分值）。
 
-## 4. 试炼（Rogue）
+## 4. 万象（Rogue，设计中，待拍板）
 
 **岔路**（每战之后三选一）
 
@@ -92,24 +92,30 @@
 | 休息 | 调息 | 回复全部生命值，或精进一门心法 | RESPITE | Restore all HP, or deepen an Insight. |
 | 事件 | 奇遇 | 祸福未知 | ENCOUNTER | Fortune or folly. |
 
-**心法**（祝福，English: INSIGHTS）分三个境界：**初窥 → 小成 → 大成**（Novice / Adept / Master），这是武侠里常用的修为层级。同一流派集齐三门，触发「融会贯通」（MASTERY）。
+**心法**（祝福，English: INSIGHTS）分三个境界：**初窥 → 小成 → 大成**（Novice / Adept / Master），这是武侠里常用的修为层级。同一流派两门都到大成，触发「融会贯通」（MASTERY）。流派名 2 字，心法名 4 字。效果和实现见 DESIGN §12.3。
 
-| 流派 | 心法示例 | English |
-|---|---|---|
-| 杀气 | 气吞山河（杀气总量+）、生生不息（杀气回复+）、杀意凌然（破甲力+） | SWALLOW THE MOUNTAINS / ENDLESS BREATH / KILLING INTENT |
-| 破势 | 势如破竹（破防+）、乘虚而入（处决阈值+） | SPLIT BAMBOO / STRIKE THE OPENING |
-| 五行 | 烈火燎原、寒冰彻骨、雷霆万钧、万蛊噬心、血债血偿 | WILDFIRE / BONE-DEEP FROST / THUNDERCLAP / GU SWARM / BLOOD DEBT |
-| 护体 | 金钟罩（生命总量+）、不动如山（减伤）、固若金汤（护盾） | GOLDEN BELL / UNMOVED MOUNTAIN / IMPREGNABLE |
-| 绝技 | 厚积薄发（绝技充能+） | SLOW TO GATHER |
-| 身法 | 踏雪无痕（移动速度+） | TRACELESS STEP |
+| 流派 | 心法 | English | 效果 |
+|---|---|---|---|
+| 护体 GUARD | 金钟铁布 | GOLDEN BELL | 生命上限 + |
+| 护体 | 不动如山 | UNMOVED MOUNTAIN | 受到的伤害 − |
+| 杀气 SHA-CHI | 气吞山河 | SWALLOW THE MOUNTAINS | 杀气上限 + |
+| 杀气 | 生生不息 | ENDLESS BREATH | 杀气回复 + |
+| 破势 BREAK | 势如破竹 | SPLIT BAMBOO | 破势伤害 + |
+| 破势 | 乘虚而入 | STRIKE THE OPENING | 破势后硬直 + |
+| 锋锐 EDGE | 削铁如泥 | CLEAVE IRON | 攻击力 + |
+| 锋锐 | 锋芒毕露 | BARED EDGE | 物理伤害 + |
+| 调元 BREATH | 厚积薄发 | SLOW TO GATHER | 绝技充能 + |
+| 调元 | 吐故纳新 | EXHALE THE OLD | 胜后回复生命 |
 
-心法说明按原作格式：先写一行效果（数值高亮），再写一句古风短文。例如：
+（五行、身法两派先不做：读不出武器元素、没找到移动速度属性。）
 
-> **金钟罩·小成**
-> 生命总量提升 <Y>25%</>。
+心法说明按原作格式：先一句古风短文，再一行效果（数值高亮），例如：
+
+> **金钟铁布·小成**
 > 罡气护体，刀枪难入。
+> 生命上限提升 <Y>30%</>。
 
-**残影的凶性**（精英词缀）：狂暴 FRENZIED、铁躯 IRONCLAD、不屈 UNYIELDING、再生 REGENERATING、附火 BLAZING。
+**残影的凶性**（凶煞的词缀，2 字）：狂暴 FRENZIED、铁躯 IRONCLAD、再生 REGENERATING、杀意 RELENTLESS。
 
 **奇遇示例**：
 
@@ -137,7 +143,8 @@
 | 结算第三行 | 击败　难度（入阵者 / 破局者 / 逆天者 / 六十六天） | Defeated　Difficulty (Wayfarer / Pathbreaker / Hellwalker / 66 Days) |
 | 出错停用（提示条） | 残影试炼出错，已停用，重启游戏后恢复 | Trial of Echoes hit an error and is off until the game restarts |
 | 返回 | 按确认键，自里武林醒转，回到铃铛之侧。 | Press confirm to stir from the Discordance and wake beside the Bell. |
-| 试炼结算 | 前路已尽。<br>闯过 {0} 关，获得心法 {1} 门。 | The path runs out.<br>Cleared {0} stages and gained {1} Insights. |
+| 万象结算 | 前路已尽（打完全部关）。<br>闯过 {0} / {1} 关，心法 {2} 门。 | The Path Ends.<br>Cleared {0} / {1} stages, {2} Insights. |
+| 万象每关开战 | 第 {0} / {1} 关 · 凶煞 · 铁躯 | Stage {0} / {1} · Dread Foe · Ironclad |
 
 ## 6. 多语言规则
 

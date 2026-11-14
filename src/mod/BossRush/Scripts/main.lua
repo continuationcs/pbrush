@@ -1,5 +1,5 @@
 -- 残影试炼 / Trial of Echoes (until 2026-11-14 强敌挑战 / Boss Challenge) for Phantom Blade Zero.
--- Entry: the bell menu. Modes: 单挑 (Duel), 连战 (Gauntlet); 试炼 (Trial) hidden until it is built.
+-- Entry: the bell menu. Modes: 单挑 (Duel), 连战 (Gauntlet); 万象 (Myriad, the roguelike) hidden until it is built.
 -- Design: doc/DESIGN.md, text: doc/COPY.md.
 local U = require("util")
 local i18n = require("i18n")
@@ -151,7 +151,7 @@ show_root = function()
     menu.show({
         { T("duel"), function() show_bosses(1) end },
         { T("gauntlet"), show_gauntlets },
-        -- 试炼 (Trial, the roguelike) is hidden until it is built.
+        -- 万象 (Myriad, the roguelike; formerly 试炼) is hidden until it is built.
         { T("back"), menu.restore, back = true },
     }, 1)
 end
