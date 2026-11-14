@@ -12,7 +12,8 @@ local gauntlets = require("gauntlets")
 
 local T = i18n.t
 -- Rows per list page (单挑, 连战). With 下一页 / 上一页 / 返回 a page has 11 rows, three more than the bell menu's own column
--- (8 with 强敌挑战), which it was laid out for; 65 bosses in a release build make 9 pages.
+-- (8 with 强敌挑战), which it was laid out for; 65 bosses in a release build are 51 entries (later
+-- phases are part of their boss's entry): 7 pages.
 local PAGE = 8
 
 -- Open bosses: not tied to level-placed points (or their points are placed by the mod), not prologue variants.
@@ -21,26 +22,55 @@ local function offered(b)
     return b.state == "open" or (b.state == "testing" and config.debug)
 end
 
--- In roster order, which is the game's codex order: the order the player meets them (user request: 单挑 lists
--- bosses by appearance).
+local by_id = {}
+for _, b in ipairs(roster) do by_id[b.id] = b end
+
+-- A boss with its later phases (roster `phases`; user decision 2026-11-14: one entry, phases fought straight on):
+-- { rec = first phase, steps = { {rec}, {later phase's bosses}, ... } }. Later phases not offered are left out.
+local function fight_of(b)
+    local steps = { { b } }
+    for _, ids in ipairs(b.phases or {}) do
+        local step = {}
+        for _, id in ipairs(ids) do
+            local r = by_id[id]
+            if r and offered(r) then step[#step + 1] = r end
+        end
+        if #step > 0 then steps[#steps + 1] = step end
+    end
+    return { rec = b, steps = steps }
+end
+
+-- The boss of the fight that is fought only on its own battlefield (arenas.own), if any: the whole fight goes
+-- there (舞狮尊主's first phase follows its second).
+local function own_boss(f)
+    for _, step in ipairs(f.steps) do
+        for _, r in ipairs(step) do
+            if arenas.own(r.id) then return r.id end
+        end
+    end
+    return nil
+end
+
+-- Every boss on offer as a fight, in roster order, which is the game's codex order: the order the player meets
+-- them (user request: 单挑 lists bosses by appearance). Later phases are part of their boss's fight.
 local function available()
     local out = {}
     for _, b in ipairs(roster) do
-        if offered(b) then out[#out + 1] = b end
+        if offered(b) and not b.part_of then out[#out + 1] = fight_of(b) end
     end
     return out
 end
 
--- A gauntlet's bosses that are available right now (nil when fewer than two). Bosses fought only on their own
--- battlefield (arenas.own) are 单挑 only: a gauntlet stays in one arena.
+-- A gauntlet's fights that are available right now (nil when fewer than two). Fights on a boss's own
+-- battlefield are 单挑 only: a gauntlet stays in one arena.
 local function gauntlet_queue(g, avail)
     local ok = {}
-    for _, b in ipairs(avail) do
-        if not arenas.own(b.id) then ok[b.id] = b end
+    for _, f in ipairs(avail) do
+        if not own_boss(f) then ok[f.rec.id] = f end
     end
     local q = {}
     if g.bosses == "all" then
-        for _, b in ipairs(avail) do if ok[b.id] then q[#q + 1] = b end end
+        for _, f in ipairs(avail) do if ok[f.rec.id] then q[#q + 1] = f end end
     else
         for _, id in ipairs(g.bosses) do if ok[id] then q[#q + 1] = ok[id] end end
     end
@@ -49,10 +79,10 @@ end
 
 local show_root, show_bosses, show_gauntlets
 
--- Start a run. The arena is not chosen by the player: where they stand if it is a suitable arena,
--- otherwise a random suitable one (arenas.pick).
+-- Start a run (queue: fights). The arena is not chosen by the player: where they stand if it is a suitable
+-- arena, otherwise a random suitable one (arenas.pick).
 local function begin(queue, opts)
-    local origin_of = #queue == 1 and queue[1].id or nil
+    local origin_of = #queue == 1 and (own_boss(queue[1]) or queue[1].rec.id) or nil
     local pos
     pcall(function() pos = U.pawn():K2_GetActorLocation() end)
     local arena, in_place = arenas.pick(origin_of, U.active_bells(), U.world_path(), pos, config.in_place_radius)
@@ -89,10 +119,13 @@ end
 -- 单挑: enters with 下一页 focused (paging to find a boss is the common action, user request).
 show_bosses = function(page, focus)
     local rows = {}
-    for _, b in ipairs(available()) do
-        -- Difficulty follows the game's own setting; records are kept per difficulty.
+    for _, f in ipairs(available()) do
+        local b = f.rec
+        -- Difficulty follows the game's own setting; records are kept per difficulty. A boss fought in several
+        -- phases keeps its time under its own key: times from when its first phase was fought alone do not count.
+        local key = "duel/" .. b.id .. (#f.steps > 1 and "/all-phases" or "") .. "/" .. U.game_difficulty()
         rows[#rows + 1] = { i18n.name(b), function()
-            begin({ b }, { record_key = "duel/" .. b.id .. "/" .. U.game_difficulty(), title = T("duel") .. " · " .. i18n.name(b) })
+            begin({ f }, { record_key = key, title = T("duel") .. " · " .. i18n.name(b) })
         end }
     end
     show_paged(rows, page, focus or "paging", show_bosses)

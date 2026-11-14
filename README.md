@@ -11,7 +11,7 @@ Published on Nexus Mods: <https://www.nexusmods.com/phantombladezero/mods/1099>
 ## Features
 
 - Entry in the Bell menu, below Traverse; gamepad navigation works.
-- **Duel**: any of 65 bosses. **Gauntlet**: 12 themed groups (Shadow Wardens, Puppet Theatre, The Young Mistress, Three Masks, Order's Finest, Two Faces of Death, Perils of the Wulin, Madmen of the Wulin, Strange Tales, Veterans of War, Shadows of the Sects, A Thousand Echoes), each building up to its
+- **Duel**: any of 65 bosses (51 entries: a boss with several phases is fought in one go). **Gauntlet**: 11 themed groups (Shadow Wardens, Puppet Theatre, The Young Mistress, Three Masks, Order's Finest, Perils of the Wulin, Madmen of the Wulin, Strange Tales, Veterans of War, Shadows of the Sects, A Thousand Echoes), each building up to its
   strongest boss, a small heal between fights.
 - Arena picked for you: fight in place when standing at an arena, otherwise travel to a random one
   (rung scenic spots or the boss's own battlefield), then return to the starting Bell.

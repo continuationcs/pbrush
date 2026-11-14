@@ -5,9 +5,9 @@ Fight the game's bosses again, any time, from any Bell. The mode is built into t
 game's own buttons, fonts, transitions and boss health bar, so it plays like part of the game.
 
 MODES
-  Duel       Pick any boss and fight it once more.
-  Gauntlet   Fight a themed group of bosses back to back (12 groups: Shadow Wardens,
-             Puppet Theatre, Three Masks, Order's Finest, Two Faces of Death, Strange Tales,
+  Duel       Pick any boss and fight it once more; a boss with several phases is fought in one go.
+  Gauntlet   Fight a themed group of bosses back to back (11 groups: Shadow Wardens,
+             Puppet Theatre, Three Masks, Order's Finest, Perils of the Wulin, Strange Tales,
              Veterans of War, A Thousand Echoes...). Each builds up to its strongest boss.
              A little health returns between fights; fall once and the run ends.
 

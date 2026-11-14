@@ -1,5 +1,8 @@
 -- One challenge: travel to the arena, fight a queue of bosses (one for 单挑, a group for 连战),
 -- show the result, travel back to the starting bell.
+-- run.queue is a list of fights, one per boss: { rec = first phase, steps = { {recs}, ... } }. A boss fought in
+-- several phases has a step per phase, fought straight on (no heal); a step can hold several bosses that appear
+-- together (玉琮's three forms). run.fi / run.si: the fight and step now; run.actors: that step's bosses.
 local U = require("util")
 local config = require("config")
 local scale = require("scale")
@@ -129,27 +132,42 @@ local function go_home()
 end
 
 -- ---------------------------------------------------------------- helper points
--- Removes the helper points placed for the current boss (place_helpers, below).
+-- The level's AI subsystem: it keeps the identity points (USGameAIWorldSubsystem.Identities, tag -> component).
+local function ai_subsystem()
+    return U.find_all("SGameAIWorldSubsystem")[1]
+end
+
+local function tag_of(name) return { TagName = FName(name) } end
+
+-- Removes the helper points placed for the current boss (place_helpers and place_identity_points, below).
 local function clear_helpers()
+    local sub = ai_subsystem()
+    for tag in pairs(run.identity_tags or {}) do
+        if sub then pcall(function() sub:UnRegisterIdentityByTag(tag_of(tag)) end) end
+    end
     for _, r in ipairs(run.helpers or {}) do
         local h = U.get(r)
         if h then pcall(function() h:K2_DestroyActor() end) end
     end
-    run.helpers = {}
+    run.helpers, run.identity_tags = {}, {}
 end
 
 -- ---------------------------------------------------------------- end of run
 local function finish(result)
     if not run or run.phase == "ending" or run.phase == "returning" then return end
     phase("ending")
-    U.log("run: result %s (%d/%d)", result, run.index, #run.queue)
-    local boss = U.get(run.actor)
-    if boss and result ~= "win" then pcall(function() boss:K2_DestroyActor() end) end
+    U.log("run: result %s (%d/%d)", result, run.fi, #run.queue)
+    if result ~= "win" then
+        for _, b in ipairs(run.actors or {}) do
+            local boss = U.get(b.ref)
+            if boss then pcall(function() boss:K2_DestroyActor() end) end
+        end
+    end
     clear_helpers()
     if result == "error" then U.after(2500, go_home) return end
     local T = i18n.t
     local secs = os.clock() - (run.t0 or os.clock())
-    local defeated = result == "win" and #run.queue or math.max(0, run.index - 1)
+    local defeated = result == "win" and #run.queue or math.max(0, run.fi - 1)
     local best_line, sub = "—", run.title or ""
     if result == "win" and run.record_key then
         local best = records.best(run.record_key)
@@ -195,12 +213,22 @@ end
 
 local spawn_next
 
--- A boss in the queue has fallen: next one, or the end of the run.
-local function boss_down()
+-- The bosses of a step have fallen: the same boss's next phase, the next boss, or the end of the run.
+local function step_down()
     if not run or run.phase ~= "fighting" then return end
-    if run.index >= #run.queue then finish("win") return end
+    local last_step = run.si >= #run.queue[run.fi].steps
+    if last_step and run.fi >= #run.queue then finish("win") return end
     phase("between")
     clear_helpers()
+    if not last_step then
+        -- The same boss's next phase: no heal, a short notice (user decision 2026-11-14).
+        U.after(1500, function()
+            if not run or run.phase ~= "between" then return end
+            ui.toast(string.format(i18n.t("next_phase"), run.si + 1), 2)
+            U.after(2000, spawn_next)
+        end)
+        return
+    end
     -- Small heal between fights.
     pcall(function()
         local a = U.pawn().AttributeSetBase
@@ -211,7 +239,7 @@ local function boss_down()
     end)
     U.after(2500, function()
         if not run or run.phase ~= "between" then return end
-        ui.toast(string.format("%s  %d / %d", i18n.t("next_echo"), run.index + 1, #run.queue), 2.5)
+        ui.toast(string.format("%s  %d / %d", i18n.t("next_echo"), run.fi + 1, #run.queue), 2.5)
         U.after(2500, spawn_next)
     end)
 end
@@ -241,34 +269,63 @@ local DOWN_AFTER = 2        -- s after the game confirms the boss's death (its d
 local FORCE_KILL = 0.8      -- s at 0 HP without dying (waiting for an execution) before the game's Kill is forced
 local DOWN_FALLBACK = 6     -- s at 0 HP after which the boss counts as down whatever the game says
 
--- One fight's checks. run.actor is a ref (U.ref): the game destroys a dead boss on its own schedule.
-local function check_boss()
-    local actor = U.get(run.actor)
-    if not actor then boss_down() return end
-    local dead, hp = is_dead(actor), health(actor)
-    if dead or hp <= 0 then
-        local now = os.clock()
-        run.zero_at = run.zero_at or now
-        if dead and not run.dead_at then
-            run.dead_at = now
-            U.log("run: boss died")
-        end
-        if run.dead_at and now - run.dead_at > DOWN_AFTER then boss_down() return end
-        if not dead and not run.killed and now - run.zero_at > FORCE_KILL then
-            run.killed = true
-            local ok, e = pcall(function() actor:Kill(0) end)
-            U.log("run: boss waits at 0 HP, forced Kill -> %s", ok and "called" or tostring(e))
-        end
-        if now - run.zero_at > DOWN_FALLBACK then boss_down() end
+-- One boss of the step (b = { ref, id, spawn_at, zero_at, dead_at, killed, down }); marks it down when it is.
+-- b.ref is a ref (U.ref): the game destroys a dead boss on its own schedule.
+local function check_one(b)
+    local actor = U.get(b.ref)
+    if not actor then
+        b.down = true
+        U.log("run: boss gone (%s)", b.id)
         return
     end
-    run.zero_at = nil        -- back above 0 (a phase change refills it)
-    -- Leash: pull a boss back if a skill threw it far away or it fell out of the arena.
+    local dead = is_dead(actor)
+    -- A dying actor's attributes are not read (see check_summons); health only while it is alive.
+    local hp = dead and 0 or health(actor)
+    if dead or hp <= 0 then
+        local now = os.clock()
+        b.zero_at = b.zero_at or now
+        if dead and not b.dead_at then
+            b.dead_at = now
+            U.log("run: boss died (%s)", b.id)
+        end
+        if b.dead_at and now - b.dead_at > DOWN_AFTER then b.down = true return end
+        if not dead and not b.killed and now - b.zero_at > FORCE_KILL then
+            b.killed = true
+            local ok, e = pcall(function() actor:Kill(0) end)
+            U.log("run: boss waits at 0 HP, forced Kill -> %s (%s)", ok and "called" or tostring(e), b.id)
+        end
+        if now - b.zero_at > DOWN_FALLBACK then b.down = true end
+        return
+    end
+    b.zero_at = nil        -- back above 0 (a phase change refills it)
+    -- Leash: pull a boss back if a skill threw it far away or it fell out of the arena. Logged when it starts and
+    -- ends, with whether the pull moved it (追命's second phase sat at 0,0,0 and could not be pulled back,
+    -- 2026-11-14), not on every tick.
     local l = actor:K2_GetActorLocation()
     if U.dist(l, run.center) > config.leash or l.Z < run.center.Z - 2000 then
-        U.log("run: boss strayed to %.0f %.0f %.0f, pulling back", l.X, l.Y, l.Z)
-        pcall(function() actor:K2_SetActorLocation(run.spawn_at, false, {}, true) end)
+        pcall(function() actor:K2_SetActorLocation(b.spawn_at, false, {}, true) end)
+        b.strays = (b.strays or 0) + 1
+        if b.strays == 1 or b.strays == 20 then
+            local now = actor:K2_GetActorLocation()
+            local hidden = "?"
+            pcall(function() hidden = tostring(actor.bHidden) end)
+            U.log("run: boss strayed to %.0f %.0f %.0f (%s, %d ticks), pulled back: now %.0f %.0f %.0f, hidden %s",
+                l.X, l.Y, l.Z, b.id, b.strays, now.X, now.Y, now.Z, hidden)
+        end
+    elseif b.strays then
+        U.log("run: boss back in the arena after %d ticks (%s)", b.strays, b.id)
+        b.strays = nil
     end
+end
+
+-- The step's checks: it is over when every boss in it is down.
+local function check_bosses()
+    local all_down = true
+    for _, b in ipairs(run.actors) do
+        if not b.down then check_one(b) end
+        if not b.down then all_down = false end
+    end
+    if all_down then step_down() end
 end
 
 local function max_health(ch)
@@ -284,11 +341,15 @@ local function attr(ch, name)
 end
 
 -- Development log: the attributes that decide whether a summon can be hurt and executed (see check_summons).
-local function log_summon_attributes(rec)
+local function log_summon_attributes(summons)
     if not config.debug then return end
-    local boss = run.actor and U.get(run.actor)
-    if boss then U.log("run:   boss Level %s Health %s/%s", attr(boss, "Level"), attr(boss, "Health"), attr(boss, "Health_Max")) end
-    for _, short in ipairs(rec.summons) do
+    for _, b in ipairs(run.actors) do
+        local boss = not b.down and U.get(b.ref)
+        if boss and not is_dead(boss) then
+            U.log("run:   boss %s Level %s Health %s/%s", b.id, attr(boss, "Level"), attr(boss, "Health"), attr(boss, "Health_Max"))
+        end
+    end
+    for _, short in ipairs(summons) do
         for _, s in ipairs(U.find_all(short)) do
             if not is_dead(s) then
                 U.log("run:   summon Level %s Health %s min %s max %s, Shachi %s/%s, execute below %s / %s (break)",
@@ -310,10 +371,13 @@ end
 -- - Those that wait at 0 HP for an execution get their Kill forced after FORCE_KILL, as the boss does.
 -- Their states (0 HP / hurt / full) are logged whenever they change.
 local function check_summons()
-    local rec = run.queue[run.index]
-    if not rec.summons then return end
+    local summons = {}
+    for _, rec in ipairs(run.queue[run.fi].steps[run.si]) do
+        for _, short in ipairs(rec.summons or {}) do summons[#summons + 1] = short end
+    end
+    if #summons == 0 then return end
     local now, states = os.clock(), {}
-    for _, short in ipairs(rec.summons) do
+    for _, short in ipairs(summons) do
         for _, s in ipairs(U.find_all(short)) do
             local name = s:GetFullName()
             -- A dead summon's attributes are never read: it is being taken apart (the game crashed while a
@@ -346,7 +410,7 @@ local function check_summons()
     if line ~= run.summon_line then
         run.summon_line = line
         U.log("run: summons alive: %s", line)
-        log_summon_attributes(rec)
+        log_summon_attributes(summons)
     end
 end
 
@@ -369,7 +433,7 @@ local function watch()
             return true
         end
         if run.phase == "fighting" then check_summons() end
-        if run.phase == "fighting" then check_boss() end
+        if run.phase == "fighting" then check_bosses() end
         return false
     end)
 end
@@ -429,14 +493,18 @@ end
 -- the arena facing), on the navigation mesh when there is one, facing along the arena, before the boss spawns:
 -- its skills look these up in the level (DESIGN 5.2). Instances already in the loaded level are counted in the
 -- log: a skill that takes the nearest or the first one could still pick those. Returns false when a helper
--- cannot be placed.
-local function place_helpers(boss)
+-- cannot be placed. recs: the bosses of the step.
+local function place_helpers(recs)
     clear_helpers()
-    if not boss.helpers then return true end
+    local helpers = {}
+    for _, rec in ipairs(recs) do
+        for _, hp in ipairs(rec.helpers or {}) do helpers[#helpers + 1] = hp end
+    end
+    if #helpers == 0 then return true end
     local nav = StaticFindObject(NAV)
     local world = UEHelpers.GetWorld()
     local c, f, r = run.center, math.rad(run.face), math.rad(run.face + 90)
-    for _, hp in ipairs(boss.helpers) do
+    for _, hp in ipairs(helpers) do
         local want = { X = c.X + math.cos(f) * hp.fwd + math.cos(r) * hp.right,
                        Y = c.Y + math.sin(f) * hp.fwd + math.sin(r) * hp.right, Z = c.Z }
         local at = (U.valid(nav) and on_nav(nav, world, want)) or want
@@ -452,34 +520,84 @@ local function place_helpers(boss)
     return true
 end
 
-spawn_next = function()
-    if not run then return end
-    run.index = run.index + 1
-    run.zero_at, run.dead_at, run.killed = nil, nil, false
-    run.summon_zero, run.summon_scaled, run.summon_line = {}, {}, nil
-    local boss = run.queue[run.index]
-    local cls = U.load_class(boss.class)
-    if not U.valid(cls) then U.log("run: boss class not found %s", boss.class) finish("error") return end
-    if not place_helpers(boss) then finish("error") return end
+-- Identity points. Points placed in a level register with the AI subsystem under a gameplay tag
+-- (USGameAIIdentityComponent, e.g. on BP_SGameAITargetPoint), and some skills look one up by tag through the
+-- action GAA_AssignIdentityTransformToBlackboard. 追命's second phase does in its ultimate (CriticalArt_03):
+-- elsewhere it got the zero transform, was moved to 0,0,0 hidden, and fell out of the world (2026-11-14). After a
+-- step's bosses spawn, each such action loaded (a template inside an ability's class default) whose tag the level
+-- does not have gets a point in the arena, registered under that tag; clear_helpers takes it away.
+local IDENTITY_ACTION = "GAA_AssignIdentityTransformToBlackboard_C"
+local IDENTITY_POINT = "/SGameAI/Tools/Teleport/BP_SGameAITargetPoint.BP_SGameAITargetPoint_C"     -- SGameAI plugin
+-- Where a tag's point goes: cm ahead of the arena centre along the arena facing (the boss appears 8 m ahead).
+-- 追命's ultimate: it vanishes to the waterfall point (瀑布) and leaps out at the other (跳出); the original layout
+-- (溪谷) is not known: the waterfall behind the boss, the leap where the boss stands. Other tags: the boss's spot.
+local IDENTITY_AHEAD = { ["AI.Identity.溪谷.钩者.瀑布"] = 1500, ["AI.Identity.溪谷.钩者.跳出"] = 800 }
+local IDENTITY_AHEAD_DEFAULT = 800
+
+local function place_identity_points()
+    if not run or run.phase == "ending" or run.phase == "returning" then return end
+    local sub = ai_subsystem()
+    if not sub then U.log("run: identity: no AI subsystem") return end
+    local actions = U.find_all(IDENTITY_ACTION, true)
+    U.log("run: identity: %d actions loaded", #actions)
+    for _, act in ipairs(actions) do
+        local tag = nil
+        pcall(function() tag = act.IdentityTag.TagName:ToString() end)
+        if tag and tag ~= "None" and not run.identity_tags[tag] then
+            local have = nil
+            pcall(function() have = sub:FindIdentityByTag(tag_of(tag)) end)
+            if U.valid(have) then
+                U.log("run: identity %s: in the level (%s)", tag, act:GetFullName())
+            else
+                run.identity_tags[tag] = true
+                local cls = U.load_class(IDENTITY_POINT)
+                if not U.valid(cls) then U.log("run: identity %s: point class not found %s", tag, IDENTITY_POINT) return end
+                local f, ahead = math.rad(run.face), IDENTITY_AHEAD[tag] or IDENTITY_AHEAD_DEFAULT
+                local want = { X = run.center.X + math.cos(f) * ahead, Y = run.center.Y + math.sin(f) * ahead, Z = run.center.Z }
+                local nav = StaticFindObject(NAV)
+                local at = (U.valid(nav) and on_nav(nav, UEHelpers.GetWorld(), want)) or want
+                local h = spawn_actor(cls, at, run.face + 180, ALWAYS_SPAWN)     -- facing the player
+                if not U.valid(h) then U.log("run: identity %s: point could not be placed", tag) return end
+                run.helpers[#run.helpers + 1] = U.ref(h)
+                local ok, err = pcall(function()
+                    local comp = h.SGameAIIdentity
+                    comp.IdentityTag = tag_of(tag)
+                    sub:RegisterIdentity(comp)
+                end)
+                local now = nil
+                pcall(function() now = sub:FindIdentityByTag(tag_of(tag)) end)
+                U.log("run: identity %s: point placed %d m ahead at %.0f %.0f %.0f, registered %s%s (%s)", tag,
+                    ahead / 100, at.X, at.Y, at.Z, tostring(U.valid(now)), ok and "" or (", " .. tostring(err)),
+                    act:GetFullName())
+            end
+        end
+    end
+end
+
+-- Where the k-th boss of a step appears: the first ahead along the arena facing, the others to its sides
+-- (degrees off the facing), so bosses that appear together do not stand in one another.
+local SIDE_BY_SIDE = { 0, 40, -40, 80, -80 }
+
+-- Spawns one boss of the step near the player, facing the player. Returns the actor and where it stands.
+local function spawn_boss(rec, k)
+    local cls = U.load_class(rec.class)
+    if not U.valid(cls) then U.log("run: boss class not found %s", rec.class) return nil end
     local p = U.pawn():K2_GetActorLocation()
-    local spot, dist, turn = reachable_spot(p, run.face)
+    local face = run.face + (SIDE_BY_SIDE[k] or 0)
+    local spot, dist, turn = reachable_spot(p, face)
     local at
     if spot then
         at = { X = spot.X, Y = spot.Y, Z = spot.Z + 150 }
-        U.log("run: spawn on the navigation mesh, %d m away, %d deg off the arena facing", dist / 100, turn)
+        U.log("run: spawn on the navigation mesh, %d m away, %d deg off the arena facing", dist / 100, turn + face - run.face)
     else
-        -- No navigation data here: 8 m ahead along the arena facing.
-        local r = math.rad(run.face)
+        -- No navigation data here: 8 m ahead.
+        local r = math.rad(face)
         at = { X = p.X + math.cos(r) * 800, Y = p.Y + math.sin(r) * 800, Z = p.Z + 50 }
         U.log("run: no navigation data around the player, spawning 8 m ahead")
     end
-    run.spawn_at = at
-    -- Facing the player.
     local a = spawn_actor(cls, at, math.deg(math.atan(p.Y - at.Y, p.X - at.X)), ADJUST_IF_POSSIBLE)
-    if not U.valid(a) then U.log("run: spawn failed") finish("error") return end
+    if not U.valid(a) then U.log("run: spawn failed %s", rec.id) return nil end
     if not U.valid(a.Controller) then pcall(function() a:SpawnDefaultController() end) end
-    run.actor = U.ref(a)
-    U.log("run: boss %d/%d %s", run.index, #run.queue, boss.id)
     -- No side effects from a challenge kill: no loot or Remnant Dust (both come from the NPC's LootComp),
     -- no codex entry.
     pcall(function() a.bExcludeFromCodex = true end)
@@ -488,6 +606,32 @@ spawn_next = function()
         if U.valid(lc) then lc:K2_DestroyComponent(lc) U.log("run: loot component removed") end
     end)
     scale.apply(a, run.difficulty)
+    return a, at
+end
+
+-- The next step: the same boss's next phase, or the next boss's first.
+spawn_next = function()
+    if not run then return end
+    if run.fi == 0 or run.si >= #run.queue[run.fi].steps then
+        run.fi, run.si = run.fi + 1, 1
+    else
+        run.si = run.si + 1
+    end
+    run.summon_zero, run.summon_scaled, run.summon_line = {}, {}, nil
+    local fight = run.queue[run.fi]
+    local recs = fight.steps[run.si]
+    if not place_helpers(recs) then finish("error") return end
+    run.actors = {}
+    for k, rec in ipairs(recs) do
+        local a, at = spawn_boss(rec, k)
+        if not a then finish("error") return end
+        run.actors[#run.actors + 1] = { ref = U.ref(a), id = rec.id, spawn_at = at }
+        U.log("run: boss %d/%d phase %d/%d: %s", run.fi, #run.queue, run.si, #fight.steps, rec.id)
+    end
+    -- The bosses' abilities are loaded with them; checked again a moment later in case some load late.
+    place_identity_points()
+    local me = run
+    U.after(1500, function() if run == me then place_identity_points() end end)
     run.t0 = run.t0 or os.clock()
     local first = run.phase ~= "between"
     phase("fighting")
@@ -567,12 +711,13 @@ function M.abort()
     end
 end
 
--- queue: list of roster records; difficulty: game EDifficultMode; arena: arenas.lua record;
--- opts: { record_key, title (mode line for the result screen), in_place = bool }.
+-- queue: list of fights { rec, steps = { {roster records}, ... } } (see the top of this file); difficulty: game
+-- EDifficultMode; arena: arenas.lua record; opts: { record_key, title (mode line for the result screen),
+-- in_place = bool }.
 function M.start(queue, difficulty, arena, opts)
     if run then U.log("run: already running") return end
     opts = opts or {}
-    run = { queue = queue, index = 0, difficulty = difficulty, arena = arena, origin = save_origin(),
+    run = { queue = queue, fi = 0, si = 0, actors = {}, identity_tags = {}, difficulty = difficulty, arena = arena, origin = save_origin(),
             record_key = opts.record_key, title = opts.title, in_place = opts.in_place, snap = snapshot(),
             helpers = {} }
     U.log("run: start %d boss(es), difficulty %d, arena %s, from %s / %s", #queue, difficulty, arena.key, run.origin.map, run.origin.bell)

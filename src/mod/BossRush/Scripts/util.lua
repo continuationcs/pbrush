@@ -79,8 +79,8 @@ end
 
 -- ---------------------------------------------------------------- entry points
 -- Every call from the game into the mod goes through the functions below; no other file of the mod calls
--- LoopAsync, ExecuteWithDelay, ExecuteInGameThread, RegisterHook, NotifyOnNewObject or RegisterKeyBind
--- (src/tools/lua_check.py enforces it). They guarantee that:
+-- ExecuteInGameThread, the delayed actions, RegisterHook, NotifyOnNewObject or RegisterKeyBind, and none calls
+-- LoopAsync or ExecuteWithDelay (src/tools/lua_check.py enforces both). They guarantee that:
 --   * mod code runs on the game thread only;
 --   * an error never escapes: it is logged with its traceback, a loop that failed stops, and the mod turns
 --     itself off (U.failed): no new entries in the game's menus, clicks on ours are ignored, the handlers
@@ -114,27 +114,24 @@ local function guarded(fn, ...)
     return ok, res
 end
 
--- fn() on the game thread after ms milliseconds (0: as soon as the game thread is free).
+-- Timers are UE4SS's delayed actions, which run entirely on the game thread. LoopAsync and ExecuteWithDelay
+-- (used before 2026-11-14) run their callbacks on a separate thread inside the same Lua state as everything else:
+-- with several loops going (run, menu, system-menu row, summons) the state got corrupted ("Ref was not function"
+-- in the log, then "attempt to call a table value (for iterator)" on a plain `for ... in pairs(t)`), and the mod
+-- stopped mid-challenge; an earlier Lua VM crash after hot reloads fits the same cause. Never use them.
+
+-- fn() on the game thread after ms milliseconds (0: on the next game-thread tick).
 function U.after(ms, fn)
-    local function go() ExecuteInGameThread(function() guarded(fn) end) end
-    if ms <= 0 then go() else ExecuteWithDelay(math.floor(ms), go) end
+    local function go() guarded(fn) end
+    if ms <= 0 then ExecuteInGameThread(go) else ExecuteInGameThreadWithDelay(math.floor(ms), go) end
 end
 
--- fn() on the game thread every ms milliseconds until it returns true or fails. A tick is queued only once
--- the previous one has run, so ticks never pile up while the game thread is busy (loading screens).
+-- fn() on the game thread every ms milliseconds until it returns true or fails.
 function U.every(ms, fn)
-    local stopped, pending = false, false
-    LoopAsync(math.floor(ms), function()
-        if stopped then return true end
-        if pending then return false end
-        pending = true
-        ExecuteInGameThread(function()
-            pending = false
-            if stopped then return end
-            local ok, done = guarded(fn)
-            if not ok or done then stopped = true end
-        end)
-        return false
+    local handle
+    handle = LoopInGameThreadWithDelay(math.floor(ms), function()
+        local ok, done = guarded(fn)
+        if (not ok or done) and handle then CancelDelayedAction(handle) end
     end)
 end
 
@@ -160,14 +157,20 @@ function U.key(key, fn, modifiers)
     if modifiers then RegisterKeyBind(key, modifiers, cb) else RegisterKeyBind(key, cb) end
 end
 
--- Live instances of a class by its short name ("BP_X_C"), class default objects left out. The only way the mod
--- calls FindAllOf (lua_check.py enforces it): a non-string name is a Lua error here, where UE4SS's own argument
--- check could crash natively while building its message.
-function U.find_all(class_short)
+-- Live instances of a class by its short name ("BP_X_C"), class default objects and everything inside them left
+-- out. templates = true keeps objects inside a class default (not the default itself): a Blueprint's configured
+-- parts, e.g. the actions of a gameplay ability, live there. The only way the mod calls FindAllOf (lua_check.py
+-- enforces it): a non-string name is a Lua error here, where UE4SS's own argument check could crash natively
+-- while building its message.
+function U.find_all(class_short, templates)
     if type(class_short) ~= "string" then error("U.find_all: class name expected, got " .. type(class_short)) end
     local out = {}
     for _, o in ipairs(FindAllOf(class_short) or {}) do
-        if U.valid(o) and not o:GetFullName():find("Default__") then out[#out + 1] = o end
+        if U.valid(o) then
+            local default = templates and o:GetFName():ToString():find("^Default__") or
+                (not templates and o:GetFullName():find("Default__"))
+            if not default then out[#out + 1] = o end
+        end
     end
     return out
 end

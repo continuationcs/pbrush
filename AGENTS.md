@@ -40,8 +40,10 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
   `U.after`, `U.every` (loops; return true to stop), `U.on_new`, `U.hook`, `U.key`. They run mod code on the game
   thread and catch every Lua error: it is logged with its traceback, the mod turns itself off (`U.failed()`,
   `U.on_fail` handlers clean up: the bell entry is removed, a running challenge ends and the player is sent home)
-  and a tip strip tells the player. No other mod file may call `LoopAsync`, `ExecuteWithDelay`,
-  `ExecuteInGameThread`, `RegisterHook`, `NotifyOnNewObject` or `RegisterKeyBind`; `lua_check.py` fails if one does.
+  and a tip strip tells the player. No other mod file may call `ExecuteInGameThread`, the delayed actions
+  (`ExecuteInGameThreadWithDelay`, `LoopInGameThreadWithDelay`, `CancelDelayedAction`), `RegisterHook`,
+  `NotifyOnNewObject`, `RegisterKeyBind` or `FindAllOf`; `LoopAsync` and `ExecuteWithDelay` are banned everywhere
+  (see the gotchas). `lua_check.py` fails on either.
   Don't wrap code in `pcall` to hide errors: use it only for calls that may legitimately fail (optional
   properties, game functions missing in some states) and handle the failure. Native crashes cannot be caught
   in Lua and are not swallowed in UE4SS either (running on with corrupted memory could write a broken save):
@@ -109,9 +111,13 @@ shell turns them into real characters. Use the Edit/Write tools, or a Python scr
 
 ## UE4SS / game gotchas (all learned the hard way)
 
-- `ExecuteWithDelay` needs an **integer** ms (`math.floor`), or it errors.
-- `LoopAsync` callbacks run off the game thread: do game work inside `ExecuteInGameThread`, and keep loop state in
-  upvalues checked at the top of the loop (a flag set inside the game-thread callback is seen one tick later).
+- **Never use `LoopAsync` or `ExecuteWithDelay`**: their callbacks run on another thread inside the mod's Lua
+  state, alongside game-thread code. With several loops running (run, menu, system-menu row, summons) the state
+  got corrupted: `[Lua::Registry::get_function_ref] Ref was not function` in the log, then "attempt to call a
+  table value (for iterator)" on a plain `for ... in pairs(t)`, and the mod stopped mid-challenge (2026-11-14);
+  the Lua VM crash after hot reloads (2026-11-13) fits the same cause. `U.after` / `U.every` use UE4SS's delayed
+  actions (`ExecuteInGameThreadWithDelay`, `LoopInGameThreadWithDelay` + `CancelDelayedAction`, integer ms),
+  which run on the game thread only. A `Ref was not function` line in `UE4SS.log` means Lua state trouble.
 - `FindFirstOf` may return the class default object; for subsystems with data use `FindAllOf` and skip
   `Default__` names.
 - **No hooks on Blueprint functions.** UE4SS registered `W_BellMenu_C:BP_OnActivated` as a *native* hook, and
@@ -168,6 +174,13 @@ shell turns them into real characters. Use the Edit/Write tools, or a Python scr
   BeginPlay, skills call `GetTargets` / `FindNearestActor`). The first scan only knew the first kind and marked
   Yubi safe. Don't confuse a class named next to `BeginDeferredActorSpawnFromClass` (the skill spawns it, no
   dependency: 魔渊's pillars, 舞狮尊主's poles) with a lookup.
+  A third kind: **identity points** by gameplay tag. Level points (`BP_SGameAITargetPoint`, class in the SGameAI
+  plugin: `/SGameAI/Tools/Teleport/...`) register a `USGameAIIdentityComponent` with
+  `USGameAIWorldSubsystem.Identities`; the action `GAA_AssignIdentityTransformToBlackboard` (property
+  `IdentityTag`) looks one up. Missing, it yields the zero transform: 追命's second phase was moved to 0,0,0
+  hidden and fell out of the world. The tag is in the action's instance data, not in the asset's name map
+  (read it at runtime: the actions are templates inside the ability's class default, `U.find_all(cls, true)`).
+  `run.lua` `place_identity_points` registers a point for every such tag the level lacks (confirmed 2026-11-14).
 - **Scale a boss's summons with it**: the game sizes some summon values from the boss's. 舞狮尊主's last lion
   head gets a health floor of 1% of the boss's `Health_Max`; with only the boss scaled (x18.51) the floor
   (1851) was above the head's maximum (500), so it could not be hurt or executed (2026-11-13). Roster `summons`
@@ -238,6 +251,9 @@ shell turns them into real characters. Use the Edit/Write tools, or a Python scr
   spot for a new arena, F3 arena survey, F4 forced error. The discovery probe mod was retired (git history has
   it; UE4SS's own keybinds dump the CXX headers). **Never bind F11**:
   the game uses it (user report). Pick new keys with a modifier on an existing F key rather than a free letter.
+  Anything a dev tool changes in the game must survive a hot reload: god mode keeps the player's own values in a
+  file (`%TEMP%\BossRush_god_base.tsv`) and the next load restores them; kept only in memory, each reload took
+  the boosted values as the originals (player health 3085 -> 30,855,000, 2026-11-14).
 - Low system memory crashes the game (pagefile); it is not the mod. System settings are the user's to change.
 - Do not install third-party binaries without asking the user.
 

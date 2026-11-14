@@ -3,7 +3,8 @@ balance, and calls to names that are neither defined in the file nor known globa
 
 Mod rule (AGENTS.md): in the mod, only util.lua may call the UE4SS entry-point APIs (RAW_ENTRY); every other
 file goes through U.after / U.every / U.on_new / U.hook / U.key, which run on the game thread and turn errors
-into a clean stop. A file breaking the rule fails the check.
+into a clean stop. LoopAsync and ExecuteWithDelay are banned everywhere (FORBIDDEN): their callbacks run on
+another thread in the mod's Lua state, which corrupted it (AGENTS.md). A file breaking either rule fails the check.
 
 Usage: python src/tools/lua_check.py [file.lua ...]   (default: every script of the mod)
 Exit code 1 when a file is unbalanced.
@@ -51,8 +52,9 @@ def strip(src):
 
 
 # FindAllOf too: U.find_all checks its argument is a string, which UE4SS's own check can crash on (AGENTS.md).
-RAW_ENTRY = ('LoopAsync', 'ExecuteWithDelay', 'ExecuteInGameThread', 'RegisterHook', 'NotifyOnNewObject',
-             'RegisterKeyBind', 'FindAllOf')
+RAW_ENTRY = ('ExecuteInGameThread', 'ExecuteInGameThreadWithDelay', 'LoopInGameThreadWithDelay', 'CancelDelayedAction',
+             'RegisterHook', 'NotifyOnNewObject', 'RegisterKeyBind', 'FindAllOf')
+FORBIDDEN = ('LoopAsync', 'ExecuteWithDelay')
 ENTRY_OWNER = 'util.lua'
 
 files = sys.argv[1:] or [str(p) for p in sorted(SRC.glob('mod/*/Scripts/*.lua'))]
@@ -82,7 +84,8 @@ for path in files:
         params.update(x.strip() for x in m.group(1).split(','))
     known_globals = {'print', 'pcall', 'xpcall','ipairs', 'pairs', 'require', 'tostring', 'tonumber', 'type', 'error',
                      'select', 'setmetatable', 'getmetatable', 'rawget', 'rawset', 'next', 'unpack', 'assert',
-                     'RegisterHook', 'NotifyOnNewObject', 'LoopAsync', 'ExecuteInGameThread', 'ExecuteWithDelay',
+                     'RegisterHook', 'NotifyOnNewObject', 'ExecuteInGameThread', 'ExecuteInGameThreadWithDelay',
+                     'LoopInGameThreadWithDelay', 'CancelDelayedAction',
                      'FindFirstOf', 'FindAllOf', 'StaticFindObject', 'FName', 'FText', 'LoadAsset', 'RegisterKeyBind',
                      'RegisterConsoleCommandHandler', 'GenerateSDK', 'DumpAllObjects', 'StaticConstructObject',
                      'function', 'if', 'while', 'return', 'and', 'or', 'not', 'elseif', 'until', 'load_class'}
@@ -97,6 +100,10 @@ for path in files:
         if raw:
             print('BAD %s: calls %s directly; use the entry points in %s' % (path, ', '.join(raw), ENTRY_OWNER))
             ok = False
+    banned = sorted({n for n in FORBIDDEN if re.search(r'(?<![.:\w])' + n + r'\b', s)})
+    if banned:
+        print('BAD %s: calls %s; use U.after / U.every (game-thread delayed actions)' % (path, ', '.join(banned)))
+        ok = False
     msg = 'OK ' if ok else 'BAD'
     print('%s %s depth=%d () %d/%d [] %d/%d {} %d/%d%s' % (msg, path, depth, br['('], br[')'], br['['], br[']'],
           br['{'], br['}'], ('  undefined calls: ' + ', '.join(sorted(undefined))) if undefined else ''))

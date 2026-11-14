@@ -27,24 +27,55 @@ function M.install(run, arenas)
     -- ------------------------------------------------------------ god mode (F1)
     -- Health_Max x100 and kept full; attack multiplied. Re-applied every 100 ms: a respawn or a level load resets
     -- the attributes. The arena survey turns mode 1 on while it runs.
+    -- The player's own values are kept in GOD_PATH while it is on, not only in memory: a hot reload (Ctrl+R) with
+    -- god mode on made the new instance take the boosted values as the originals, and turning it off then left the
+    -- player boosted; over a few reloads health went 3085 -> 30,855,000 and bosses fell in seconds (2026-11-14).
     local MODES = { { mult = 10, label = "无敌 + 10 倍攻击" }, { mult = 1000, label = "无敌 + 一击必杀" } }
+    -- Outside the mod folder: install.ps1 wipes that, and an install is followed by a reload.
+    local GOD_PATH = (os.getenv("TEMP") or os.getenv("TMP") or DIR) .. "\\BossRush_god_base.tsv"
     local god = { mode = 0, gen = 0 }
 
     local function attrs() return U.pawn().AttributeSetBase end
 
+    local function read_base()
+        local f = io.open(GOD_PATH, "r")
+        if not f then return nil end
+        local line = f:read("*l") or ""
+        f:close()
+        local v = {}
+        for x in line:gmatch("[^\t]+") do v[#v + 1] = tonumber(x) end
+        if #v < 4 then return nil end
+        return { hp_base = v[1], hp = v[2], atk_base = v[3], atk = v[4] }
+    end
+
+    local function restore(s, b)
+        s.Health_Max.BaseValue, s.Health_Max.CurrentValue = b.hp_base, b.hp
+        s.Health.BaseValue, s.Health.CurrentValue = b.hp, b.hp
+        s.Attack.BaseValue, s.Attack.CurrentValue = b.atk_base, b.atk
+        os.remove(GOD_PATH)
+    end
+
     local function god_set(mode)
         local s = attrs()
         if god.mode == 0 and mode > 0 then
-            god.hp_base, god.hp = s.Health_Max.BaseValue, s.Health_Max.CurrentValue
-            god.atk_base, god.atk = s.Attack.BaseValue, s.Attack.CurrentValue
+            local saved = read_base()
+            if saved then
+                god.hp_base, god.hp, god.atk_base, god.atk = saved.hp_base, saved.hp, saved.atk_base, saved.atk
+            else
+                god.hp_base, god.hp = s.Health_Max.BaseValue, s.Health_Max.CurrentValue
+                god.atk_base, god.atk = s.Attack.BaseValue, s.Attack.CurrentValue
+                local f = io.open(GOD_PATH, "w")
+                if f then
+                    f:write(string.format("%.6f\t%.6f\t%.6f\t%.6f\n", god.hp_base, god.hp, god.atk_base, god.atk))
+                    f:close()
+                end
+            end
         end
         god.gen = god.gen + 1
         god.mode = mode
         if mode == 0 then
-            s.Health_Max.BaseValue, s.Health_Max.CurrentValue = god.hp_base, god.hp
-            s.Health.BaseValue, s.Health.CurrentValue = god.hp, god.hp
-            s.Attack.BaseValue, s.Attack.CurrentValue = god.atk_base, god.atk
-            out("god off")
+            restore(s, god)
+            out(string.format("god off (health %.0f, attack %.0f)", god.hp, god.atk))
             ui.toast("调试：关闭", 2)
             return
         end
@@ -224,6 +255,24 @@ function M.install(run, arenas)
             return false
         end)
     end
+
+    -- A previous load left god mode on (hot reload): once the player exists, put their own values back, if they
+    -- are still boosted (after a game restart the game has already recomputed them).
+    U.every(1000, function()
+        if not U.valid(U.pawn()) then return false end
+        local saved = read_base()
+        if not saved then return true end
+        local s = attrs()
+        if s.Health_Max.CurrentValue >= saved.hp * 50 then
+            restore(s, saved)
+            out(string.format("god left on by the previous load: health %.0f, attack %.0f restored", saved.hp, saved.atk))
+            ui.toast("调试：上次未关闭的无敌已还原", 3)
+        else
+            os.remove(GOD_PATH)
+            out("god file from an earlier session dropped (values not boosted)")
+        end
+        return true
+    end)
 
     U.key(Key.F1, function() god_set((god.mode + 1) % (#MODES + 1)) end)
     U.key(Key.F2, mark)

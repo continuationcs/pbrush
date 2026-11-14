@@ -11,6 +11,7 @@ local S = {
     win          = { "残影尽散", "THE ECHOES FADE" },
     lose         = { "饮恨", "UNDYING GRUDGE" },
     next_echo    = { "残影将至", "Another echo stirs" },
+    next_phase   = { "第 %d 阶段", "Phase %d" },
     incoming     = { "强敌将至，准备迎战", "A foe approaches. Steel yourself." },
     arena        = { "场地", "Arena" },
     defeated     = { "击败", "Defeated" },
