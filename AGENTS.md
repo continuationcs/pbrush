@@ -172,6 +172,14 @@ shell turns them into real characters. Use the Edit/Write tools, or a Python scr
 - **Spawning bosses**: `BeginDeferredActorSpawnFromClass` + `FinishSpawningActor`; AI, health bar and music come by
   themselves. Spawned bosses have `Level = 0`; writing `Level` changes nothing, writing attributes does
   (`AttributeSetBase.X.BaseValue/CurrentValue`). The game formula is `base × (1 + curve(level))`.
+  Scale a stat's current value with its maximum when the boss starts full (Health, Sha-Chi): scaling only
+  `Shachi_Max` left the boss's Sha-Chi gauge at 1/12 (player report, 0.1.4).
+- **Playthroughs (周目)**: the monster curves (`CV_AttributeCurve_Monster_*`, read offline) run past level 25
+  (Health to 500, Attack and Shachi to 200) and repeat their shape every 25 levels, so each playthrough adds 25
+  levels; `scale.lua` uses progress + 25 × `PBZGameSystem.CycleCount`, capped at 200 (2026-11-14, after a player
+  saw 二周目 bosses at 25W health where the mod's had 15W). Inferred from the curves: confirm with a 二周目 save
+  (the development log lists nearby native monsters' levels). The difficulty configs' Global Mob Level Offset is 0
+  except Handicapped (-1).
 - Some bosses wait at 0 HP for an execution; `actor:Kill(0)` ends them (`run.lua` forces it after 0.8 s at 0 HP
   when the game does not report the boss dead). Remove `LootComp` and set
   `bExcludeFromCodex` to stop loot, Remnant Dust and codex entries.
