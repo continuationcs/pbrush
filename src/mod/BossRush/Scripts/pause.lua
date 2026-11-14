@@ -1,4 +1,4 @@
--- 「强敌挑战 · 退出挑战」 as a row of 系统 → 退出游戏 while a challenge runs: one press closes the menu and leaves
+-- 「残影试炼 · 退出挑战」 as a row of 系统 → 退出游戏 while a challenge runs: one press closes the menu and leaves
 -- (counts as a defeat; user decision: no confirmation step).
 --
 -- That page is the game's settings panel (W_PBZSettingPanel_C, a UGameSettingPanel from the GameSettings plugin):

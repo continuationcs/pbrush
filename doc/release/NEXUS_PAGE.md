@@ -26,7 +26,7 @@
 | Category | Gameplay |
 | Language | English（页面描述里同时放了中文） |
 | Requirements → Nexus requirements | UE4SS for Phantom Blade Zero（phantombladezero/mods/13），说明填：Required. Install and test it first. |
-| File name | Boss Challenge 0.1.0 |
+| File name | Trial of Echoes 0.1.0 |
 | File category | Main files |
 | File description | Extract into <game>\platform\steam\ue4ss\Mods\ |
 | Permissions / credits | 致谢 RE-UE4SS 团队与 KintaroModding（见描述末尾）。资产权限按你的意愿选择。 |
@@ -38,7 +38,7 @@ Fight the bosses again from any Bell. Duel any boss or run themed boss gauntlets
 ## Description（BBCode）
 
 ```
-[size=5][b]Boss Challenge (强敌挑战)[/b][/size]
+[size=5][b]Trial of Echoes (残影试炼)[/b][/size]
 
 Fight the game's bosses again, any time, from any Bell. The mode lives in the Bell menu and uses the game's own buttons, fonts, transitions and boss health bar, so it feels like part of the game. Gamepad friendly.
 
@@ -50,10 +50,10 @@ Fight the game's bosses again, any time, from any Bell. The mode lives in the Be
 
 [size=4][b]How it plays[/b][/size]
 [list]
-[*]Ring any Bell and choose [b]Boss Challenge[/b] below Traverse.
+[*]Ring any Bell and choose [b]Trial of Echoes[/b] below Traverse.
 [*]The arena is chosen for you: stand at one of the arenas and the fight starts right there, otherwise you are taken to a random arena (scenic spots you have reached, or the boss's own battlefield).
 [*]Bosses are scaled to your progress with the game's own monster level curves, so early bosses are still a fight late in the game. Difficulty follows your game setting.
-[*]Leave at any time from the game menu: [b]Boss Challenge · Leave[/b] (System → Exit Game).
+[*]Leave at any time from the game menu: [b]Trial of Echoes · Leave[/b] (System → Exit Game).
 [*]A result screen shows your time and best time. Press confirm and you wake beside the Bell you started from, with health and remedies as they were.
 [*]No side effects: challenge kills give no loot or Remnant Dust and do not touch your codex, quests or story. The mod never writes into your save; best times are kept in the mod folder.
 [/list]
@@ -81,7 +81,7 @@ Edit [code]BossRush\Scripts\config.lua[/code] and restart the game: boss scaling
 
 [size=4][b]Known limitations[/b][/size]
 [list]
-[*]65 bosses are available. The Lion Dance Grandmaster's second phase is fought only at its own battlefield (The Sealed Lion), in Duel only. Eight bosses whose skills rely on their own level are not offered yet: the four Acolytes, Dusk, Leng Tu, and Zuo Shang (first form and True Lóng).
+[*]66 bosses are available. The Lion Dance Grandmaster's second phase is fought only at its own battlefield (The Sealed Lion), in Duel only. Eight bosses whose skills rely on their own level are not offered yet: the four Acolytes, Dusk, Leng Tu, and Zuo Shang (first form and True Lóng).
 [*]The roguelike Trial mode is not included yet.
 [*]Text: Simplified Chinese or English.
 [*]Made and tested on the Steam version, game build CL-302256.
@@ -96,7 +96,7 @@ Edit [code]BossRush\Scripts\config.lua[/code] and restart the game: boss scaling
 
 [line]
 
-[size=5][b]强敌挑战[/b][/size]
+[size=5][b]残影试炼[/b][/size]
 
 随时随地，在任意铃铛处再战昔日强敌。入口在铃铛菜单里，用游戏自己的按钮、字体、转场和首领血条，玩起来就像游戏自带的模式。支持手柄。
 
@@ -108,10 +108,10 @@ Edit [code]BossRush\Scripts\config.lua[/code] and restart the game: boss scaling
 
 [b]玩法[/b]
 [list]
-[*]敲响任意铃铛，在“穿行”下方选择「强敌挑战」。
+[*]敲响任意铃铛，在“穿行”下方选择「残影试炼」。
 [*]场地自动决定：站在场地上就原地开打，否则随机传送到一个场地。
 [*]首领数值按你的进度、用游戏自己的等级曲线提升；难度跟随游戏设置。
-[*]随时可在游戏菜单选「强敌挑战 · 退出挑战」退出（系统 → 退出游戏）。
+[*]随时可在游戏菜单选「残影试炼 · 退出挑战」退出（系统 → 退出游戏）。
 [*]结束后显示结算画面和最佳纪录，按确认键回到出发的铃铛，血量和药瓶恢复如初。
 [*]没有副作用：不掉落、不给意识尘埃、不影响图鉴、任务和剧情；不写入存档。
 [/list]
@@ -122,13 +122,13 @@ Edit [code]BossRush\Scripts\config.lua[/code] and restart the game: boss scaling
 
 [b]兼容性[/b]：只增加内容，不替换游戏文件、不改存档，可与其他 UE4SS Lua mod、.pak mod 共存；只可能与改动铃铛菜单、游戏菜单、对话选项按钮或提示条的 mod 冲突；改怪物数值或难度的 mod 会连带影响挑战首领的强度。
 
-[b]已知限制[/b]：目前开放 65 位首领（舞狮尊主二阶段只在「尊主封印地」打、只进单挑），技能依赖原关卡的 8 位首领（灭法之法四人、荡秽、冷荼、左殇初见与龙体）暂未开放；肉鸽玩法「试炼」暂未加入；文字为简体中文或英文。
+[b]已知限制[/b]：目前开放 66 位首领（舞狮尊主二阶段只在「尊主封印地」打、只进单挑），技能依赖原关卡的 8 位首领（灭法之法四人、荡秽、冷荼、左殇初见与龙体）暂未开放；肉鸽玩法「试炼」暂未加入；文字为简体中文或英文。
 ```
 
 ## 上传前自检
 
 - [ ] 用发布包（而不是开发版）在游戏里完整跑一遍：先停用探测 mod，删掉开发版 BossRush，解压 `BossRush-0.1.0.zip` 安装，打一局单挑、一局连战。
-- [ ] 用手柄完整走一遍：进菜单、选首领、结算画面按 A 关闭、游戏菜单里的「强敌挑战 · 退出挑战」。
+- [ ] 用手柄完整走一遍：进菜单、选首领、结算画面按 A 关闭、游戏菜单里的「残影试炼 · 退出挑战」。
 - [x] 主图：`doc/release/main_image.png`
-- [ ] 再截 2~4 张实机图：铃铛菜单里的「强敌挑战」、首领列表、战斗中、结算画面。
+- [ ] 再截 2~4 张实机图：铃铛菜单里的「残影试炼」、首领列表、战斗中、结算画面。
 - [ ] 确认击杀首领后确实没有掉落和意识尘埃（目前只看到日志里“掉落组件已拆除”，还没在画面上核对）。

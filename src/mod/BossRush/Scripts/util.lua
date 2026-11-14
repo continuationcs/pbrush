@@ -206,13 +206,17 @@ function U.active_bells()
 end
 
 -- The game's own difficulty setting (EDifficultMode): 0 Handicapped, 1 Easy, 2 Normal, 3 Hard, 4 NightMare.
+-- Always a number: -1 when it cannot be read (shown as "—", records kept apart, no level offset), so callers
+-- can concatenate and index with it safely; an unread difficulty is never passed off as Normal.
 function U.game_difficulty()
-    local d = 2
+    local d
     pcall(function()
         local lib = StaticFindObject("/Script/ProjectPBZ.Default__PBZBlueprintFunctionLibrary")
         d = lib:GetDifficulty(require("UEHelpers").GetWorld())
     end)
-    return tonumber(d) or 2
+    local n = tonumber(d)
+    if not n then U.log("difficulty: could not be read (%s)", tostring(d)) return -1 end
+    return n
 end
 
 function U.bell_name(id)

@@ -191,7 +191,7 @@ shell turns them into real characters. Use the Edit/Write tools, or a Python scr
   slide-in animation: call it **once**, after the button is added (calling it twice made labels jitter). Join the
   menu's `CommonButtonGroupBase` for the selected/unselected look, and relink gamepad navigation explicitly with
   `SetNavigationRuleExplicit` (the designer's Up/Down links skip inserted buttons).
-- **Bell menu insertion** (强敌挑战 right below 穿行, user decision): every open creates a new `W_BellMenu_C`.
+- **Bell menu insertion** (残影试炼, formerly 强敌挑战, right below 穿行, user decision): every open creates a new `W_BellMenu_C`.
   `NotifyOnNewObject` + a 30 ms poll inserts the entry as soon as `TeleportBtn` exists, before the menu is drawn
   (a late insertion flickered and reset a selection the player had already made). Insertion = take out the
   options after 穿行, add ours, put them back (`widgets.insert`); then call `UpdateButtonStyle()` /
@@ -233,6 +233,21 @@ shell turns them into real characters. Use the Edit/Write tools, or a Python scr
   `GetSelected()` made moving the cursor onto 返回 go back). What sees every click is the button group's
   `OnHandleButtonBaseClicked`, bound to the button's dynamic `OnButtonBaseClicked`: buttons in a group are routed
   through that hook, others (the settings panel row) through `HandleButtonClicked`.
+- **Boss names come from the codex, and its class mapping can be wrong**: `bosses.json` (pbzero, from
+  `DT_CodexEnemyDataTable`) gave 七星剑阵：大师兄 to `EMei_Sword_JianZhen`, which in game is a 红衣女剑客 (its health
+  bar says so); one codex entry can hold several parts (`BossName_013_0/1/2`) and the row does not name each part's
+  class. When a boss looks wrong, ask what its **health bar** says. `gen_roster.py` fixes records with `CLASS_FIX`
+  and adds codex bosses missing from `bosses.json` with `EXTRA`; a guessed class lands as `testing` until the user
+  confirms it (2026-11-14). The game's display texts (names in English, difficulty names) are in the encrypted
+  pak's locres: not readable offline; ask the user for the in-game text.
+- **A layout read from a screenshot must be checked slot by slot**: the probe's `wb_settlement` preview labelled
+  only the blocks that are properties; the big title block (`CommonTextBlock_64`) is not one, so the screenshot
+  showed its default text 敬请期待 and it was taken for the title slot without its name ever appearing. The result
+  screen showed 敬请期待 as its title from 0.1.0 until 2026-11-14, and `GetWidgetFromName` did not reach it either.
+  `settle.lua` finds it among the live `CommonTextBlock`s by its path inside the screen and logs what it reads back.
+- **Values from the game may be unknown**: `U.game_difficulty()` returns -1 when the difficulty cannot be read
+  (never a guessed level), and `i18n.difficulty` shows "—" for any value outside the user-given list; nothing that
+  formats or looks up such a value may raise.
 - **With a menu open the game is in UI-only input**: `PlayerController:IsInputKeyDown` sees no key (polling Esc /
   gamepad B in the bell menu read nothing). Read keys that way only in gameplay (the result screen does).
 - Most of the bell menu's logic lives in the game's TypeScript layer (puerts mixins), invisible to UE4SS hooks.
@@ -260,5 +275,10 @@ shell turns them into real characters. Use the Edit/Write tools, or a Python scr
 ## Commits
 
 - Branch `main`, remote `origin` = github.com/continuationcs/pbrush. Commit or push only when the user asks.
+- **Every commit carries its lessons** (user rule, 2026-11-14): before committing, write what the work taught
+  (causes found, wrong assumptions, how something was confirmed) into `AGENTS.md` (gotchas, rules) and the decisions
+  and results into `doc/DESIGN.md` / `doc/COPY.md`, and commit them together with the code.
+- Another session may have uncommitted work in the same files: stage only this work's hunks (e.g. `git
+  hash-object -w` of a file built from HEAD plus this work's edits, then `git update-index --cacheinfo`).
 - Not tracked: `out/`, `save-backup/` (personal save backups; file names carry a Steam ID), `src/data/run*/`
   (raw logs).

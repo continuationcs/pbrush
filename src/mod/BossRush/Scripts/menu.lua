@@ -1,4 +1,4 @@
--- Bell menu: adds 「强敌挑战」 below 穿行, and shows our pages in place of the menu's own options, using the
+-- Bell menu: adds 「残影试炼」 below 穿行, and shows our pages in place of the menu's own options, using the
 -- menu's own button class and button group, so look, sound and gamepad navigation are native.
 --
 -- No Blueprint function of the menu is hooked (hooks on Blueprint functions crashed the game). The entry is
@@ -230,7 +230,7 @@ local function inject(menu, on_entry)
     local group = find_group(menu)
     cur = { menu = U.ref(menu), box = U.ref(box), like = U.ref(like), group = U.ref(group), hidden = {}, added = {} }
     local L = { menu = menu, box = box, like = like, group = group }
-    -- 强敌挑战 goes right below 穿行 (user decision).
+    -- 残影试炼 goes right below 穿行 (user decision).
     local entry = W.new_button(menu, menu.TeleportBtn)
     local moved = W.insert(box, like, entry, like)
     join(L, entry, i18n.t("entry"), on_entry)
@@ -356,7 +356,7 @@ local function remove_all()
     W.forget_owner(OWNER)
 end
 
--- on_entry() is called when 「强敌挑战」 is chosen. enabled() decides whether the entry is added at all.
+-- on_entry() is called when 「残影试炼」 is chosen. enabled() decides whether the entry is added at all.
 function M.install(on_entry, enabled)
     U.on_fail(remove_all)
     U.on_new(MENU_CLASS, function(new_menu)

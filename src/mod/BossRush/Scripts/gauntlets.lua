@@ -27,6 +27,6 @@ return {
     { key = "war",      zh = "沙场宿将", en = "Veterans of War",     bosses = B({ "HuoDaoDuiZhang", "DuYanBoss", "YingMei_RedShadowBoneBlade",
         "GreatBladeMan", "WuXuan" }) },
     { key = "sects",    zh = "名门残影", en = "Shadows of the Sects", bosses = B({ "Zhuobi", "CanQu_BiHai", "BiYuan",
-        "EMei_Sword_JianZhen" }) },
+        "HuaShan_Blue" }) },
     { key = "all",      zh = "千影归来", en = "A Thousand Echoes",   bosses = "all" },
 }

@@ -1,4 +1,4 @@
--- 强敌挑战 / Boss Challenge for Phantom Blade Zero.
+-- 残影试炼 / Trial of Echoes (until 2026-11-14 强敌挑战 / Boss Challenge) for Phantom Blade Zero.
 -- Entry: the bell menu. Modes: 单挑 (Duel), 连战 (Gauntlet); 试炼 (Trial) hidden until it is built.
 -- Design: doc/DESIGN.md, text: doc/COPY.md.
 local U = require("util")
@@ -12,7 +12,7 @@ local gauntlets = require("gauntlets")
 
 local T = i18n.t
 -- Rows per list page (单挑, 连战). With 下一页 / 上一页 / 返回 a page has 11 rows, three more than the bell menu's own column
--- (8 with 强敌挑战), which it was laid out for; 65 bosses in a release build are 51 entries (later
+-- (8 with 残影试炼), which it was laid out for; 66 bosses in a release build are 50 entries (later
 -- phases are part of their boss's entry): 7 pages.
 local PAGE = 8
 
@@ -125,7 +125,7 @@ show_bosses = function(page, focus)
         -- phases keeps its time under its own key: times from when its first phase was fought alone do not count.
         local key = "duel/" .. b.id .. (#f.steps > 1 and "/all-phases" or "") .. "/" .. U.game_difficulty()
         rows[#rows + 1] = { i18n.name(b), function()
-            begin({ f }, { record_key = key, title = T("duel") .. " · " .. i18n.name(b) })
+            begin({ f }, { record_key = key, mode = T("duel"), name = i18n.name(b) })
         end }
     end
     show_paged(rows, page, focus or "paging", show_bosses)
@@ -139,7 +139,7 @@ show_gauntlets = function(page, focus)
         local q = gauntlet_queue(g, avail)
         if q then
             rows[#rows + 1] = { string.format("%s · %d", i18n.name(g), #q), function()
-                begin(q, { record_key = "gauntlet/" .. g.key .. "/" .. U.game_difficulty(), title = T("gauntlet") .. " · " .. i18n.name(g) })
+                begin(q, { record_key = "gauntlet/" .. g.key .. "/" .. U.game_difficulty(), mode = T("gauntlet"), name = i18n.name(g) })
             end }
         end
     end
@@ -171,7 +171,7 @@ if config.debug then
     local stamp = os.date("%H:%M:%S")
     U.every(1000, function()
         if not U.valid(U.pawn()) then return false end
-        require("ui").toast("强敌挑战 已载入（开发版）" .. stamp, 3)
+        require("ui").toast("残影试炼 已载入（开发版）" .. stamp, 3)
         return true
     end)
 end

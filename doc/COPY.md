@@ -23,7 +23,7 @@
 
 | 位置 | 中文 | English |
 |---|---|---|
-| 菜单条目 | **强敌挑战** | **Boss Challenge** |
+| 菜单条目 | **残影试炼** | **Trial of Echoes** |
 | 条目说明 | 沉入里武林，与昔日强敌的残影再较高下。<br>挑战你已击败过的首领。 | Sink into the Discordance and face the echoes of fallen foes.<br>Fight bosses you have already defeated. |
 | 未解锁 | 尚无可唤出的残影。<br>击败任意首领后开放。 | No echoes linger yet.<br>Unlocks after you defeat a boss. |
 
@@ -37,7 +37,7 @@
 
 **说明文字一律两段式**（用户定稿）：第一行是文艺的一句，第二行是直白说明，讲清楚这一项做什么、有什么规则。界面上第二行用次一级的字色。
 
-命名原则（用户定稿）：用直白的字，同一类文案字数一致。入口 4 字「强敌挑战」，三个玩法各 2 字「单挑 / 连战 / 试炼」，子菜单最后一项「返回」也是 2 字。「试炼」不用「轮回」，因为原作里「轮回」已经是周目（Cycle）的意思。
+命名原则（用户定稿）：用直白的字，同一类文案字数一致。入口 4 字「残影试炼」（2026-11-14 用户改名，原为「强敌挑战 / Boss Challenge」），三个玩法各 2 字「单挑 / 连战 / 试炼」，子菜单最后一项「返回」也是 2 字。「试炼」不用「轮回」，因为原作里「轮回」已经是周目（Cycle）的意思。
 
 ### 单挑的难度
 直接复用原作的难度名和标语：入阵者 / 破局者 / 逆天者（WAYFARER / PATHBREAKER / HELLWALKER），运行时读游戏的本地化文本。
@@ -55,12 +55,12 @@
 | 8 | 痴狂众生 | Madmen of the Wulin | 残钢 → 铁杀 → 奎艳艳 → 铁狂 → 花千笑 |
 | 9 | 妖异志怪 | Strange Tales | 新娘阿花 → 骨婉约 → 小雪 → 烟千岁 → 梦华圣母 |
 | 10 | 沙场宿将 | Veterans of War | 祝原 → 独眼弓客 → 囚锋 → 毕峰 → 武轩 |
-| 11 | 名门残影 | Shadows of the Sects | 拙壁 → 碧海残躯 → 毕远残躯 → 七星剑阵大师兄 → 大师兄的绝望剑意 |
+| 11 | 名门残影 | Shadows of the Sects | 拙壁 → 碧海残躯 → 毕远残躯 → 七星剑阵大师兄（二阶段大师兄的绝望剑意和红衣女剑客同时出现） |
 | 12 | 千影归来 | A Thousand Echoes | 全部开放的首领，按出场顺序 |
 
 **2026-11-14 重排（用户决定）**：每组 4～5 场，按顺序越打越强、最强或最终形态压轴；新开放的火流星、玉瓒、左殇（银发）补进原定的组；生死两相限 5 对；新增痴狂众生、妖异志怪、沙场宿将、名门残影（成员按首领名号归类，未必对应剧情阵营）；组名统一为 4 字（三面 → 金铁玉面，千影 → 千影归来）。灭法之法四人未开放，这一组暂不提供。连战页和单挑页一样分页，每页 8 组。
 
-**多阶段首领合并（用户决定，2026-11-14）**：多阶段的首领只占一行，以一阶段命名，选中后各阶段连着打：阶段之间不回血，只提示「第 n 阶段」（`next_phase`）。玉琮二阶段是钢刃、寒冰、混沌三个同时出现。生死两相（一阶段接二阶段）因此与其他组重复，已删除，连战共 11 组。组织高手、江湖险恶等组里的多阶段首领也都打完全部阶段。
+**多阶段首领合并（用户决定，2026-11-14）**：多阶段的首领只占一行，以一阶段命名，选中后各阶段连着打：阶段之间不回血，只提示「第二阶段」（英文 Second Phase，`i18n.phase`）。玉琮二阶段是钢刃、寒冰、混沌三个同时出现；金面具黑衣人二阶段是魔渊；七星剑阵：大师兄二阶段是大师兄的绝望剑意和红衣女剑客同时出现（同日用户决定；红衣女剑客实测确认。首领表原把「七星剑阵：大师兄」记在一个实际是红衣女剑客的类上，改用华山的 HuaShan_Blue，实测确认）。生死两相（一阶段接二阶段）因此与其他组重复，已删除，连战共 11 组。组织高手、江湖险恶等组里的多阶段首领也都打完全部阶段。
 
 关卡标语沿用原作的对仗格式，例如「拂尘四扫，灭法之法」/ "Four whisks, four elements, one end."（定稿时逐关补齐）。
 
@@ -123,15 +123,18 @@
 |---|---|---|
 | HUD | 连战·灭法之法　3 / 4　04:12 | GAUNTLET · The Acolytes　3 / 4　04:12 |
 | 到达场地、首领出现前（加载界面消失后显示 3 秒，然后首领出现） | 强敌将至，准备迎战 | A foe approaches. Steel yourself. |
-| 两战之间 | 残影将至。 | Another echo stirs. |
+| 两战之间（带「第几场 / 共几场」） | 残影将至　2 / 4 | Another echo stirs　2 / 4 |
+| 同一首领进入下一阶段 | 第二阶段（第三阶段……） | Second Phase (Third Phase …) |
 | 开战 | 残影现形 | THE ECHO TAKES FORM |
 | 胜利 | 残影尽散 | THE ECHOES FADE |
 | 失败 | 饮恨 | UNDYING GRUDGE（原作用词） |
-| 退出（游戏菜单） | 强敌挑战 · 退出挑战 | Boss Challenge · Leave |
+| 退出（游戏菜单） | 残影试炼 · 退出挑战 | Trial of Echoes · Leave |
 | 放弃结算标题 | 收刃离去 | Sheathe Your Blade |
-| 用时 | 此战用时　最佳用时　新纪录！ | Time　Best Time　NEW RECORD! |
-| 出错停用（提示条） | 强敌挑战出错，已停用，重启游戏后恢复 | Boss Challenge hit an error and is off until the game restarts |
-| 返回 | 自里武林醒转，回到铃铛之侧。 | You stir from the Discordance and wake beside the Bell. |
+| 用时 | 用时　最佳　新纪录！ | Time　Best　NEW RECORD! |
+| 结算标题下的小字行 | 残影试炼（即入口名） | Trial of Echoes |
+| 结算第三行 | 击败　难度（入阵者 / 破局者 / 逆天者 / 六十六天） | Defeated　Difficulty (Wayfarer / Pathbreaker / Hellwalker / 66 Days) |
+| 出错停用（提示条） | 残影试炼出错，已停用，重启游戏后恢复 | Trial of Echoes hit an error and is off until the game restarts |
+| 返回 | 按确认键，自里武林醒转，回到铃铛之侧。 | Press confirm to stir from the Discordance and wake beside the Bell. |
 | 试炼结算 | 前路已尽。<br>闯过 {0} 关，获得心法 {1} 门。 | The path runs out.<br>Cleared {0} stages and gained {1} Insights. |
 
 ## 6. 多语言规则

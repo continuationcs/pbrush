@@ -13,6 +13,31 @@ anchored = ['ZuoShang', 'LengTu', 'YuZan', 'GuiChai_Red', 'QiShu', 'DuYan', 'Chi
             'YanQianSui', 'CanQu', 'DangHui', 'LionDancer_P2', 'MengHua']
 story = ['Tutorial', 'HorseCart', 'Prologue']
 
+# Codex entry 013 has three parts: 红衣女剑客 (BossName_013_0), 七星剑阵：大师兄 (_1), 大师兄的绝望剑意 (_2). bosses.json
+# gives part 1's name to BP_Monster_EMei_Sword_JianZhen, but in game that class is a 红衣女剑客 (its health bar says
+# so, user test 2026-11-14). 大师兄 is taken to be BP_Monster_HuaShan_Blue: 绝望剑意 is a 华山 class too, the
+# cutscene of that fight (Seq076) uses HuaShan_Blue, and it has no level lookups; confirmed in game 2026-11-14.
+# CLASS_FIX: bosses.json record -> the class that really carries its name.
+CLASS_FIX = {
+    'BP_Monster_EMei_Sword_JianZhen': ('BP_Monster_HuaShan_Blue', '/PBZCombatAsset/ActorData/Mobs/035_HuaShan/'
+                                       'BP_Monster_HuaShan_Blue.BP_Monster_HuaShan_Blue_C'),
+}
+for x in b:
+    if x['id'] in CLASS_FIX:
+        x['id'], x['class_path'] = CLASS_FIX[x['id']]
+
+# Bosses the codex names but bosses.json leaves out, inserted after the record named in `after`. 红衣女剑客:
+# BP_Monster_EMei_Sword_Top (the codex's female sword-sect elite, no level lookups); confirmed in game 2026-11-14
+# (health bar 红衣女剑客). Her English codex name is in the en-US locres, not read here.
+EXTRA = [
+    {'after': 'BP_Monster_HuaShan_JianOu', 'id': 'BP_Monster_EMei_Sword_Top', 'name': '红衣女剑客',
+     'name_en': 'The Red-Robed Swordswoman',
+     'class_path': '/PBZCombatAsset/ActorData/Mobs/034_EMei/BP_Monster_EMei_Sword_Top.BP_Monster_EMei_Sword_Top_C'},
+]
+for x in EXTRA:
+    i = next(i for i, y in enumerate(b) if y['id'] == x['after'])
+    b.insert(i + 1, {k: v for k, v in x.items() if k != 'after'})
+
 # Helper points the mod places in the arena before the boss spawns (and removes after), so a level-dependent boss
 # can be fought anywhere (DESIGN 5.2, "补点"). Each is (class path, forward cm, right cm) from the arena centre
 # along the arena facing, put on the navigation mesh. Which classes each boss needs comes from its abilities
@@ -69,8 +94,9 @@ PHASES = {P + first: [[P + i for i in step] for step in steps] for first, steps 
     'PowerMan': [['PowerMan_P2']],
     'MBoss': [['MBossVariants']],
     'YouLong_SecondBrother': [['YouLong_Harpoon']],
-    'EMei_Sword_JianZhen': [['HuaShan_JianOu']],
+    'HuaShan_Blue': [['HuaShan_JianOu', 'EMei_Sword_Top']],   # 绝望剑意 with 红衣女剑客 (user, 2026-11-14)
     'YuCong_P1': [['YuCong_WuLi', 'YuCong_Bing', 'YuCong_HunDun']],
+    'MoTian_LongZhu_01': [['MoTian']],      # 金面具黑衣人, then 魔渊 (user decision 2026-11-14)
 }.items()}
 PART_OF = {later: first for first, steps in PHASES.items() for step in steps for later in step}
 # Level-dependent bosses confirmed in game (2026-11-13), open although their names match `anchored`: with helper

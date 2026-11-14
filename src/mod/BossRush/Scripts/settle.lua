@@ -38,6 +38,22 @@ local function set(w, name, text)
     if t then pcall(function() t:SetText(U.text(text or "")) end) end
 end
 
+-- The title block is not a variable of the layout (the probe's preview, which labelled every property, never
+-- reached it: the 敬请期待 seen there and in every result screen until 2026-11-14 is its default text), and
+-- GetWidgetFromName did not reach it either. Find it among the live text blocks: the one inside this screen.
+local TITLE = "CommonTextBlock_64"
+local function set_title(w, path, text)
+    local found
+    for _, t in ipairs(path and U.find_all("CommonTextBlock") or {}) do
+        local full = t:GetFullName()
+        if full:find(path, 1, true) and full:sub(-#TITLE - 1) == "." .. TITLE then found = t break end
+    end
+    found = found or widget(w, TITLE)
+    if not found then U.log("settle: title block not found") return end
+    found:SetText(U.text(text or ""))
+    U.log("settle: title block %s, reads back \"%s\"", found:GetFullName(), found:GetText():ToString())
+end
+
 -- d = { title, rows = { {label, value} x5 }, sub, foot }. Closes after `seconds`, or earlier when the player
 -- presses a confirm / back key (after a short grace period, and only a fresh press). on_close() runs once.
 function M.show(d, seconds, on_close)
@@ -50,7 +66,9 @@ function M.show(d, seconds, on_close)
         w:AddToViewport(60)
         local r = U.ref(w)
         current = r
-        set(w, "CommonTextBlock_64", d.title)
+        -- A title that fails leaves the rest of the screen up; the log says why.
+        local tok, terr = pcall(set_title, w, r and r.path, d.title)
+        if not tok then U.log("settle: title failed: %s", tostring(terr)) end
         for i = 1, 5 do
             local row = d.rows[i] or { "", "" }
             set(w, SLOTS["l" .. i], row[1])

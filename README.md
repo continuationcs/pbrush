@@ -1,6 +1,6 @@
 # BOSS RUSH for Phantom Blade Zero
 
-A UE4SS Lua mod that adds **强敌挑战 / Boss Challenge** to the Bell menu: fight the game's bosses again, one at a
+A UE4SS Lua mod that adds **残影试炼 / Trial of Echoes** to the Bell menu: fight the game's bosses again, one at a
 time (**单挑 Duel**) or in themed groups (**连战 Gauntlet**). It uses the game's own buttons, fonts, tip strip,
 result layout and boss health bar, so it plays like a built-in mode.
 
@@ -11,13 +11,13 @@ Published on Nexus Mods: <https://www.nexusmods.com/phantombladezero/mods/1099>
 ## Features
 
 - Entry in the Bell menu, below Traverse; gamepad navigation works.
-- **Duel**: any of 65 bosses (51 entries: a boss with several phases is fought in one go). **Gauntlet**: 11 themed groups (Shadow Wardens, Puppet Theatre, The Young Mistress, Three Masks, Order's Finest, Perils of the Wulin, Madmen of the Wulin, Strange Tales, Veterans of War, Shadows of the Sects, A Thousand Echoes), each building up to its
+- **Duel**: any of 66 bosses (50 entries: a boss with several phases is fought in one go). **Gauntlet**: 11 themed groups (Shadow Wardens, Puppet Theatre, The Young Mistress, Three Masks, Order's Finest, Perils of the Wulin, Madmen of the Wulin, Strange Tales, Veterans of War, Shadows of the Sects, A Thousand Echoes), each building up to its
   strongest boss, a small heal between fights.
 - Arena picked for you: fight in place when standing at an arena, otherwise travel to a random one
   (rung scenic spots or the boss's own battlefield), then return to the starting Bell.
 - Boss stats follow your progress with the game's own monster level curves (`base × (1 + curve(level))`);
   difficulty follows the game setting.
-- Result screen with time and best time; leave a run from the game menu («强敌挑战 · 退出挑战»).
+- Result screen with time, best time and difficulty; leave a run from the game menu («残影试炼 · 退出挑战»).
 - No side effects: no loot or Remnant Dust, no codex entries, no save changes; health and remedies restored.
 
 ## Install (players)
@@ -67,7 +67,7 @@ Made against the Steam build CL-302256 with UE4SS experimental 3.0.1. See `AGENT
 
 ## 中文
 
-给《影之刃零》加一个「强敌挑战」模式的 UE4SS Lua mod：在任意铃铛处单挑任一首领，或按主题连战一组首领。
+给《影之刃零》加一个「残影试炼」模式的 UE4SS Lua mod：在任意铃铛处单挑任一首领，或按主题连战一组首领。
 入口在铃铛菜单“穿行”下方，用的是游戏自己的按钮、字体、提示条、结算版式和首领血条，支持手柄。
 
 - **安装**：先装 [OFFICIAL UE4SS for PBZ](https://www.nexusmods.com/phantombladezero/mods/13)，再把发布包解压到

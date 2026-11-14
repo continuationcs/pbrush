@@ -168,11 +168,11 @@ local function finish(result)
     local T = i18n.t
     local secs = os.clock() - (run.t0 or os.clock())
     local defeated = result == "win" and #run.queue or math.max(0, run.fi - 1)
-    local best_line, sub = "—", run.title or ""
+    local best_line, name = "—", run.name or ""
     if result == "win" and run.record_key then
         local best = records.best(run.record_key)
         if records.submit(run.record_key, secs) then
-            sub = sub .. "　" .. T("new_record")
+            name = name .. "　" .. T("new_record")
             best_line = records.fmt(secs)
         elseif best then
             best_line = records.fmt(best)
@@ -185,12 +185,15 @@ local function finish(result)
     local data = {
         title = title,
         rows = {
+            -- Layout (user, 2026-11-14): mode and boss / group (+ new record) centred; time | best;
+            -- defeated | difficulty. The small line under the title is the entry's name.
+            { run.mode or "", name },
             { T("time"), run.t0 and records.fmt(secs) or "—" },
             { T("best"), best_line },
-            { T("arena"), i18n.name(run.arena) },
             { T("defeated"), string.format("%d / %d", defeated, #run.queue) },
+            { T("difficulty"), i18n.difficulty(run.difficulty) },
         },
-        sub = sub,
+        sub = T("entry"),
         foot = T("going_home"),
     }
     local wait = config.settle_seconds
@@ -224,7 +227,7 @@ local function step_down()
         -- The same boss's next phase: no heal, a short notice (user decision 2026-11-14).
         U.after(1500, function()
             if not run or run.phase ~= "between" then return end
-            ui.toast(string.format(i18n.t("next_phase"), run.si + 1), 2)
+            ui.toast(i18n.phase(run.si + 1), 2)
             U.after(2000, spawn_next)
         end)
         return
@@ -712,13 +715,13 @@ function M.abort()
 end
 
 -- queue: list of fights { rec, steps = { {roster records}, ... } } (see the top of this file); difficulty: game
--- EDifficultMode; arena: arenas.lua record; opts: { record_key, title (mode line for the result screen),
+-- EDifficultMode; arena: arenas.lua record; opts: { record_key, mode, name (first line of the result screen: 单挑 / 连战 and the boss or group),
 -- in_place = bool }.
 function M.start(queue, difficulty, arena, opts)
     if run then U.log("run: already running") return end
     opts = opts or {}
     run = { queue = queue, fi = 0, si = 0, actors = {}, identity_tags = {}, difficulty = difficulty, arena = arena, origin = save_origin(),
-            record_key = opts.record_key, title = opts.title, in_place = opts.in_place, snap = snapshot(),
+            record_key = opts.record_key, mode = opts.mode, name = opts.name, in_place = opts.in_place, snap = snapshot(),
             helpers = {} }
     U.log("run: start %d boss(es), difficulty %d, arena %s, from %s / %s", #queue, difficulty, arena.key, run.origin.map, run.origin.bell)
     phase("travelling")
