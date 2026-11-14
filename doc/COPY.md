@@ -131,7 +131,7 @@
 | 退出（游戏菜单） | 残影试炼 · 退出挑战 | Trial of Echoes · Leave |
 | 放弃结算标题 | 收刃离去 | Sheathe Your Blade |
 | 用时 | 用时　最佳　新纪录！ | Time　Best　NEW RECORD! |
-| 结算标题下的小字行 | 残影试炼（即入口名） | Trial of Echoes |
+| 结算标题下的小字行 | 残影试炼 0.1.5（入口名 + mod 版本号，开发版显示 dev） | Trial of Echoes 0.1.5 |
 | 结算第三行 | 击败　难度（入阵者 / 破局者 / 逆天者 / 六十六天） | Defeated　Difficulty (Wayfarer / Pathbreaker / Hellwalker / 66 Days) |
 | 出错停用（提示条） | 残影试炼出错，已停用，重启游戏后恢复 | Trial of Echoes hit an error and is off until the game restarts |
 | 返回 | 按确认键，自里武林醒转，回到铃铛之侧。 | Press confirm to stir from the Discordance and wake beside the Bell. |

@@ -1,12 +1,13 @@
--- Development tools (never shipped: src/tools/build_release.py leaves this file out). Keys F1-F4 (user decision,
--- 2026-11-14; the game itself uses F11):
+-- Development tools (never shipped: src/tools/build_release.py leaves this file out). Single keys F1-F5, no
+-- combinations (user decision, 2026-11-14). Taken elsewhere: F10 (UE4SS console, ConsoleEnablerMod), F11 (the
+-- game), F12 (Steam screenshot); UE4SS's own keys use Ctrl (Ctrl+R reload, Ctrl+O GUI, Ctrl+J / Ctrl+H dumps).
 --   F1  god mode: off -> unkillable + attack x10 -> unkillable + one-hit kills -> off
 --   F2  mark the spot the player stands on and the direction they face, for a new arena (marks.tsv), and
 --       survey it right there (grades shown on screen)
---   Ctrl+F2  go to the arena in FOCUS (for one whose bell the player cannot travel to, e.g. 龙柱)
 --   F3  arena survey: open, level ground around every arena's player and boss points (doc/DESIGN.md 5.0a);
 --       only the FOCUS arena when one is set
 --   F4  raise an error inside the mod, to check the stop path (log, tip strip, entry removed, run ended)
+--   F5  go to the arena in FOCUS (for one whose bell the bell menu cannot reach, e.g. 龙柱)
 -- Results: [BossRush] DEV lines in UE4SS.log and dev.tsv / marks.tsv in the mod folder.
 local U = require("util")
 local ui = require("ui")
@@ -22,7 +23,7 @@ local function append(file, line)
 end
 
 -- The arena being worked on (arenas.lua key), or nil. 龙柱's bell cannot be travelled to from the bell menu
--- (2026-11-14), so Ctrl+F2 takes the player there to mark a new spot, and F3 re-surveys only it.
+-- (2026-11-14), so F5 takes the player there to mark a new spot, and F3 re-surveys only it.
 local FOCUS = nil      -- e.g. "xigu_pillar" (done 2026-11-14)
 
 local function out(line)
@@ -310,24 +311,20 @@ function M.install(run, arenas)
     end)
 
     U.key(Key.F1, function() god_set((god.mode + 1) % (#MODES + 1)) end)
-    -- Plain F2 may fire with Ctrl+F2 too: ignore it while Ctrl is held (keys are readable in gameplay).
-    U.key(Key.F2, function()
-        if U.any_key_down({ "LeftControl", "RightControl" }) then return end
-        survey(mark())
-    end)
-    U.key(Key.F2, function()
+    U.key(Key.F2, function() survey(mark()) end)
+    U.key(Key.F3, function() survey() end)
+    U.key(Key.F4, function() error("devtools: forced error (F4)") end)
+    U.key(Key.F5, function()
         local a
         for _, x in ipairs(arenas.all()) do if x.key == FOCUS then a = x end end
-        if not a then out("go: no FOCUS arena") return end
+        if not a then out("go: no FOCUS arena") ui.toast("调试：未设置 FOCUS 场地", 2) return end
         if run.active() then out("go: a challenge is running") return end
         out("go to " .. a.key)
         ui.toast("调试：前往 " .. a.zh, 2)
         FindFirstOf("PBZSaveLoadSubsystem"):TeleportTo(FName(a.map), U.transform(a.x, a.y, a.z, a.yaw), FName(U.bell_name(a.bell)))
-    end, { ModifierKey.CONTROL })
-    U.key(Key.F3, survey)
-    U.key(Key.F4, function() error("devtools: forced error (F4)") end)
-    U.log("devtools ready: F1 god mode, F2 mark a spot, Ctrl+F2 go to %s, F3 arena survey%s, F4 forced error",
-        tostring(FOCUS), FOCUS and (" (" .. FOCUS .. " only)") or "")
+    end)
+    U.log("devtools ready: F1 god mode, F2 mark and survey a spot, F3 arena survey%s, F4 forced error, F5 go to %s",
+        FOCUS and (" (" .. FOCUS .. " only)") or "", tostring(FOCUS))
 end
 
 return M

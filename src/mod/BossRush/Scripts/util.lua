@@ -150,11 +150,10 @@ function U.hook(func_path, fn)
     end)
 end
 
--- fn() on the game thread when the key is pressed (development tools). modifiers: optional list of
--- ModifierKey values, e.g. { ModifierKey.CONTROL }. F11 is the game's own key: never bind it.
-function U.key(key, fn, modifiers)
-    local function cb() U.after(0, fn) end
-    if modifiers then RegisterKeyBind(key, modifiers, cb) else RegisterKeyBind(key, cb) end
+-- fn() on the game thread when the key is pressed (development tools). Single keys only, no modifier
+-- combinations (user decision 2026-11-14); never F10 (UE4SS console), F11 (the game) or F12 (Steam).
+function U.key(key, fn)
+    RegisterKeyBind(key, function() U.after(0, fn) end)
 end
 
 -- Live instances of a class by its short name ("BP_X_C"), class default objects and everything inside them left

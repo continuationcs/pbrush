@@ -26,7 +26,7 @@ local A = {
     -- share one spawner, in Xigu's separate Discordance space (z ~ 10,000,000; src/data/anchored_cells.lua.txt);
     -- the bell 龙柱 (Bell_DP_001) is 30 m from it. The bell's own spot was cramped (survey 3/16, 0 m): the user
     -- marked this one in the open ground (F2, 2026-11-14), facing 103. The bell cannot be travelled to from the
-    -- bell menu, but TeleportTo with its id works (the run, devtools Ctrl+F2). Their skills need
+    -- bell menu, but TeleportTo with its id works (the run, devtools F5). Their skills need
     -- nothing from the level (Skill_08 spawns its own pillars): this is about the setting, not a fix.
     -- 魔渊 may have a second original spot (Pangzhen's 龙柱, Bell_DP_004): phases cannot change maps, so Xigu.
     { key = "xigu_pillar", kind = "own",  map = "/Game/Maps/B02/PBZ_Xigu_WP",                       bell = "DP_001",       zh = "龙柱",           en = "The Lóng Pillar",             x = -38650,  y = 234117, z = 10009000, yaw = 103, boss = "BP_Monster_MoTian_LongZhu_01" },

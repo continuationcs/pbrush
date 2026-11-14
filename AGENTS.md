@@ -13,6 +13,10 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
   top-of-screen Gauntlet HUD.
 - Copy style (`doc/COPY.md`): plain words; items of one kind keep the same character count (entry 4 chars,
   modes 2 chars); descriptions are two parts, one poetic line then one plain line. zh-Hans and English.
+- **Point out copy mistakes in the user's requests** (user rule, 2026-11-14): when text the user asks for looks
+  wrong (a wrong or look-alike character, a typo, a name that clashes with an existing one), say so and ask
+  before using it, e.g. 残影试练 → 残影试炼 (练/炼), or 残影试炼 sharing 试炼 with the Trial mode. Do not
+  silently copy it, and do not silently "fix" it either.
 - Controller first: every new UI must be reachable and usable with a gamepad.
 - Feel native: reuse the game's widgets (`W_DialogueButton`, `WB_TipsText`, `wb_settlement`), never draw custom
   UI when a game widget exists. Never write into the game save.
@@ -25,7 +29,7 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
 - **Some bells cannot be travelled to from the bell menu** (龙柱 `Bell_DP_001`, in Xigu's separate Discordance
   space), yet `PBZSaveLoadSubsystem:TeleportTo` with the bell id takes the player there and the run works. A
   boss's original battlefield in such a space is an arena of kind `own` (as 尊主封印地); to work on it, set
-  `FOCUS` in `devtools.lua` (Ctrl+F2 goes there).
+  `FOCUS` in `devtools.lua` (F5 goes there).
 - A test round is expensive, so make one round answer the question: log each stage of a new integration (object
   found → page recognised → row added → row on screen → clicked) so the log shows where it stopped, and put a
   read-only description of what was found (names, classes, counts) in the debug log. A missing log line means
@@ -102,7 +106,9 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
   apart (2026-11-13); UE4SS unregisters the old instance's hooks but the log shows nothing about its
   `NotifyOnNewObject` callbacks or loops. For a test round that must be trusted, restart the game instead.
 - `python src\tools\build_release.py <version>` builds `out\BossRush-<version>.zip` with `debug = false` in the copy
-  and refuses scripts that contain debug key bindings. The repo keeps `debug = true`.
+  and refuses scripts that contain debug key bindings. The repo keeps `debug = true`. The version lives only in
+  `Scripts/version.lua` (`"dev"` in the repo; the build writes `<version>` into the copy, and stops if it cannot);
+  the result screen shows it after the entry name.
 - Nexus page: mod 1099 (`doc/release/NEXUS_PAGE.md`). Updates go to the same page as a new file version. Nexus sits
   behind Cloudflare; a human check that appears must be passed by the user, never by an agent.
 
@@ -268,12 +274,13 @@ shell turns them into real characters. Use the Edit/Write tools, or a Python scr
 - Cross-map travel: `PBZSaveLoadSubsystem:TeleportTo(FName("/Game/Maps/..."), transform, FName("Bell_<id>"))`.
   It saves and loads, so no separate autosave handling is needed.
 - Read input with `PlayerController:IsInputKeyDown({KeyName = FName("Gamepad_FaceButton_Bottom")})`.
-- Development keys (`devtools.lua`, development builds only; user decision 2026-11-14): F1 god mode, F2 mark a
-  spot for a new arena and survey it right there (grades on screen), Ctrl+F2 go to the `FOCUS` arena (set it in
-  `devtools.lua` for an arena whose bell the bell menu cannot reach), F3 arena survey (only the `FOCUS` arena when
-  one is set), F4 forced error. Plain F2 ignores presses with Ctrl held (a plain binding may also fire on
-  Ctrl+F2). The discovery probe mod was retired (git history has it; UE4SS's own keybinds dump the CXX headers). **Never bind F11**:
-  the game uses it (user report). Pick new keys with a modifier on an existing F key rather than a free letter.
+- Development keys (`devtools.lua`, development builds only; user decisions 2026-11-14): **single keys only, no
+  combinations**: F1 god mode, F2 mark a spot for a new arena and survey it right there (grades on screen), F3
+  arena survey (only the `FOCUS` arena when `devtools.lua` sets one), F4 forced error, F5 go to the `FOCUS` arena
+  (for an arena whose bell the bell menu cannot reach). The discovery probe mod was retired (git history has it;
+  UE4SS's own keybinds dump the CXX headers). **Never bind F10, F11 or F12**: F10 opens the UE4SS console
+  (ConsoleEnablerMod), F11 is the game's (user report), F12 is Steam's screenshot. A new tool takes the next free
+  F key (F6-F9); UE4SS's own keys all use Ctrl.
   Anything a dev tool changes in the game must survive a hot reload: god mode keeps the player's own values in a
   file (`%TEMP%\BossRush_god_base.tsv`) and the next load restores them; kept only in memory, each reload took
   the boosted values as the originals (player health 3085 -> 30,855,000, 2026-11-14).

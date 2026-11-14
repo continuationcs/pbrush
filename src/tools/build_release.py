@@ -1,4 +1,4 @@
-"""Build the Nexus release zip of the Boss Challenge mod.
+"""Build the Nexus release zip of the Trial of Echoes (BOSS RUSH) mod.
 
 Copies src/mod/BossRush into out/, switches the copy to a release configuration (debug log off), adds the
 README and enabled.txt, and zips it so the archive extracts straight into the game's UE4SS Mods folder:
@@ -35,10 +35,12 @@ def main():
         sys.exit('config.lua: could not switch debug off')
     cfg.write_text(text, encoding='utf-8', newline='\n')
 
-    # Version stamp in main.lua's first line.
-    main_lua = mod / 'Scripts' / 'main.lua'
-    m = main_lua.read_text(encoding='utf-8')
-    main_lua.write_text(f'-- Boss Challenge {version}\n' + m, encoding='utf-8', newline='\n')
+    # The version the mod shows (result screen): version.lua returns "dev" in the repo.
+    ver = mod / 'Scripts' / 'version.lua'
+    text, n = re.subn(r'return "dev"', f'return "{version}"', ver.read_text(encoding='utf-8'))
+    if n != 1:
+        sys.exit('version.lua: could not set the version')
+    ver.write_text(text, encoding='utf-8', newline='\n')
 
     (mod / 'enabled.txt').write_text('', encoding='ascii')
     for name in ('README.txt', 'README_zh.txt'):

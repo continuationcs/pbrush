@@ -186,14 +186,14 @@ local function finish(result)
         title = title,
         rows = {
             -- Layout (user, 2026-11-14): mode and boss / group (+ new record) centred; time | best;
-            -- defeated | difficulty. The small line under the title is the entry's name.
+            -- defeated | difficulty. The small line under the title is the entry's name and the mod version.
             { run.mode or "", name },
             { T("time"), run.t0 and records.fmt(secs) or "—" },
             { T("best"), best_line },
             { T("defeated"), string.format("%d / %d", defeated, #run.queue) },
             { T("difficulty"), i18n.difficulty(run.difficulty) },
         },
-        sub = T("entry"),
+        sub = T("entry") .. " " .. require("version"),
         foot = T("going_home"),
     }
     local wait = config.settle_seconds
