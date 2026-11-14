@@ -66,15 +66,16 @@ end
 -- No arena choice for the player (user decision): if they already stand at a suitable arena, fight there;
 -- otherwise pick one at random. Suitable = this boss's origin, or a scenic spot whose bell is rung; a boss with
 -- its own battlefield is fought only there. The Realm of Mirage is the fallback when nothing else is available.
+-- exclude: optional set of arena keys to leave out (an arena found occupied on arrival, run.lua).
 -- Returns arena, in_place.
-function M.pick(boss_id, rung, map, pos, radius)
+function M.pick(boss_id, rung, map, pos, radius, exclude)
     local pool = {}
     local own = boss_id and M.own(boss_id)
     if own then
         pool = { own }
     else
         for _, e in ipairs(M.for_boss(boss_id, rung)) do
-            if e.arena.kind ~= "jhsy" then pool[#pool + 1] = e.arena end
+            if e.arena.kind ~= "jhsy" and not (exclude and exclude[e.arena.key]) then pool[#pool + 1] = e.arena end
         end
     end
     for _, a in ipairs(pool) do

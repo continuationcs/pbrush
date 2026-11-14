@@ -281,6 +281,14 @@ shell turns them into real characters. Use the Edit/Write tools, or a Python scr
   run started reading every summon's health before checking `IsDead` (2026-11-13). Check `IsDead` first.
 - Cross-map travel: `PBZSaveLoadSubsystem:TeleportTo(FName("/Game/Maps/..."), transform, FName("Bell_<id>"))`.
   It saves and loads, so no separate autosave handling is needed.
+- **Leaving the Realm of Mirage** (`TeleportToBellFromJhsy`) lands at the bell it was *entered from*, which is not
+  always the run's starting bell: after a run moved there from an occupied arena it landed at that arena's bell,
+  the return wait timed out and the player's state was never restored (2026-11-14). `go_home` makes a second trip
+  once out, and restores the state even when the return times out. Never end a run without `restore`.
+- **In a new playthrough (二周目) a boss not yet beaten there stands at its own battlefield**: 彭猛 at 斧老大斩落处
+  made a second 彭猛 in the fight (2026-11-14). On arrival `run.lua` looks for living roster bosses within 60 m;
+  a scenic arena is swapped (then the Realm of Mirage), an own arena ends the run with a notice. Bells also reset
+  in a new playthrough, so few scenic arenas are offered early on.
 - Read input with `PlayerController:IsInputKeyDown({KeyName = FName("Gamepad_FaceButton_Bottom")})`.
 - Development keys (`devtools.lua`, development builds only; user decisions 2026-11-14): **single keys only, no
   combinations**: F1 god mode, F2 mark a spot for a new arena and survey it right there (grades on screen), F3

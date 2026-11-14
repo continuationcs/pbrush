@@ -10,11 +10,15 @@ local ui = require("ui")
 local records = require("records")
 local settle = require("settle")
 local i18n = require("i18n")
+local arenas = require("arenas")
 local UEHelpers = require("UEHelpers")
 
 local M = {}
 
 local run = nil   -- active run, or nil
+
+-- Defined with the arrival wait below; used by go_home too.
+local loading
 
 local function phase(p)
     run.phase = p
@@ -111,21 +115,39 @@ local function go_home()
     local tp = FindFirstOf("PBZTeleportSubsystem")
     local in_jhsy = false
     pcall(function() in_jhsy = tp:IsInJhsy(U.pawn()) end)
+    -- The game's own way out of the Realm of Mirage lands at the bell it was entered from. That is the origin,
+    -- unless the run went there from an occupied arena (arena_taken): then that arena's bell, and a second trip
+    -- takes the player home once they are out (user test 2026-11-14: left at the arena's bell, state not restored).
+    local leg2 = not in_jhsy
     if in_jhsy then
-        -- The game's own way out of the Realm of Mirage lands at the bell it was entered from: the origin.
         tp:TeleportToBellFromJhsy({})
     else
         teleport_to(o.map, o.x, o.y, o.z, o.yaw, o.bell)
     end
     -- Once the player stands at the starting bell again, put their state back and end the run.
-    local snap, tries = run.snap, 0
+    local snap, tries, settled = run.snap, 0, 0
     U.every(500, function()
         tries = tries + 1
-        if tries > 120 then run = nil return true end
+        if tries > 120 then
+            U.log("run: never got back to the starting bell; state restored where the player is")
+            restore(snap) run = nil
+            return true
+        end
         local okd, d = pcall(function() return U.dist(U.pawn():K2_GetActorLocation(), { X = o.x, Y = o.y, Z = o.z }) end)
         if okd and d < 2000 then
             U.after(1500, function() restore(snap) run = nil end)
             return true
+        end
+        if not leg2 then
+            -- Out of the Realm of Mirage somewhere else: wait until that place has loaded, then go home.
+            local still_in = true
+            pcall(function() still_in = tp:IsInJhsy(U.pawn()) end)
+            settled = (okd and not still_in and not loading()) and settled + 1 or 0
+            if settled >= 4 then
+                leg2 = true
+                U.log("run: out of the Realm of Mirage away from the starting bell; going home")
+                teleport_to(o.map, o.x, o.y, o.z, o.yaw, o.bell)
+            end
         end
         return false
     end)
@@ -647,7 +669,7 @@ end
 -- (~4 s, activated while it is up). Read in game 2026-11-14 with every candidate logged; IsLoadingLevel,
 -- PBZDestinationLoadingSubsystem:IsDestinationLoadingActive and WB_TempLoadingScreen never changed.
 local LOADING_SCREEN = "WB_AdditionalLoading_C"
-local function loading()
+function loading()
     for _, w in ipairs(U.find_all(LOADING_SCREEN)) do
         local active = false
         pcall(function() active = w:IsActivated() == true end)
@@ -660,8 +682,53 @@ end
 -- the 「强敌将至」 notice stays up that long.
 local GRACE_MS = 3000
 
+-- A boss of the roster still alive in the level near the arena centre: the game's own, not ours (none is spawned
+-- yet on arrival). In a new playthrough (二周目) a boss not yet beaten stands at its own battlefield: 彭猛 at
+-- 斧老大斩落处 joined the fight as a second 彭猛 (user test 2026-11-14). Returns the class names found.
+local NATIVE_RADIUS = 6000
+local roster_classes
+local function native_bosses_near(center)
+    if not roster_classes then
+        roster_classes = {}
+        for _, r in ipairs(require("roster")) do roster_classes[r.class:match("%.([^.]+)$") or ""] = true end
+    end
+    local found = {}
+    for _, npc in ipairs(U.find_all("PBZCharacter_NPC")) do
+        local name = npc:GetClass():GetFName():ToString()
+        if roster_classes[name] then
+            local dead = true
+            pcall(function() dead = npc:IsDead() end)        -- IsDead first: never read a dying actor
+            if not dead and U.dist(npc:K2_GetActorLocation(), center) < NATIVE_RADIUS then found[#found + 1] = name end
+        end
+    end
+    return found
+end
+
+local wait_arrival
+
+-- The arena is held by a living native boss: fight somewhere else (another arena, or the Realm of Mirage when
+-- none is left). A boss fought only on its own battlefield cannot move: the run ends before anything spawns,
+-- and the player is told to beat the boss in this playthrough first.
+local function arena_taken(natives)
+    U.log("run: arena %s held by a native boss (%s)", run.arena.key, table.concat(natives, ", "))
+    if run.arena.kind == "own" then
+        ui.toast(i18n.t("arena_taken_own"), 5)
+        U.after(2000, function() finish("error") end)
+        return
+    end
+    run.excluded = run.excluded or {}
+    run.excluded[run.arena.key] = true
+    run.arena = arenas.pick(run.origin_of, U.active_bells(), nil, nil, 0, run.excluded)
+    run.in_place = false
+    U.log("run: moving to %s", run.arena.key)
+    ui.toast(i18n.t("arena_taken"), 3)
+    phase("travelling")
+    go_to_arena()
+    wait_arrival()
+end
+
 -- Wait for the arena to load: loading finished, and the player standing near the arena centre for a moment.
-local function wait_arrival()
+function wait_arrival()
     local stable, tries, seen = 0, 0, nil
     U.every(500, function()
         if not run or run.phase ~= "travelling" then return true end
@@ -676,6 +743,8 @@ local function wait_arrival()
         end
         stable = (near and not busy) and stable + 1 or 0
         if stable >= 4 then
+            local natives = native_bosses_near(run.center)
+            if #natives > 0 then arena_taken(natives) return true end
             phase("arrived")
             ui.toast(i18n.t("incoming"), GRACE_MS / 1000)
             U.after(GRACE_MS, spawn_next)
@@ -721,7 +790,8 @@ function M.start(queue, difficulty, arena, opts)
     if run then U.log("run: already running") return end
     opts = opts or {}
     run = { queue = queue, fi = 0, si = 0, actors = {}, identity_tags = {}, difficulty = difficulty, arena = arena, origin = save_origin(),
-            record_key = opts.record_key, mode = opts.mode, name = opts.name, in_place = opts.in_place, snap = snapshot(),
+            record_key = opts.record_key, mode = opts.mode, name = opts.name, in_place = opts.in_place,
+            origin_of = opts.origin_of, snap = snapshot(),
             helpers = {} }
     U.log("run: start %d boss(es), difficulty %d, arena %s, from %s / %s", #queue, difficulty, arena.key, run.origin.map, run.origin.bell)
     phase("travelling")

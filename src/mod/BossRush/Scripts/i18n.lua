@@ -12,6 +12,9 @@ local S = {
     lose         = { "饮恨", "UNDYING GRUDGE" },
     next_echo    = { "残影将至", "Another echo stirs" },
     incoming     = { "强敌将至，准备迎战", "A foe approaches. Steel yourself." },
+    -- A living native boss holds the arena (a new playthrough): fight elsewhere, or not at all on its own ground.
+    arena_taken  = { "此地已有强敌盘踞，另觅战场", "A foe already holds this ground. Seeking another." },
+    arena_taken_own = { "此地强敌本尊尚在，本周目击败后再来", "The foe itself still holds this ground. Defeat it in this playthrough first." },
     difficulty   = { "难度", "Difficulty" },
     defeated     = { "击败", "Defeated" },
     going_home   = { "按确认键，自里武林醒转，回到铃铛之侧。", "Press confirm to stir from the Discordance and wake beside the Bell." },

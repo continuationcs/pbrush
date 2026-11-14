@@ -87,7 +87,7 @@ local function begin(queue, opts)
     pcall(function() pos = U.pawn():K2_GetActorLocation() end)
     local arena, in_place = arenas.pick(origin_of, U.active_bells(), U.world_path(), pos, config.in_place_radius)
     if not arena then U.log("no arena available") return end
-    opts.in_place = in_place
+    opts.in_place, opts.origin_of = in_place, origin_of
     U.log("arena: %s (%s)", arena.key, in_place and "here" or "travel")
     menu.close()
     U.after(300, function() run.start(queue, U.game_difficulty(), arena, opts) end)
