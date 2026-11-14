@@ -1,8 +1,11 @@
 -- Development tools (never shipped: src/tools/build_release.py leaves this file out). Keys F1-F4 (user decision,
 -- 2026-11-14; the game itself uses F11):
 --   F1  god mode: off -> unkillable + attack x10 -> unkillable + one-hit kills -> off
---   F2  mark the spot the player stands on and the direction they face, for a new arena (marks.tsv)
---   F3  arena survey: open, level ground around every arena's player and boss points (doc/DESIGN.md 5.0a)
+--   F2  mark the spot the player stands on and the direction they face, for a new arena (marks.tsv), and
+--       survey it right there (grades shown on screen)
+--   Ctrl+F2  go to the arena in FOCUS (for one whose bell the player cannot travel to, e.g. 龙柱)
+--   F3  arena survey: open, level ground around every arena's player and boss points (doc/DESIGN.md 5.0a);
+--       only the FOCUS arena when one is set
 --   F4  raise an error inside the mod, to check the stop path (log, tip strip, entry removed, run ended)
 -- Results: [BossRush] DEV lines in UE4SS.log and dev.tsv / marks.tsv in the mod folder.
 local U = require("util")
@@ -17,6 +20,10 @@ local function append(file, line)
     local f = io.open(DIR .. file, "a")
     if f then f:write(line .. "\n") f:close() end
 end
+
+-- The arena being worked on (arenas.lua key), or nil. 龙柱's bell cannot be travelled to from the bell menu
+-- (2026-11-14), so Ctrl+F2 takes the player there to mark a new spot, and F3 re-surveys only it.
+local FOCUS = nil      -- e.g. "xigu_pillar" (done 2026-11-14)
 
 local function out(line)
     U.log("DEV %s", line)
@@ -109,7 +116,8 @@ function M.install(run, arenas)
         local line = string.format("%s\t%.0f\t%.0f\t%.0f\tyaw %.0f", tostring(U.world_path()), l.X, l.Y, l.Z, yaw)
         append("marks.tsv", os.date("%Y-%m-%d %H:%M:%S") .. "\t" .. line)
         out("mark " .. line)
-        ui.toast(string.format("调试：已标点 %.0f %.0f %.0f，朝向 %.0f", l.X, l.Y, l.Z, yaw), 3)
+        ui.toast(string.format("调试：已标点 %.0f %.0f %.0f，朝向 %.0f，测量中", l.X, l.Y, l.Z, yaw), 3)
+        return { key = "mark", x = l.X, y = l.Y, z = l.Z, yaw = yaw }
     end
 
     -- ------------------------------------------------------------ arena survey (F3)
@@ -117,6 +125,7 @@ function M.install(run, arenas)
     -- the boss appears (8 m ahead), how far the ground stays open in 16 directions: walkable (navigation mesh),
     -- level (no step or slope over MAX_STEP_DZ between samples) and unobstructed (the path there is not more
     -- than DETOUR times the straight line). One direction per tick. Then back to the starting bell.
+    -- F2 measures the spot just marked the same way, where the player stands (no travel).
     local DIRS, STEP, REACH = 16, 200, 3000           -- cm
     local MAX_STEP_DZ = 150
     local DETOUR = 1.3
@@ -159,6 +168,13 @@ function M.install(run, arenas)
         return open, why, maxdz
     end
 
+    -- Grade by doc/DESIGN.md 5.0a.
+    local function grade(enough, min_m, dz_m)
+        if enough >= 14 and min_m >= 10 and dz_m <= 3 then return "良" end
+        if enough >= 11 and min_m >= 6 and dz_m <= 4 then return "可" end
+        return "差"
+    end
+
     local function summary(arena, label, res)
         local opens, reasons, enough, maxdz = {}, {}, 0, 0
         for _, r in ipairs(res) do
@@ -172,17 +188,26 @@ function M.install(run, arenas)
         for k, v in pairs(reasons) do why[#why + 1] = k .. " " .. v end
         local dirs = {}
         for _, r in ipairs(res) do dirs[#dirs + 1] = string.format("%.0f", r.open / 100) end
-        out(string.format("survey\t%s\t%s\topen>=15m %d/%d\tmin %.0f m\tmedian %.0f m\tmax dz %.1f m\t%s\tdirs %s",
-            arena.key, label, enough, #res, opens[1] / 100, opens[math.floor(#opens / 2) + 1] / 100, maxdz / 100,
+        local g = grade(enough, opens[1] / 100, maxdz / 100)
+        out(string.format("survey\t%s\t%s\t%s\topen>=15m %d/%d\tmin %.0f m\tmedian %.0f m\tmax dz %.1f m\t%s\tdirs %s",
+            arena.key, label, g, enough, #res, opens[1] / 100, opens[math.floor(#opens / 2) + 1] / 100, maxdz / 100,
             table.concat(why, ", "), table.concat(dirs, " ")))
+        return string.format("%s %s %d/16 最窄 %.0f m", label == "player" and "站位" or "首领点", g, enough, opens[1] / 100)
     end
 
     local surveying = false
-    local function survey()
+    -- here: a spot to measure where the player stands ({ key, x, y, z, yaw }), instead of travelling the arenas.
+    local function survey(here)
         if surveying then return end
         if run.active() then out("survey: a challenge is running") return end
         local list = {}
-        for _, a in ipairs(arenas.all()) do if a.kind ~= "jhsy" then list[#list + 1] = a end end
+        if here then
+            list = { here }
+        else
+            for _, a in ipairs(arenas.all()) do
+                if a.kind ~= "jhsy" and (not FOCUS or a.key == FOCUS) then list[#list + 1] = a end
+            end
+        end
         local pl = U.pawn():K2_GetActorLocation()
         local home = { map = U.world_path(), x = pl.X, y = pl.Y, z = pl.Z, bell = "None" }
         pcall(function() home.bell = FindFirstOf("BellManager").RecentlyInteractedBellID:ToString() end)
@@ -193,19 +218,28 @@ function M.install(run, arenas)
         -- A scenic arena is offered only once its bell is rung: show whether each bell id is in the rung set.
         local rung = U.active_bells()
         for _, a in ipairs(list) do
-            out(string.format("survey\t%s\tbell %s rung %s", a.key, U.bell_name(a.bell), tostring(rung[U.bell_name(a.bell)] == true)))
+            if a.bell then
+                out(string.format("survey\t%s\tbell %s rung %s", a.key, U.bell_name(a.bell), tostring(rung[U.bell_name(a.bell)] == true)))
+            end
         end
         local i, step, ticks, still, jobs, res = 0, "go", 0, 0, nil, nil
         U.every(100, function()
             ticks = ticks + 1
             if step == "go" then
                 i = i + 1
+                if i > #list and here then
+                    if was_god == 0 then god_set(0) end
+                    surveying = false
+                    out("survey: done")
+                    return true
+                end
                 if i > #list then
                     FindFirstOf("PBZSaveLoadSubsystem"):TeleportTo(FName(home.map), U.transform(home.x, home.y, home.z, 0), FName(home.bell))
                     step, ticks = "home", 0
                     return false
                 end
                 local a = list[i]
+                if here then step, ticks, still = "wait", 0, 0 return false end
                 FindFirstOf("PBZSaveLoadSubsystem"):TeleportTo(FName(a.map), U.transform(a.x, a.y, a.z, a.yaw), FName(U.bell_name(a.bell)))
                 step, ticks, still = "wait", 0, 0
             elseif step == "wait" then
@@ -239,8 +273,9 @@ function M.install(run, arenas)
                     table.insert(res[job[1]], { open = open, why = why, dz = dz })
                     return false
                 end
-                summary(list[i], "player", res.player)
-                if #res.boss > 0 then summary(list[i], "boss", res.boss) end
+                local lines = { summary(list[i], "player", res.player) }
+                if #res.boss > 0 then lines[#lines + 1] = summary(list[i], "boss", res.boss) end
+                if here then ui.toast("调试：" .. table.concat(lines, "；"), 8) end
                 step = "go"
             elseif step == "home" then
                 local near = false
@@ -275,10 +310,24 @@ function M.install(run, arenas)
     end)
 
     U.key(Key.F1, function() god_set((god.mode + 1) % (#MODES + 1)) end)
-    U.key(Key.F2, mark)
+    -- Plain F2 may fire with Ctrl+F2 too: ignore it while Ctrl is held (keys are readable in gameplay).
+    U.key(Key.F2, function()
+        if U.any_key_down({ "LeftControl", "RightControl" }) then return end
+        survey(mark())
+    end)
+    U.key(Key.F2, function()
+        local a
+        for _, x in ipairs(arenas.all()) do if x.key == FOCUS then a = x end end
+        if not a then out("go: no FOCUS arena") return end
+        if run.active() then out("go: a challenge is running") return end
+        out("go to " .. a.key)
+        ui.toast("调试：前往 " .. a.zh, 2)
+        FindFirstOf("PBZSaveLoadSubsystem"):TeleportTo(FName(a.map), U.transform(a.x, a.y, a.z, a.yaw), FName(U.bell_name(a.bell)))
+    end, { ModifierKey.CONTROL })
     U.key(Key.F3, survey)
     U.key(Key.F4, function() error("devtools: forced error (F4)") end)
-    U.log("devtools ready: F1 god mode, F2 mark a spot, F3 arena survey, F4 forced error")
+    U.log("devtools ready: F1 god mode, F2 mark a spot, Ctrl+F2 go to %s, F3 arena survey%s, F4 forced error",
+        tostring(FOCUS), FOCUS and (" (" .. FOCUS .. " only)") or "")
 end
 
 return M

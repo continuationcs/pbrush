@@ -4,6 +4,44 @@
 
 上传文件：`out/BossRush-0.1.4.zip`（0.1.3 未发布，直接跳到 0.1.4）；主图：`doc/release/main_image.png`（1920×1080，上传到 Images，设为 primary）
 
+## 0.1.5 更新说明（待发布，下次发版时用；版本号发布时再定）
+
+自 0.1.4（362d429）以来的改动，发布前补上之后新增的内容。
+
+```
+0.1.5
+- Renamed: the Bell menu entry is now Trial of Echoes (was Boss Challenge).
+- Bosses with several phases are one entry: pick the boss and fight all its phases straight on, no healing in
+  between, with a "Second Phase" notice. Yucong's second phase brings its three forms at once; the Gold-Masked
+  One is followed by Mo Yuan; the Seven-Stars Formation's Chief Disciple is followed by his Sword of Despair
+  together with the Red-Robed Swordswoman. Duel lists 50 entries for 66 bosses. Best times of these bosses
+  start fresh.
+- The Gold-Masked One and Mo Yuan are fought at their own battlefield, The Lóng Pillar, in Duel only.
+- Fixed: the Chief Disciple of the Seven-Stars Formation was the wrong character; the Red-Robed Swordswoman is new.
+- Fixed: the Hunt's second phase vanished; the mod stopped in the middle of some fights.
+- Gauntlet regrouped: 11 groups of 4-5 fights, each building up to its strongest boss, with four new groups
+  (Madmen of the Wulin, Strange Tales, Veterans of War, Shadows of the Sects). Best times are kept.
+- Result screen: the title shows the result (it showed a placeholder before); the screen now shows the mode and
+  boss, time, best time, bosses defeated and the game difficulty.
+- Bell menu: the entry keeps working after coming back from a sub-screen (Ability Cultivation ...).
+```
+
+中文（小黑盒 / Nexus 中文段落用）：
+
+```
+0.1.5
+- 改名：铃铛菜单的入口改为「残影试炼」（原「强敌挑战」）。
+- 多阶段首领合并为一位：选中后各阶段连着打完，阶段之间不回血，提示「第二阶段」。玉琮二阶段钢刃、寒冰、混沌同时出现；
+  金面具黑衣人之后是魔渊；七星剑阵：大师兄之后是大师兄的绝望剑意和红衣女剑客一起登场。单挑共 50 行、66 位首领。
+  这些首领的最佳用时重新计算。
+- 金面具黑衣人和魔渊固定在原作战场「龙柱」打，只进单挑。
+- 修复：七星剑阵：大师兄原先是错的角色；新增红衣女剑客。
+- 修复：追命二阶段消失；部分战斗中途 mod 停止工作。
+- 连战重新分组：共 11 组，每组 4～5 场，越打越强，新增痴狂众生、妖异志怪、沙场宿将、名门残影；原有最佳用时保留。
+- 结算画面：标题正确显示胜负（之前显示占位文字）；显示模式和首领、用时、最佳、击败数和游戏难度。
+- 铃铛菜单：从能力修行等子页面返回后，入口仍能正常选中和使用。
+```
+
 ## 0.1.4 更新说明（Changelog / 文件说明）
 
 ```
@@ -81,7 +119,7 @@ Edit [code]BossRush\Scripts\config.lua[/code] and restart the game: boss scaling
 
 [size=4][b]Known limitations[/b][/size]
 [list]
-[*]66 bosses are available. The Lion Dance Grandmaster's second phase is fought only at its own battlefield (The Sealed Lion), in Duel only. Eight bosses whose skills rely on their own level are not offered yet: the four Acolytes, Dusk, Leng Tu, and Zuo Shang (first form and True Lóng).
+[*]66 bosses are available. The Lion Dance Grandmaster's second phase is fought only at its own battlefield (The Sealed Lion), in Duel only; so are the Gold-Masked One and Mo Yuan, at The Lóng Pillar. Eight bosses whose skills rely on their own level are not offered yet: the four Acolytes, Dusk, Leng Tu, and Zuo Shang (first form and True Lóng).
 [*]The roguelike Trial mode is not included yet.
 [*]Text: Simplified Chinese or English.
 [*]Made and tested on the Steam version, game build CL-302256.
@@ -122,7 +160,7 @@ Edit [code]BossRush\Scripts\config.lua[/code] and restart the game: boss scaling
 
 [b]兼容性[/b]：只增加内容，不替换游戏文件、不改存档，可与其他 UE4SS Lua mod、.pak mod 共存；只可能与改动铃铛菜单、游戏菜单、对话选项按钮或提示条的 mod 冲突；改怪物数值或难度的 mod 会连带影响挑战首领的强度。
 
-[b]已知限制[/b]：目前开放 66 位首领（舞狮尊主二阶段只在「尊主封印地」打、只进单挑），技能依赖原关卡的 8 位首领（灭法之法四人、荡秽、冷荼、左殇初见与龙体）暂未开放；肉鸽玩法「试炼」暂未加入；文字为简体中文或英文。
+[b]已知限制[/b]：目前开放 66 位首领（舞狮尊主二阶段只在「尊主封印地」打，金面具黑衣人和魔渊只在「龙柱」打，都只进单挑），技能依赖原关卡的 8 位首领（灭法之法四人、荡秽、冷荼、左殇初见与龙体）暂未开放；肉鸽玩法「试炼」暂未加入；文字为简体中文或英文。
 ```
 
 ## 上传前自检

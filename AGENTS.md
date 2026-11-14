@@ -18,8 +18,14 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
   UI when a game widget exists. Never write into the game save.
 - The user tests in rounds ("做完一轮, 我去统一测试"): batch related changes, then give one test list. New bosses
   land as `state = "testing"` (development builds only) and become `"open"` after the user confirms in game.
-- New or moved arenas: mark the spot with F2, then run the arena survey (development build, F3), and grade them by the standard in
-  `doc/DESIGN.md` §5.0a before offering them.
+- New or moved arenas: mark the spot with F2 (it surveys the spot at once), then run the arena survey
+  (development build, F3), and grade them by the standard in `doc/DESIGN.md` §5.0a before offering them.
+  Never take a bell's teleport point as the standing spot: the 龙柱 bell's point was a cramped nook (3/16 open,
+  0 m); have the user mark one in the open ground (2026-11-14).
+- **Some bells cannot be travelled to from the bell menu** (龙柱 `Bell_DP_001`, in Xigu's separate Discordance
+  space), yet `PBZSaveLoadSubsystem:TeleportTo` with the bell id takes the player there and the run works. A
+  boss's original battlefield in such a space is an arena of kind `own` (as 尊主封印地); to work on it, set
+  `FOCUS` in `devtools.lua` (Ctrl+F2 goes there).
 - A test round is expensive, so make one round answer the question: log each stage of a new integration (object
   found → page recognised → row added → row on screen → clicked) so the log shows where it stopped, and put a
   read-only description of what was found (names, classes, counts) in the debug log. A missing log line means
@@ -263,8 +269,10 @@ shell turns them into real characters. Use the Edit/Write tools, or a Python scr
   It saves and loads, so no separate autosave handling is needed.
 - Read input with `PlayerController:IsInputKeyDown({KeyName = FName("Gamepad_FaceButton_Bottom")})`.
 - Development keys (`devtools.lua`, development builds only; user decision 2026-11-14): F1 god mode, F2 mark a
-  spot for a new arena, F3 arena survey, F4 forced error. The discovery probe mod was retired (git history has
-  it; UE4SS's own keybinds dump the CXX headers). **Never bind F11**:
+  spot for a new arena and survey it right there (grades on screen), Ctrl+F2 go to the `FOCUS` arena (set it in
+  `devtools.lua` for an arena whose bell the bell menu cannot reach), F3 arena survey (only the `FOCUS` arena when
+  one is set), F4 forced error. Plain F2 ignores presses with Ctrl held (a plain binding may also fire on
+  Ctrl+F2). The discovery probe mod was retired (git history has it; UE4SS's own keybinds dump the CXX headers). **Never bind F11**:
   the game uses it (user report). Pick new keys with a modifier on an existing F key rather than a free letter.
   Anything a dev tool changes in the game must survive a hot reload: god mode keeps the player's own values in a
   file (`%TEMP%\BossRush_god_base.tsv`) and the next load restores them; kept only in memory, each reload took
