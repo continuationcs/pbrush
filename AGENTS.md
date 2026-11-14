@@ -171,8 +171,11 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
   language setting (`GameUserSettings.ini` `CultureName`) after mods load, so a value read at load is the
   system language (an English game showed 强敌挑战).
 - Setting arbitrary Lua fields on UObjects fails; keep per-object state in Lua tables keyed by `GetFullName()`.
-- **Spawning bosses**: `BeginDeferredActorSpawnFromClass` + `FinishSpawningActor`; AI, health bar and music come by
-  themselves. Spawned bosses have `Level = 0`; writing `Level` changes nothing, writing attributes does
+- **Spawning bosses**: `BeginDeferredActorSpawnFromClass` + `FinishSpawningActor`; AI and health bar come by
+  themselves, and music for most bosses. Not for all: 金面具黑衣人 / 魔渊 had no music in a random arena (Nexus
+  report by townnet on 0.1.4) but do at their own battlefield 龙柱 (user test 2026-11-14), so their music seems
+  tied to the level. When a player reports a silent fight, check whether that boss has music at its own
+  battlefield. Spawned bosses have `Level = 0`; writing `Level` changes nothing, writing attributes does
   (`AttributeSetBase.X.BaseValue/CurrentValue`). The game formula is `base × (1 + curve(level))`.
   Scale a stat's current value with its maximum when the boss starts full (Health, Sha-Chi): scaling only
   `Shachi_Max` left the boss's Sha-Chi gauge at 1/12 (player report, 0.1.4).
