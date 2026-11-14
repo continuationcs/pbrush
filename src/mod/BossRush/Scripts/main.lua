@@ -11,7 +11,7 @@ local roster = require("roster")
 local gauntlets = require("gauntlets")
 
 local T = i18n.t
--- Bosses per 单挑 page. With 下一页 / 上一页 / 返回 a page has 11 rows, three more than the bell menu's own column
+-- Rows per list page (单挑, 连战). With 下一页 / 上一页 / 返回 a page has 11 rows, three more than the bell menu's own column
 -- (8 with 强敌挑战), which it was laid out for; 65 bosses in a release build make 9 pages.
 local PAGE = 8
 
@@ -63,47 +63,54 @@ local function begin(queue, opts)
     U.after(300, function() run.start(queue, U.game_difficulty(), arena, opts) end)
 end
 
--- Page layout (user request): 下一页 / 上一页 first (both wrap around: 上一页 on the first page goes to the last),
--- then the bosses, then 返回. focus: the row to focus; 下一页 on entering (paging to find a boss is the common
--- action, user request), and after paging the paging row just used.
-show_bosses = function(page, focus)
-    local list = available()
-    if #list == 0 then
+-- A list page (单挑, 连战). Layout (user request): 下一页 / 上一页 first (both wrap around: 上一页 on the first page
+-- goes to the last), then PAGE rows, then 返回. rows = { {label, fn} }; reshow(page, focus) shows another page.
+-- focus: the row to focus; "paging" = 下一页 when there are pages, else the first row. After paging, the paging
+-- row just used keeps the focus.
+local function show_paged(rows, page, focus, reshow)
+    if #rows == 0 then
         menu.show({ { T("none"), function() end }, { T("back"), show_root, back = true } }, 1)
         return
     end
-    local pages = math.max(1, math.ceil(#list / PAGE))
+    local pages = math.max(1, math.ceil(#rows / PAGE))
     page = math.min(math.max(page or 1, 1), pages)
     local items = {}
     if pages > 1 then
-        items[#items + 1] = { T("next"), function() show_bosses(page % pages + 1, 1) end }
-        items[#items + 1] = { T("prev"), function() show_bosses((page - 2) % pages + 1, 2) end }
+        items[#items + 1] = { T("next"), function() reshow(page % pages + 1, 1) end }
+        items[#items + 1] = { T("prev"), function() reshow((page - 2) % pages + 1, 2) end }
     end
-    for i = (page - 1) * PAGE + 1, math.min(page * PAGE, #list) do
-        local b = list[i]
+    local first = #items + 1
+    for i = (page - 1) * PAGE + 1, math.min(page * PAGE, #rows) do items[#items + 1] = rows[i] end
+    items[#items + 1] = { T("back"), show_root, back = true }
+    if focus == "paging" then focus = 1 elseif focus == nil then focus = first end
+    menu.show(items, focus)
+end
+
+-- 单挑: enters with 下一页 focused (paging to find a boss is the common action, user request).
+show_bosses = function(page, focus)
+    local rows = {}
+    for _, b in ipairs(available()) do
         -- Difficulty follows the game's own setting; records are kept per difficulty.
-        items[#items + 1] = { i18n.name(b), function()
+        rows[#rows + 1] = { i18n.name(b), function()
             begin({ b }, { record_key = "duel/" .. b.id .. "/" .. U.game_difficulty(), title = T("duel") .. " · " .. i18n.name(b) })
         end }
     end
-    items[#items + 1] = { T("back"), show_root, back = true }
-    menu.show(items, focus or 1)
+    show_paged(rows, page, focus or "paging", show_bosses)
 end
 
-show_gauntlets = function()
+-- 连战: enters with the first group focused.
+show_gauntlets = function(page, focus)
     local avail = available()
-    local items = {}
+    local rows = {}
     for _, g in ipairs(gauntlets) do
         local q = gauntlet_queue(g, avail)
         if q then
-            items[#items + 1] = { string.format("%s · %d", i18n.name(g), #q), function()
+            rows[#rows + 1] = { string.format("%s · %d", i18n.name(g), #q), function()
                 begin(q, { record_key = "gauntlet/" .. g.key .. "/" .. U.game_difficulty(), title = T("gauntlet") .. " · " .. i18n.name(g) })
             end }
         end
     end
-    if #items == 0 then items[#items + 1] = { T("none"), function() end } end
-    items[#items + 1] = { T("back"), show_root, back = true }
-    menu.show(items, 1)
+    show_paged(rows, page, focus, show_gauntlets)
 end
 
 -- Every page's 返回 row is marked back = true: the back key (Esc / gamepad B) clicks it, one level up.

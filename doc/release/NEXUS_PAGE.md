@@ -45,7 +45,7 @@ Fight the game's bosses again, any time, from any Bell. The mode lives in the Be
 [size=4][b]Modes[/b][/size]
 [list]
 [*][b]Duel[/b] - pick any boss and fight it once more.
-[*][b]Gauntlet[/b] - fight a themed group of bosses back to back: Shadow Wardens, Puppet Theatre, The Young Mistress, Three Masks, Order's Finest, Two Faces of Death, Perils of the Wulin, A Thousand Echoes. A little health returns between fights; fall once and the run ends.
+[*][b]Gauntlet[/b] - fight a themed group of bosses back to back: Shadow Wardens, Puppet Theatre, The Young Mistress, Three Masks, Order's Finest, Two Faces of Death, Perils of the Wulin, Madmen of the Wulin, Strange Tales, Veterans of War, Shadows of the Sects, A Thousand Echoes. Each builds up to its strongest boss. A little health returns between fights; fall once and the run ends.
 [/list]
 
 [size=4][b]How it plays[/b][/size]

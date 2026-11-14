@@ -6,8 +6,9 @@ game's own buttons, fonts, transitions and boss health bar, so it plays like par
 
 MODES
   Duel       Pick any boss and fight it once more.
-  Gauntlet   Fight a themed group of bosses back to back (Shadow Wardens, Puppet Theatre, Three Masks,
-             Order's Finest, Two Faces of Death, Perils of the Wulin, A Thousand Echoes...).
+  Gauntlet   Fight a themed group of bosses back to back (12 groups: Shadow Wardens,
+             Puppet Theatre, Three Masks, Order's Finest, Two Faces of Death, Strange Tales,
+             Veterans of War, A Thousand Echoes...). Each builds up to its strongest boss.
              A little health returns between fights; fall once and the run ends.
 
 HOW IT PLAYS
