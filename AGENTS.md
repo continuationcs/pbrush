@@ -137,6 +137,9 @@ shell turns them into real characters. Use the Edit/Write tools, or a Python scr
   else: the argument check itself can crash natively. The mod calls `FindAllOf` only through `U.find_all`
   (checks the name, drops `Default__` objects; `lua_check.py` enforces it); `U.ref` / `U.get` / `U.load_class`
   check their paths.
+- **An object returned by a UFunction can be null**: check it with `U.valid` before any other call. Right after the
+  bell menu reactivated, `group:GetSelectedButtonBase()` returned null and `:GetFName()` on it crashed natively
+  (null + 0x18, 2026-11-14); `pcall` does not catch it. `menu.lua` reads the selection only through `selected_name`.
 - Reading a `TArray` property: `arr:ForEach(function(i, e) local obj = e:get() end)`.
 - **Out parameters**: pass a Lua table, UE4SS fills it (`nav:K2_ProjectPointToNavigation(world, p, out, nil,
   nil, extent)` then `out.X`; `GetJhsyBellTeleportTransform(out, cam)` then `out.Translation`).
@@ -184,6 +187,11 @@ shell turns them into real characters. Use the Edit/Write tools, or a Python scr
 - **The bell menu's script rewrites gamepad navigation** whenever the menu activates (opening, coming back from
   穿行 / 能力修行 ...), which cut our entry out of the Up/Down chain. While the menu lives, `menu.lua` relinks the
   visible column every 250 ms (links only: no selection, focus or style changes).
+- **It also makes a new button group on each reactivation**, holding only its own 8 buttons (log 2026-11-14:
+  `group new, entry index -1`). Our entry, left outside, stayed selected (bold) once the cursor passed it, and
+  its clicks (routed through the group) would be lost. `menu.lua` watches `IsActivated()` and on each return
+  re-finds the group through 穿行, adds the entry back (undoing the auto-selection only if the group had none),
+  clears a stale selection, then refreshes the entry's style (`UpdateButtonStyle`, unselected look).
 - **Joining the bell menu's button group makes the inserted button the selected one**, and the menu's script then
   turns every confirm press into 穿行 (Traverse). After inserting, select `TeleportBtn` again
   (`group:SelectButtonAtIndex(group:FindButtonIndex(menu.TeleportBtn), false)`) and give it focus. Options that

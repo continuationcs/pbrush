@@ -182,6 +182,18 @@ function M.close()
     if L then pcall(function() L.menu:ClickCloseButton() end) end
 end
 
+-- Full name of the group's selected button, or nil. Right after the menu reactivates no button is selected and
+-- GetSelectedButtonBase() returns a null object: calling anything on it but IsValid crashed the game natively
+-- (null + 0x18, the object's name, 2026-11-14), so it is checked with U.valid before use.
+local function selected_name(group)
+    local name = nil
+    pcall(function()
+        local b = group:GetSelectedButtonBase()
+        if U.valid(b) then name = b:GetFullName() end
+    end)
+    return name
+end
+
 -- Hand selection back to the first other visible option if joining the group made our entry the selected
 -- button: the menu's script would otherwise turn every confirm press into 穿行. Never touches a selection
 -- the player made.
@@ -189,23 +201,21 @@ local function return_selection(first_ref)
     local L = live()
     local first = U.get(first_ref)
     if not (L and L.group and L.entry and first) then return end
-    local sel_is_entry = false
-    pcall(function() sel_is_entry = L.group:GetSelectedButtonBase():GetFullName() == L.entry:GetFullName() end)
-    if not sel_is_entry then return end
+    if selected_name(L.group) ~= L.entry:GetFullName() then return end
     pcall(function() L.group:SelectButtonAtIndex(L.group:FindButtonIndex(first), false) end)
     pcall(function() first:SetFocus() end)
     pcall(function() L.entry:DoSelectedAppearance(false) end)
     U.log("menu: selection handed back to %s", first:GetFName():ToString())
 end
 
--- Re-added options rebuild their Slate widgets and come back with a stale text size until they are
--- selected once: refresh their style and unselected look.
-local function refresh_style(moved_refs)
-    local L = live()
-    if not (L and L.entry) then return end
-    for _, w in ipairs(gets(moved_refs)) do
+-- Buttons whose Slate widgets were rebuilt outside the menu's script come back with a stale text style (larger,
+-- bold) until they are selected once: options re-added by the insertion, and our entry whenever the menu comes
+-- back from one of its sub-screens (能力修行 ...), where the script restyles only its own buttons. Refresh their
+-- style and, unless selected, their unselected look.
+local function refresh_style(refs)
+    for _, w in ipairs(gets(refs)) do
         local t = W.focus_target(w)
-        if t and t:GetFullName() ~= L.entry:GetFullName() then
+        if t then
             pcall(function() t:UpdateButtonStyle() end)
             local selected = false
             pcall(function() selected = t:GetSelected() end)
@@ -233,6 +243,7 @@ local function inject(menu, on_entry)
     end
     local moved_refs = {}
     for _, w in ipairs(moved) do moved_refs[#moved_refs + 1] = U.ref(w) end
+    cur.moved = moved_refs
     local first_ref = U.ref(first)
     U.after(100, function() refresh_style(moved_refs) end)
     U.after(150, function() return_selection(first_ref) end)
@@ -241,15 +252,81 @@ local function inject(menu, on_entry)
     return true
 end
 
--- Keep the column's gamepad links right while this menu lives; ends when the menu is gone or replaced.
+-- What the entry looks like now, for the log: selected, which button the group has selected, focus.
+local function entry_state(L)
+    local sel, focus = "?", "?"
+    local group_sel = L.group and selected_name(L.group) or nil
+    group_sel = group_sel and group_sel:match("([^%.:]+)$") or "none"
+    pcall(function() sel = tostring(L.entry:GetSelected()) end)
+    pcall(function() focus = tostring(L.entry:HasKeyboardFocus()) end)
+    return string.format("selected %s, group selected %s, focus %s", sel, group_sel, focus)
+end
+
+local function index_in(group, b)
+    local idx = -1
+    pcall(function() idx = group:FindButtonIndex(b) end)
+    return idx
+end
+
+-- When the menu comes back from a sub-screen its button group has no selection and our entry reports itself
+-- selected without the group knowing it (log, 2026-11-14): the entry has dropped out of the group, so moving
+-- the cursor off it no longer deselects it (it stayed bold) and its clicks, routed through the group, are lost.
+-- Put it back in the menu's group (found again through 穿行, in case the script made a new one), leaving the
+-- group's selection as the game had it.
+local function rejoin(L)
+    local g = find_group(L.menu)
+    if not g then U.log("menu: rejoin: no group holds 穿行") return nil end
+    local same = L.group ~= nil and g:GetFullName() == L.group:GetFullName()
+    local count = -1
+    pcall(function() count = g:GetButtonCount() end)
+    local idx = index_in(g, L.entry)
+    U.log("menu: rejoin: group %s, %d buttons, entry index %d", same and "same" or "new", count, idx)
+    cur.group = U.ref(g)
+    if idx >= 0 then return g end
+    local before = selected_name(g)
+    local ok, err = pcall(function() g:AddWidget(L.entry) end)
+    if not ok then U.log("menu: rejoin failed: %s", tostring(err)) return g end
+    -- Joining selects the newcomer when nothing is selected, and the menu's script then turns confirm into 穿行.
+    if before == nil and selected_name(g) == L.entry:GetFullName() then pcall(function() g:DeselectAll() end) end
+    -- A selection the entry kept while outside the group (cursor passed over it) that the group does not share
+    -- and the player is not on: clear it, or it stays bold.
+    local sel, focus = false, false
+    pcall(function() sel = L.entry:GetSelected() == true end)
+    pcall(function() focus = L.entry:HasKeyboardFocus() == true end)
+    if sel and not focus and selected_name(g) ~= L.entry:GetFullName() then
+        pcall(function() L.entry:SetIsSelected(false, false) end)
+    end
+    U.log("menu: rejoin: entry index now %d, group selected %s", index_in(g, L.entry), tostring(selected_name(g)))
+    return g
+end
+
+-- Keep the column's gamepad links right while this menu lives, and put our entry back in the button group and
+-- restyle it (and the options the insertion moved) each time the menu comes back from a sub-screen; ends when
+-- the menu is gone or replaced.
 local function keep_linked(menu_ref)
+    local was_up = true
     U.every(RELINK_MS, function()
         local L = cur and cur.menu == menu_ref and live()
         if not L then
             U.log("menu: closed, relink loop ended")
             return true
         end
-        if L.menu:IsVisible() then relink(L.box) end
+        local visible, active = L.menu:IsVisible(), false
+        pcall(function() active = L.menu:IsActivated() == true end)
+        local up = visible and active
+        if up ~= was_up then
+            U.log("menu: %s (visible %s, activated %s)", up and "back" or "left", tostring(visible), tostring(active))
+            if up and L.entry then
+                U.log("menu: entry before restyle: %s", entry_state(L))
+                L.group = rejoin(L) or L.group
+                local refs = { cur.entry }
+                for _, r in ipairs(cur.moved or {}) do refs[#refs + 1] = r end
+                refresh_style(refs)
+                U.log("menu: entry after restyle: %s", entry_state(L))
+            end
+            was_up = up
+        end
+        if visible then relink(L.box) end
     end)
 end
 
