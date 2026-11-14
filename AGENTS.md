@@ -279,6 +279,17 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
   tick runs), then shows `WB_AdditionalLoading_C` (~4 s, `IsActivated()` while up): `run.lua` waits for it, then
   gives the player `GRACE_MS`. `IsLoadingLevel`, `IsDestinationLoadingActive` and `WB_TempLoadingScreen_C` never
   changed (found by logging every candidate on each change, 2026-11-14).
+- **A health floor above 0 makes a boss unkillable**: in a player's 二周目 魔渊 spawned with `Health_Min` 24 (of
+  12000), stopped there with `IsDead` false, and a forced `Kill` at 24 left it attacking through the result
+  screen. Setting `Health_Min` to 0 lets it die normally (roster `clear_health_min`; Nexus report by mastersoul2,
+  confirmed with the 0.1.5 release build 2026-11-14). Each boss's `Health_Min` at spawn is in the development log:
+  look there when a boss will not die. Not every floor is a bug: a lock that ends in an execution
+  (`GE_LockHealthButCanExecuted`, 舞狮尊主's last lion head) is the fight's mechanic.
+- **Player deaths in the Realm of Mirage are not seen yet**: the game sends the player out at once, `IsDead` is
+  never read true and the run ends as 收刃离去 instead of 饮恨 (Nexus report by mastersoul2). Hooks on the revive
+  handlers (`PBZPlayerReviveSubsystem:PBZOnPlayerRevived`, `PBZJhsyReturnStreamingSubsystem:HandlePlayerRevived`)
+  did not fix it in the 0.1.5 release test (2026-11-14): follow up with the development build's log (which hook
+  fired, the player's health before leaving).
 - **Never read a dying actor's attributes**: the game crashed natively while a lion head dissolved, right after the
   run started reading every summon's health before checking `IsDead` (2026-11-13). Check `IsDead` first.
 - Cross-map travel: `PBZSaveLoadSubsystem:TeleportTo(FName("/Game/Maps/..."), transform, FName("Bell_<id>"))`.

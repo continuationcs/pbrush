@@ -27,6 +27,8 @@
 - New Game+: bosses now grow with the playthrough like the game's own enemies (they stayed at first-playthrough
   strength before).
 - Fixed: bosses started with only a sliver of their Sha-Chi gauge; it is now full.
+- Fixed: Mo Yuan could not be killed in New Game+ (his health stopped just above zero).
+- Thanks to mastersoul2 for the detailed New Game+ report and fix suggestions behind these changes.
 - New Game+: an arena where the game's own boss is still alive is swapped for another, so that boss no longer
   joins the fight; a boss fought only on its own battlefield asks you to beat it in this playthrough first.
 ```
@@ -47,6 +49,8 @@
 - 铃铛菜单：从能力修行等子页面返回后，入口仍能正常选中和使用。
 - 多周目：首领数值随周目提升，和游戏原生敌人一致（之前一直停在一周目的强度）。
 - 修复：首领开场杀气只有一小截，现在是满的。
+- 修复：多周目时魔渊打不死（血量停在接近 0 的地方）。
+- 感谢 mastersoul2 详细的多周目反馈和修改建议，上面几项都来自这位玩家的排查。
 - 多周目：场地上还站着游戏原本的首领时，自动换一处场地，不再出现两个同样的首领；只能在专属战场打的首领，会提示先在本周目击败它。
 ```
 
@@ -75,7 +79,7 @@
 | File name | BOSS RUSH 0.1.5 |
 | File category | Main files |
 | File description | Extract into <game>\platform\steam\ue4ss\Mods\ |
-| Permissions / credits | 致谢 RE-UE4SS 团队与 KintaroModding（见描述末尾）。资产权限按你的意愿选择。 |
+| Permissions / credits | 致谢 RE-UE4SS 团队、KintaroModding 与 mastersoul2（见描述末尾）。资产权限按你的意愿选择。 |
 
 ## Brief overview（简介，最多 255 字符）
 
@@ -137,6 +141,7 @@ Edit [code]BossRush\Scripts\config.lua[/code] and restart the game: boss scaling
 [list]
 [*][url=https://github.com/UE4SS-RE/RE-UE4SS]RE-UE4SS[/url] team (MIT)
 [*][url=https://github.com/KintaroModding/ue4ss]KintaroModding[/url] - Phantom Blade Zero support for UE4SS (MIT)
+[*][url=https://next.nexusmods.com/profile/mastersoul2]mastersoul2[/url] - New Game+ testing and fix suggestions (Sha-Chi gauge, boss levels, Mo Yuan, deaths in the Realm of Mirage)
 [*]Phantom Blade Zero by S-GAME. This mod ships no game files.
 [/list]
 

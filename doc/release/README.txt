@@ -68,5 +68,7 @@ CREDITS
   - UE4SS: the RE-UE4SS team (MIT License), https://github.com/UE4SS-RE/RE-UE4SS
   - Phantom Blade Zero support for UE4SS (memory layout and signatures): KintaroModding (MIT License),
     https://github.com/KintaroModding/ue4ss
+  - mastersoul2: New Game+ testing and fix suggestions (Sha-Chi gauge, boss levels, Mo Yuan, deaths in the
+    Realm of Mirage), https://next.nexusmods.com/profile/mastersoul2
   - Phantom Blade Zero is a game by S-GAME. All game assets belong to their owners; this mod ships
     no game files.

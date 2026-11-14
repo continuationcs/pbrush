@@ -323,6 +323,20 @@ local function check_one(b)
         return
     end
     b.zero_at = nil        -- back above 0 (a phase change refills it)
+    -- Roster clear_health_min: the boss's health floor stays above 0 outside its own level, so it can never die.
+    -- 魔渊 started with Health_Min 24 (Health_Max 12000) in a player's 二周目 and stopped there, IsDead false;
+    -- a forced Kill at 24 left it attacking through the result screen. With the floor set to 0 it falls, dies
+    -- and goes like any other boss, scaled or not; the game does not set it again (Nexus report on 0.1.4,
+    -- mastersoul2). Checked every tick: the floor may be applied after spawning.
+    if b.clear_min then
+        pcall(function()
+            local m = actor.AttributeSetBase.Health_Min
+            if m.CurrentValue > 0 or m.BaseValue > 0 then
+                U.log("run: %s Health_Min %.0f set to 0", b.id, m.CurrentValue)
+                m.BaseValue, m.CurrentValue = 0, 0
+            end
+        end)
+    end
     -- Leash: pull a boss back if a skill threw it far away or it fell out of the arena. Logged when it starts and
     -- ends, with whether the pull moved it (追命's second phase sat at 0,0,0 and could not be pulled back,
     -- 2026-11-14), not on every tick.
@@ -440,23 +454,38 @@ local function check_summons()
 end
 
 -- From the first boss to the end of the run, every 250 ms: the player's death or leaving, and the fight.
+-- The game reviving the player means they died, even when IsDead was never seen true: dying in the Realm of
+-- Mirage sends the player back to the bell at once, and the run read it as leaving the arena, 收刃离去 instead
+-- of 饮恨 (Nexus report on 0.1.4, mastersoul2). Both are native functions bound to the revive event; whether
+-- the game calls them where UE4SS sees it is checked in game (the log says which fired).
+for _, f in ipairs({ "/Script/ProjectPBZ.PBZPlayerReviveSubsystem:PBZOnPlayerRevived",
+                     "/Script/ProjectPBZ.PBZJhsyReturnStreamingSubsystem:HandlePlayerRevived" }) do
+    local ok, e = pcall(U.hook, f, function()
+        U.log("run: player revived (%s)%s", f:match("[^.]+$"), run and (" during the run, phase " .. run.phase) or "")
+        if run and (run.phase == "fighting" or run.phase == "between") then run.revived = true end
+    end)
+    if not ok then U.log("run: no hook on %s (%s)", f, tostring(e)) end
+end
+
 local function watch()
     local me = run
     U.every(250, function()
         if not (run == me and (run.phase == "fighting" or run.phase == "between")) then return true end
         local p = U.pawn()
-        if not U.valid(p) or is_dead(p) then
-            U.log("run: player died")
+        if not U.valid(p) or is_dead(p) or run.revived then
+            U.log("run: player died%s", run.revived and " (the game revived them)" or "")
             finish("lose")
             return true
         end
         -- The player left the arena some other way (a return-to-bell item, a fall): treat it as leaving.
         local okp, pl = pcall(function() return p:K2_GetActorLocation() end)
         if okp and U.dist(pl, run.center) > config.player_leave then
-            U.log("run: player left the arena")
+            U.log("run: player left the arena (health at the previous check %s, now %s)", tostring(run.player_hp),
+                tostring(health(p)))
             finish("abort")
             return true
         end
+        run.player_hp = health(p)
         if run.phase == "fighting" then check_summons() end
         if run.phase == "fighting" then check_bosses() end
         return false
@@ -650,7 +679,9 @@ spawn_next = function()
     for k, rec in ipairs(recs) do
         local a, at = spawn_boss(rec, k)
         if not a then finish("error") return end
-        run.actors[#run.actors + 1] = { ref = U.ref(a), id = rec.id, spawn_at = at }
+        run.actors[#run.actors + 1] = { ref = U.ref(a), id = rec.id, spawn_at = at, clear_min = rec.clear_health_min }
+        local hmin = attr(a, "Health_Min")
+        if hmin ~= "?" then U.log("run: %s Health_Min %s at spawn", rec.id, hmin) end
         U.log("run: boss %d/%d phase %d/%d: %s", run.fi, #run.queue, run.si, #fight.steps, rec.id)
     end
     -- The bosses' abilities are loaded with them; checked again a moment later in case some load late.

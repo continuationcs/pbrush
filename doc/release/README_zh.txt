@@ -58,4 +58,6 @@
   - UE4SS：RE-UE4SS 团队（MIT 许可），https://github.com/UE4SS-RE/RE-UE4SS
   - UE4SS 的影之刃零适配（内存布局与特征码）：KintaroModding（MIT 许可），
     https://github.com/KintaroModding/ue4ss
+  - mastersoul2：多周目实测与修改建议（杀气槽、首领等级、魔渊、镜花水月中战死），
+    https://next.nexusmods.com/profile/mastersoul2
   - 《影之刃零》由灵游坊（S-GAME）开发，游戏资源归其所有；本 mod 不包含任何游戏文件。

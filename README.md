@@ -60,6 +60,8 @@ Made against the Steam build CL-302256 with UE4SS experimental 3.0.1. See `AGENT
 - [RE-UE4SS](https://github.com/UE4SS-RE/RE-UE4SS) (MIT).
 - Phantom Blade Zero support for UE4SS by [KintaroModding](https://github.com/KintaroModding/ue4ss) (MIT);
   the files under `src/vendor/kintaro-pbz-config/` come from there.
+- [mastersoul2](https://next.nexusmods.com/profile/mastersoul2): New Game+ testing and fix suggestions (Sha-Chi gauge,
+  boss levels, Mo Yuan, deaths in the Realm of Mirage).
 - Phantom Blade Zero by S-GAME. This repository contains no game files.
 - Code, text and images were made with an AI assistant (Claude); design, testing and tuning by the author.
 
