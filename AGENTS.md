@@ -119,7 +119,9 @@ bracket balance, calls to undefined locals) and re-read the call sites: one bad 
 functions and the menu broke with "attempt to call a nil value". Prefer the Edit tool for Lua.
 
 **Do not write Lua through a Bash heredoc + Python one-liner when it contains escapes** (`\t`, `\n`, `\\`): the
-shell turns them into real characters. Use the Edit/Write tools, or a Python script file.
+shell turns them into real characters. Use the Edit/Write tools, or a Python script file. The same goes for any
+file whose text holds a backslash, Windows paths included: `src\tools\build_release.py` in a heredoc became a
+backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asserted its match).
 
 ## UE4SS / game gotchas (all learned the hard way)
 

@@ -49,7 +49,7 @@ Settings live in `BossRush\Scripts\config.lua` (restart the game after editing).
 powershell -File src\tools\install.ps1 -Mods BossRush
 
 # build the release zip into out\ (debug log switched off in the copy)
-python src\tools\build_release.py 0.1.4
+python src\tools\build_release.py 0.1.5
 ```
 
 Logs go to `<game>\platform\steam\ue4ss\UE4SS.log` with the prefix `[BossRush]`.

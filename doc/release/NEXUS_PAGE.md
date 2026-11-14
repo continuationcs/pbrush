@@ -2,11 +2,11 @@
 
 **已发布（2026-11-12）**：https://www.nexusmods.com/phantombladezero/mods/1099 ，名称 BOSS RUSH，文件 BOSS RUSH 0.1.0。页面顶部的 mod 版本号仍显示 1，需在 General 页改为 0.1.0。旧草稿 1098 已改名「BOSS RUSH old」，未发布；新版上传页没有删除入口，需要时联系 Nexus 客服删除。
 
-上传文件：`out/BossRush-0.1.4.zip`（0.1.3 未发布，直接跳到 0.1.4）；主图：`doc/release/main_image.png`（1920×1080，上传到 Images，设为 primary）
+上传文件：`out/BossRush-0.1.5.zip`（0.1.4 之前：0.1.3 未发布，直接跳到 0.1.4）；主图：`doc/release/main_image.png`（1920×1080，上传到 Images，设为 primary）
 
-## 0.1.5 更新说明（待发布，下次发版时用；版本号发布时再定）
+## 0.1.5 更新说明（Changelog / 文件说明）
 
-自 0.1.4（362d429）以来的改动，发布前补上之后新增的内容。
+自 0.1.4（362d429）以来的改动。
 
 ```
 0.1.5
@@ -68,11 +68,11 @@
 | 字段 | 填写 |
 |---|---|
 | Mod name | BOSS RUSH（名称里不能用中文） |
-| Version | 0.1.0 |
+| Version | 0.1.5 |
 | Category | Gameplay |
 | Language | English（页面描述里同时放了中文） |
 | Requirements → Nexus requirements | UE4SS for Phantom Blade Zero（phantombladezero/mods/13），说明填：Required. Install and test it first. |
-| File name | Trial of Echoes 0.1.0 |
+| File name | BOSS RUSH 0.1.5 |
 | File category | Main files |
 | File description | Extract into <game>\platform\steam\ue4ss\Mods\ |
 | Permissions / credits | 致谢 RE-UE4SS 团队与 KintaroModding（见描述末尾）。资产权限按你的意愿选择。 |
