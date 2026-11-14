@@ -78,3 +78,10 @@ Made against the Steam build CL-302256 with UE4SS experimental 3.0.1. See `AGENT
 - **数值**：按进度用游戏自己的等级曲线提升，难度跟随游戏设置。
 - **没有副作用**：不掉落、不给意识尘埃、不写图鉴、不改存档；血量和药瓶恢复。
 - 设计和决定记录在 `doc/DESIGN.md`，文案在 `doc/COPY.md`。
+
+### 致谢
+
+- [RE-UE4SS](https://github.com/UE4SS-RE/RE-UE4SS)（MIT）。
+- [KintaroModding](https://github.com/KintaroModding/ue4ss)：UE4SS 的影之刃零适配（MIT）。
+- [mastersoul2](https://next.nexusmods.com/profile/mastersoul2)：多周目实测与修改建议（杀气槽、首领等级、魔渊、镜花水月中战死）。
+- 《影之刃零》由灵游坊（S-GAME）开发；本仓库不包含任何游戏文件。
