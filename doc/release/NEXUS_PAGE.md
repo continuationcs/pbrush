@@ -24,13 +24,13 @@
 - Result screen: the title shows the result (it showed a placeholder before); the screen now shows the mode and
   boss, time, best time, bosses defeated and the game difficulty.
 - Bell menu: the entry keeps working after coming back from a sub-screen (Ability Cultivation ...).
+- New Game+: an arena where the game's own boss is still alive is swapped for another, so that boss no longer
+  joins the fight; a boss fought only on its own battlefield asks you to beat it in this playthrough first.
 - New Game+: bosses now grow with the playthrough like the game's own enemies (they stayed at first-playthrough
   strength before).
 - Fixed: bosses started with only a sliver of their Sha-Chi gauge; it is now full.
 - Fixed: Mo Yuan could not be killed in New Game+ (his health stopped just above zero).
 - Thanks to mastersoul2 for the detailed New Game+ report and fix suggestions behind these changes.
-- New Game+: an arena where the game's own boss is still alive is swapped for another, so that boss no longer
-  joins the fight; a boss fought only on its own battlefield asks you to beat it in this playthrough first.
 ```
 
 中文（小黑盒 / Nexus 中文段落用）：
@@ -47,11 +47,11 @@
 - 连战重新分组：共 11 组，每组 4～5 场，越打越强，新增痴狂众生、妖异志怪、沙场宿将、名门残影；原有最佳用时保留。
 - 结算画面：标题正确显示胜负（之前显示占位文字）；显示模式和首领、用时、最佳、击败数和游戏难度。
 - 铃铛菜单：从能力修行等子页面返回后，入口仍能正常选中和使用。
+- 多周目：场地上还站着游戏原本的首领时，自动换一处场地，不再出现两个同样的首领；只能在专属战场打的首领，会提示先在本周目击败它。
 - 多周目：首领数值随周目提升，和游戏原生敌人一致（之前一直停在一周目的强度）。
 - 修复：首领开场杀气只有一小截，现在是满的。
 - 修复：多周目时魔渊打不死（血量停在接近 0 的地方）。
 - 感谢 mastersoul2 详细的多周目反馈和修改建议，上面几项都来自这位玩家的排查。
-- 多周目：场地上还站着游戏原本的首领时，自动换一处场地，不再出现两个同样的首领；只能在专属战场打的首领，会提示先在本周目击败它。
 ```
 
 ## 0.1.4 更新说明（Changelog / 文件说明）
