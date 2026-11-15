@@ -354,7 +354,22 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
   otherwise only the fallback when no arena is available). The discovery probe mod was retired (git history has it;
   UE4SS's own keybinds dump the CXX headers). **Never bind F10, F11 or F12**: F10 opens the UE4SS console
   (ConsoleEnablerMod), F11 is the game's (user report), F12 is Steam's screenshot. A new tool takes the next free
-  F key (F7-F9); UE4SS's own keys all use Ctrl.
+  F key (F7-F9; F7-F9 picked the entrance effects and were removed once chosen, 2026-11-15); UE4SS's own keys all
+  use Ctrl.
+- **Loading an asset that is not in memory**: UE4SS's `LoadAsset` left six of eight Niagara effects "not found"
+  (2026-11-15; the two that played were already loaded). `U.load` falls back to the engine's
+  `KismetSystemLibrary:LoadAsset_Blocking` of a soft object path, as `U.load_class` does for classes.
+- **An effect attached to another character's body may refuse it**: `NS_ChiYingGuRen_Teleport_001_Main`, made for
+  one character's mesh, came back `IsActive()` false on every boss it was attached to and showed nothing; a second
+  `Activate(true)` did not help (2026-11-15), while 荡秽's blink-in worked on any body. `U.play_effect_on` logs the
+  active state: false means the effect cannot be used that way.
+- **Stopping a Niagara effect (`Deactivate`) only ends new particles**: live ones run out their lifetime. 荡秽's
+  blink-in loops and never ends by itself, yet stopping it at 0.5 s or 2.5 s looked the same (2026-11-15): it shows
+  one burst. To shorten what is seen, choose another effect; `DeactivateImmediate` would cut it off abruptly.
+- **Holding a boss still**: its controller's `SGameAIComponent:StopAI()` / `StartAI()` (SGameAI plugin). The AI
+  is already started when `FinishSpawningActor` returns; after `StopAI` it stayed stopped (`bAIStarted` false,
+  never restarted by the game) and `StartAI` brought it back, in every phase and with two bosses at once
+  (2026-11-15).
   Anything a dev tool changes in the game must survive a hot reload: god mode keeps the player's own values in a
   file (`%TEMP%\BossRush_god_base.tsv`) and the next load restores them; kept only in memory, each reload took
   the boosted values as the originals (player health 3085 -> 30,855,000, 2026-11-14).

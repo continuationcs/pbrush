@@ -143,7 +143,7 @@ function M.install(run, arenas)
 
     -- ------------------------------------------------------------ arena survey (F3)
     -- Travels to every arena (not the Realm of Mirage) and measures, from where the player stands and from where
-    -- the boss appears (8 m ahead), how far the ground stays open in 16 directions: walkable (navigation mesh),
+    -- the boss appears (run.SPAWN_AHEAD, 12 m ahead), how far the ground stays open in 16 directions: walkable (navigation mesh),
     -- level (no step or slope over MAX_STEP_DZ between samples) and unobstructed (the path there is not more
     -- than DETOUR times the straight line). One direction per tick. Then back to the starting bell.
     -- F2 measures the spot just marked the same way, where the player stands (no travel).
@@ -151,7 +151,7 @@ function M.install(run, arenas)
     local MAX_STEP_DZ = 150
     local DETOUR = 1.3
     local OPEN_ENOUGH = 1500                          -- a direction counts as open from 15 m
-    local BOSS_AHEAD = 800
+    local BOSS_AHEAD = run.SPAWN_AHEAD
     -- The player's spot must be at least this far from the nearest bell (user request 2026-11-15: no fight right
     -- next to a bell; DESIGN 5.0a). Closer is graded 差 whatever the ground.
     local BELL_MIN = 1200
@@ -292,7 +292,7 @@ function M.install(run, arenas)
                     if b then
                         for d = 0, DIRS - 1 do jobs[#jobs + 1] = { "boss", b, a.yaw + d * 360 / DIRS } end
                     else
-                        out("survey\t" .. a.key .. "\tboss point (8 m ahead) not on the navigation mesh")
+                        out("survey\t" .. a.key .. string.format("\tboss point (%d m ahead) not on the navigation mesh", BOSS_AHEAD / 100))
                     end
                     step = "measure"
                 elseif ticks > 900 then

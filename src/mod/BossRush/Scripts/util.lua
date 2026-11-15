@@ -203,22 +203,89 @@ function U.nearest_bell(p)
     return best, name
 end
 
+-- Load an asset by its object path "/Pkg/Path/Asset.Asset": the loaded one, or from disk. nil when missing.
+-- UE4SS's LoadAsset did not load effects that were not in memory yet (six of eight Niagara systems read "not
+-- found", 2026-11-15); the engine's blocking load of a soft object path does.
+local KSL = "/Script/Engine.Default__KismetSystemLibrary"
+function U.load(path)
+    if type(path) ~= "string" then error("U.load: path expected, got " .. type(path)) end
+    local o = StaticFindObject(path)
+    if U.valid(o) then return o end
+    pcall(LoadAsset, (path:gsub("%.[^.]+$", "")))
+    o = StaticFindObject(path)
+    if U.valid(o) then return o end
+    local ok, res = pcall(function()
+        local ksl = StaticFindObject(KSL)
+        return ksl:LoadAsset_Blocking(ksl:Conv_SoftObjPathToSoftObjRef(ksl:MakeSoftObjectPath(path)))
+    end)
+    o = StaticFindObject(path)
+    if U.valid(o) then return o end
+    if ok and U.valid(res) then return res end
+    return nil
+end
+
 -- Load a class by "/Pkg/Path/Asset.Asset_C".
 function U.load_class(path)
     if type(path) ~= "string" then error("U.load_class: path expected, got " .. type(path)) end
-    local c = StaticFindObject(path)
-    if U.valid(c) then return c end
-    pcall(LoadAsset, (path:gsub("%.[^.]+$", "")))
-    c = StaticFindObject(path)
-    if U.valid(c) then return c end
+    local c = U.load(path)
+    if c then return c end
     local ok, res = pcall(function()
-        local ksl = StaticFindObject("/Script/Engine.Default__KismetSystemLibrary")
+        local ksl = StaticFindObject(KSL)
         return ksl:LoadClassAsset_Blocking(ksl:Conv_SoftClassPathToSoftClassRef(ksl:MakeSoftClassPath(path)))
     end)
     c = StaticFindObject(path)
     if U.valid(c) then return c end
     if ok and U.valid(res) then return res end
     return nil
+end
+
+-- Game effects (Niagara systems, "/Plugin/Path/NS_X.NS_X"). U.play_effect plays one at a point (on the ground,
+-- facing yaw); U.play_effect_on plays one attached to a component (a character's
+-- Mesh: effects made to cover a body take their particles from the skeletal mesh they are attached to). Both
+-- return a ref for U.stop_effect, or nil. The component destroys itself once the effect is over; U.stop_effect
+-- ends it gracefully (no new particles, the live ones fade), which a looping effect needs.
+local NIAGARA = "/Script/Niagara.Default__NiagaraFunctionLibrary"
+local NO_POOLING = 0     -- ENCPoolMethod::None
+local SNAP_TO_TARGET = 2 -- EAttachLocation::SnapToTarget
+
+-- The system and the Niagara library, or nil (logged).
+local function effect_parts(path)
+    local sys = U.load(path)
+    if not sys then U.log("effect: not found %s", path) return nil end
+    local lib = StaticFindObject(NIAGARA)
+    if not U.valid(lib) then U.log("effect: no Niagara library") return nil end
+    return sys, lib
+end
+
+local function played(comp, path, where)
+    if not U.valid(comp) then U.log("effect: could not be played %s", path) return nil end
+    local active = "?"
+    pcall(function() active = tostring(comp:IsActive()) end)
+    U.log("effect: %s %s, active %s", path:match("([^.]+)$"), where, active)
+    return U.ref(comp)
+end
+
+function U.play_effect(path, at, yaw)
+    local sys, lib = effect_parts(path)
+    if not sys then return nil end
+    local comp = lib:SpawnSystemAtLocation(UEHelpers.GetWorld(), sys, at, { Pitch = 0, Yaw = yaw or 0, Roll = 0 },
+        { X = 1, Y = 1, Z = 1 }, true, true, NO_POOLING, false)
+    return played(comp, path, string.format("at %.0f %.0f %.0f", at.X, at.Y, at.Z))
+end
+
+function U.play_effect_on(path, target)
+    local sys, lib = effect_parts(path)
+    if not sys then return nil end
+    local comp = lib:SpawnSystemAttached(sys, target, FName("None"), { X = 0, Y = 0, Z = 0 },
+        { Pitch = 0, Yaw = 0, Roll = 0 }, SNAP_TO_TARGET, true, true, NO_POOLING, false)
+    -- "active false" in the log means the effect refused this body and shows nothing: ChiYingGuRen's teleport did
+    -- on every boss, and a second Activate did not help (2026-11-15).
+    return played(comp, path, "on " .. target:GetFullName():match("([^.:]+)$"))
+end
+
+function U.stop_effect(r)
+    local comp = U.get(r)
+    if comp then comp:Deactivate() end
 end
 
 -- Bells the player has rung (BellManager.ActivateBellIDs), as a set of "Bell_XXX" names.

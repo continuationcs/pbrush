@@ -574,13 +574,15 @@ local function watch()
 end
 
 -- Where the boss appears: on the level's navigation mesh and reachable on foot from the player, so it never
--- starts behind an invisible wall, inside a tree or on a ledge (player report on Nexus, 0.1.2). Tries 8 m ahead
--- along the arena facing first, then other directions, then shorter distances. Returns nil when there is no
--- navigation data around the player.
+-- starts behind an invisible wall, inside a tree or on a ledge (player report on Nexus, 0.1.2). 12 m ahead along
+-- the arena facing (user decision 2026-11-15, was 8 m: more room to react after the entrance; every scenic
+-- arena's boss point had 12 m or more open ground around it in the survey), then closer, and only when nothing
+-- ahead fits, further to the sides and behind. Returns nil when there is no navigation data around the player.
 local NAV = "/Script/NavigationSystem.Default__NavigationSystemV1"
 local NAV_EXTENT = { X = 200, Y = 200, Z = 500 }
-local SPAWN_DIST = { 800, 600, 400 }
-local SPAWN_TURN = { 0, 30, -30, 60, -60, 90, -90, 135, -135, 180 }
+local SPAWN_DIST = { 1200, 1000, 800, 600, 400 }
+local SPAWN_TURNS = { { 0, 30, -30 }, { 60, -60, 90, -90 }, { 135, -135, 180 } }
+M.SPAWN_AHEAD = SPAWN_DIST[1]
 
 local function on_nav(nav, world, point)
     local out = {}
@@ -603,11 +605,13 @@ local function reachable_spot(player, face)
     local world = UEHelpers.GetWorld()
     local from = on_nav(nav, world, player)
     if not from then return nil end
-    for _, dist in ipairs(SPAWN_DIST) do
-        for _, turn in ipairs(SPAWN_TURN) do
-            local r = math.rad(face + turn)
-            local spot = on_nav(nav, world, { X = from.X + math.cos(r) * dist, Y = from.Y + math.sin(r) * dist, Z = from.Z })
-            if spot and walkable(nav, world, from, spot, dist) then return spot, dist, turn end
+    for _, turns in ipairs(SPAWN_TURNS) do
+        for _, dist in ipairs(SPAWN_DIST) do
+            for _, turn in ipairs(turns) do
+                local r = math.rad(face + turn)
+                local spot = on_nav(nav, world, { X = from.X + math.cos(r) * dist, Y = from.Y + math.sin(r) * dist, Z = from.Z })
+                if spot and walkable(nav, world, from, spot, dist) then return spot, dist, turn end
+            end
         end
     end
     return nil
@@ -663,11 +667,12 @@ end
 -- does not have gets a point in the arena, registered under that tag; clear_helpers takes it away.
 local IDENTITY_ACTION = "GAA_AssignIdentityTransformToBlackboard_C"
 local IDENTITY_POINT = "/SGameAI/Tools/Teleport/BP_SGameAITargetPoint.BP_SGameAITargetPoint_C"     -- SGameAI plugin
--- Where a tag's point goes: cm ahead of the arena centre along the arena facing (the boss appears 8 m ahead).
--- 追命's ultimate: it vanishes to the waterfall point (瀑布) and leaps out at the other (跳出); the original layout
--- (溪谷) is not known: the waterfall behind the boss, the leap where the boss stands. Other tags: the boss's spot.
-local IDENTITY_AHEAD = { ["AI.Identity.溪谷.钩者.瀑布"] = 1500, ["AI.Identity.溪谷.钩者.跳出"] = 800 }
-local IDENTITY_AHEAD_DEFAULT = 800
+-- Where a tag's point goes: cm ahead of the arena centre along the arena facing (the boss appears SPAWN_AHEAD
+-- ahead). 追命's ultimate: it vanishes to the waterfall point (瀑布) and leaps out at the other (跳出); the original
+-- layout (溪谷) is not known: the waterfall 7 m behind the boss, the leap where the boss stands. Other tags: the
+-- boss's spot.
+local IDENTITY_AHEAD = { ["AI.Identity.溪谷.钩者.瀑布"] = M.SPAWN_AHEAD + 700, ["AI.Identity.溪谷.钩者.跳出"] = M.SPAWN_AHEAD }
+local IDENTITY_AHEAD_DEFAULT = M.SPAWN_AHEAD
 
 local function place_identity_points()
     if not run or run.phase == "ending" or run.phase == "returning" then return end
@@ -713,24 +718,34 @@ end
 -- (degrees off the facing), so bosses that appear together do not stand in one another.
 local SIDE_BY_SIDE = { 0, 40, -40, 80, -80 }
 
--- Spawns one boss of the step near the player, facing the player. Returns the actor and where it stands.
-local function spawn_boss(rec, k)
-    local cls = U.load_class(rec.class)
-    if not U.valid(cls) then U.log("run: boss class not found %s", rec.class) return nil end
+-- Where the k-th boss of the step will appear, near the player: { at = spawn point, ground = the floor under it,
+-- for the entrance effect }.
+local function boss_spot(k)
     local p = U.pawn():K2_GetActorLocation()
     local face = run.face + (SIDE_BY_SIDE[k] or 0)
     local spot, dist, turn = reachable_spot(p, face)
-    local at
     if spot then
-        at = { X = spot.X, Y = spot.Y, Z = spot.Z + 150 }
         U.log("run: spawn on the navigation mesh, %d m away, %d deg off the arena facing", dist / 100, turn + face - run.face)
-    else
-        -- No navigation data here: 8 m ahead.
-        local r = math.rad(face)
-        at = { X = p.X + math.cos(r) * 800, Y = p.Y + math.sin(r) * 800, Z = p.Z + 50 }
-        U.log("run: no navigation data around the player, spawning 8 m ahead")
+        return { at = { X = spot.X, Y = spot.Y, Z = spot.Z + 150 }, ground = spot }
     end
-    local a = spawn_actor(cls, at, math.deg(math.atan(p.Y - at.Y, p.X - at.X)), ADJUST_IF_POSSIBLE)
+    -- No navigation data here: SPAWN_AHEAD ahead, at the player's height (the player's centre is about 90 cm up).
+    local r = math.rad(face)
+    U.log("run: no navigation data around the player, spawning %d m ahead", M.SPAWN_AHEAD / 100)
+    local x, y = p.X + math.cos(r) * M.SPAWN_AHEAD, p.Y + math.sin(r) * M.SPAWN_AHEAD
+    return { at = { X = x, Y = y, Z = p.Z + 50 }, ground = { X = x, Y = y, Z = p.Z - 90 } }
+end
+
+-- The yaw from a point to the player.
+local function toward_player(at)
+    local p = U.pawn():K2_GetActorLocation()
+    return math.deg(math.atan(p.Y - at.Y, p.X - at.X))
+end
+
+-- Spawns one boss of the step at its spot, facing the player. Returns the actor.
+local function spawn_boss(rec, at)
+    local cls = U.load_class(rec.class)
+    if not U.valid(cls) then U.log("run: boss class not found %s", rec.class) return nil end
+    local a = spawn_actor(cls, at, toward_player(at), ADJUST_IF_POSSIBLE)
     if not U.valid(a) then U.log("run: spawn failed %s", rec.id) return nil end
     if not U.valid(a.Controller) then pcall(function() a:SpawnDefaultController() end) end
     -- No side effects from a challenge kill: no loot or Remnant Dust (both come from the NPC's LootComp),
@@ -741,29 +756,88 @@ local function spawn_boss(rec, k)
         if U.valid(lc) then lc:K2_DestroyComponent(lc) U.log("run: loot component removed") end
     end)
     scale.apply(a, run.difficulty, run.tier)
-    return a, at
+    return a
 end
 
--- The next step: the same boss's next phase, or the next boss's first.
-spawn_next = function()
-    if not run then return end
-    if run.fi == 0 or run.si >= #run.queue[run.fi].steps then
-        run.fi, run.si = run.fi + 1, 1
-    else
-        run.si = run.si + 1
-    end
-    run.summon_zero, run.summon_scaled, run.summon_line = {}, {}, nil
+-- The entrance (user decision 2026-11-15: a boss that just popped up and attacked felt abrupt). A game effect
+-- plays where each boss will stand for OMEN_MS, the boss appears inside it (the effect is stopped and fades
+-- around it), and stands for HOLD_MS before its AI starts, so the player sees who came before it attacks.
+-- As the boss appears, a second effect plays on its body (REVEAL_EFFECT, attached to its Mesh: such effects
+-- take their particles from the mesh they are on, and on the ground alone they had no body to cover and ignored
+-- their size; user request 2026-11-15, both effects together), stopped after REVEAL_MS. 荡秽's blink-in never ends
+-- by itself, but stopping it only ends new particles: it shows one burst whose particles fade on their own, and
+-- stopping it anywhere from 0.5 to 2.5 s looked the same (user test 2026-11-15). So it plays one round as it is.
+-- User choices 2026-11-15 after seeing them: ground effect 2 (NS_SummonBossField1_602), body effect 荡秽's
+-- blink-in (candidate 5; ChiYingGuRen's teleport, candidate 4, refused every boss's body: inactive, nothing
+-- shown), hold 1.5 s (tried 1 s, back to 1.5 s).
+-- The ground effect and its size were picked in game from eight candidates of the game's own summons, teleports
+-- and appearances (development keys, removed once chosen); size 1 (as made).
+local HOLD_MS = 1500
+local REVEAL_MS = 2500
+local OMEN_EFFECT = "/PBZVFXPack/VFX/BattleFX/LengTu/NS_SummonBossField1_602.NS_SummonBossField1_602"
+local OMEN_MS = 1500
+local REVEAL_EFFECT = "/PBZVFXPack/VFX/BattleFX/DangHui/NS_DangHui_Blink_301_Show.NS_DangHui_Blink_301_Show"
+
+-- The boss's AI switch: its controller's SGameAIComponent (SGameAI plugin), StopAI / StartAI.
+local function ai_component(actor)
+    local ctrl = actor.Controller
+    if not U.valid(ctrl) then return nil end
+    local ok, comp = pcall(function() return ctrl.SGameAIComponent end)
+    return ok and U.valid(comp) and comp or nil
+end
+
+-- Holds a boss of run.actors still for HOLD_MS, then starts its AI. The AI may start after the boss is spawned
+-- (when its controller takes it over): while held, an AI found started is stopped again, and counted in the log.
+local function hold(b)
+    local actor = U.get(b.ref)
+    local ai = actor and ai_component(actor)
+    if not ai then U.log("run: hold %s: no AI component, the boss starts at once", b.id) return end
+    U.log("run: hold %s: AI started %s at spawn", b.id, tostring(ai.bAIStarted))
+    ai:StopAI()
+    local me, held, restops = run, 0, 0
+    U.every(100, function()
+        if run ~= me then return true end
+        local a = U.get(b.ref)
+        local c = a and not is_dead(a) and ai_component(a)
+        if not c then U.log("run: hold %s: boss gone or dead while held", b.id) return true end
+        held = held + 100
+        if held >= HOLD_MS then
+            c:StartAI()
+            U.log("run: hold %s over: AI started %s (stopped again %d times)", b.id, tostring(c.bAIStarted), restops)
+            return true
+        end
+        if c.bAIStarted then
+            c:StopAI()
+            restops = restops + 1
+        end
+        return false
+    end)
+end
+
+-- The body effect on a boss that just appeared, for REVEAL_MS.
+local function reveal(actor)
+    local mesh = actor.Mesh
+    if not U.valid(mesh) then U.log("run: reveal: no mesh") return end
+    local fx = U.play_effect_on(REVEAL_EFFECT, mesh)
+    U.after(REVEAL_MS, function() U.stop_effect(fx) end)
+end
+
+-- The step's bosses appear at their spots (after the omen).
+local function appear(recs, spots, omens)
     local fight = run.queue[run.fi]
-    local recs = fight.steps[run.si]
+    for _, o in pairs(omens) do U.stop_effect(o) end
     if not place_helpers(recs) then finish("error") return end
     run.actors = {}
     for k, rec in ipairs(recs) do
-        local a, at = spawn_boss(rec, k)
+        local a = spawn_boss(rec, spots[k].at)
         if not a then finish("error") return end
-        run.actors[#run.actors + 1] = { ref = U.ref(a), id = rec.id, spawn_at = at, clear_min = rec.clear_health_min }
+        local b = { ref = U.ref(a), id = rec.id, spawn_at = spots[k].at, clear_min = rec.clear_health_min }
+        run.actors[#run.actors + 1] = b
+        reveal(a)
         local hmin = attr(a, "Health_Min")
         if hmin ~= "?" then U.log("run: %s Health_Min %s at spawn", rec.id, hmin) end
         U.log("run: boss %d/%d phase %d/%d: %s", run.fi, #run.queue, run.si, #fight.steps, rec.id)
+        hold(b)
     end
     -- The bosses' abilities are loaded with them; checked again a moment later in case some load late.
     place_identity_points()
@@ -773,6 +847,37 @@ spawn_next = function()
     local first = run.phase ~= "between"
     phase("fighting")
     if first then watch() end
+end
+
+-- The next step: the same boss's next phase, or the next boss's first. The omen plays at the spots chosen now;
+-- the bosses appear OMEN_MS later unless the run ended or moved on meanwhile (a death between fights).
+spawn_next = function()
+    if not run then return end
+    if run.fi == 0 or run.si >= #run.queue[run.fi].steps then
+        run.fi, run.si = run.fi + 1, 1
+    else
+        run.si = run.si + 1
+    end
+    run.summon_zero, run.summon_scaled, run.summon_line = {}, {}, nil
+    local recs = run.queue[run.fi].steps[run.si]
+    -- Load the bosses' classes before the omen: a class loaded at the spawn froze the game for 3-5 s with the
+    -- omen already over (彭猛, 2026-11-15: effect at 24.8 s, boss at 29.8 s), so the boss appeared late and out
+    -- of nothing. Loaded now, the wait comes before the omen and the boss steps out of it on time.
+    for _, rec in ipairs(recs) do U.load_class(rec.class) end
+    U.log("run: boss classes loaded")
+    local spots, omens = {}, {}
+    for k in ipairs(recs) do
+        spots[k] = boss_spot(k)
+        omens[k] = U.play_effect(OMEN_EFFECT, spots[k].ground, toward_player(spots[k].ground))
+    end
+    local me, was = run, run.phase
+    U.after(OMEN_MS, function()
+        if run == me and run.phase == was then
+            appear(recs, spots, omens)
+        else
+            for _, o in pairs(omens) do U.stop_effect(o) end
+        end
+    end)
 end
 
 -- Whether the game is still loading. The player is put at the destination before the loading screen goes away,
