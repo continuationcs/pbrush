@@ -100,7 +100,8 @@ function U.failed() return failed end
 -- fn() runs once, on the game thread, when the mod turns itself off.
 function U.on_fail(fn) fail_handlers[#fail_handlers + 1] = fn end
 
-local function fail(err)
+-- notice: the i18n key of the line the player sees ("failed" unless given).
+local function fail(err, notice)
     print("[BossRush] ERROR " .. tostring(err) .. "\n")        -- always logged, debug or not
     if failed then return end
     failed = true
@@ -108,7 +109,13 @@ local function fail(err)
         local ok, e = xpcall(fn, debug.traceback)
         if not ok then print("[BossRush] ERROR while stopping: " .. tostring(e) .. "\n") end
     end
-    pcall(function() require("ui").toast(require("i18n").t("failed"), 6) end)
+    pcall(function() require("ui").toast(require("i18n").t(notice or "failed"), 6) end)
+end
+
+-- Turns the mod off the same way as an error, without one: the start-up check (health.lua) found the game
+-- changed under it. reason is logged; notice is the i18n key of the line the player sees.
+function U.stop(reason, notice)
+    fail(reason, notice)
 end
 
 -- Calls fn(...) and turns an error into fail(). Returns ok, and fn's first result.

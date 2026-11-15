@@ -179,6 +179,7 @@
 | 结算标题下的小字行 | 残影试炼 0.1.5（入口名 + mod 版本号，开发版显示 dev） | Trial of Echoes 0.1.5 |
 | 结算第三行 | 击败　难度 · 档位（入阵者 / 破局者 / 逆天者 / 六十六天 · 一重～五重） | Defeated　Difficulty · tier (Wayfarer / Pathbreaker / Hellwalker / 66 Days · Tier I-V) |
 | 出错停用（提示条） | 残影试炼出错，已停用，重启游戏后恢复 | Trial of Echoes hit an error and is off until the game restarts |
+| 游戏更新后停用（提示条，启动体检发现缺少核心部件） | 游戏已更新，残影试炼暂停，待 mod 更新后恢复 | The game has been updated. Trial of Echoes is paused until the mod is updated. |
 | 返回 | 按确认键，自里武林醒转，回到铃铛之侧。 | Press confirm to stir from the Discordance and wake beside the Bell. |
 | 万象结算 | 前路已尽（打完全部关）。<br>闯过 {0} / {1} 关，心法 {2} 门。 | The Path Ends.<br>Cleared {0} / {1} stages, {2} Insights. |
 | 万象每关开战 | 第 {0} / {1} 关 · 凶煞 · 铁躯 | Stage {0} / {1} · Dread Foe · Ironclad |

@@ -48,8 +48,10 @@ local A = {
 
 local M = {}
 
--- Whether the arena can be travelled to in this playthrough: its bell is rung (the Realm of Mirage needs none).
+-- Whether the arena can be travelled to in this playthrough: its bell is rung (the Realm of Mirage needs none),
+-- and its map is in the game (the start-up check, health.lua, required here: it requires this file).
 function M.usable(a, rung)
+    if a.map and not require("health").has(a.map) then return false end
     return a.kind == "jhsy" or rung[U.bell_name(a.bell)] == true
 end
 

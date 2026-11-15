@@ -11,6 +11,7 @@ local roster = require("roster")
 local gauntlets = require("gauntlets")
 local tier = require("tier")
 local ui = require("ui")
+local health = require("health")
 
 local T = i18n.t
 -- Rows per list page (单挑, 连战). With 下一页 / 上一页 / 返回 a page has 11 rows, three more than the bell menu's own column
@@ -19,9 +20,10 @@ local T = i18n.t
 local PAGE = 8
 
 -- Open bosses: not tied to level-placed points (or their points are placed by the mod), not prologue variants.
--- All are offered (user decision). Bosses still being tried ("testing") only in development builds.
+-- All are offered (user decision). Bosses still being tried ("testing") only in development builds. A boss whose
+-- class or helper points the start-up check did not find in the game (an update, health.lua) is left out.
 local function offered(b)
-    return b.state == "open" or (b.state == "testing" and config.debug)
+    return (b.state == "open" or (b.state == "testing" and config.debug)) and health.boss_ok(b)
 end
 
 local by_id = {}
@@ -237,7 +239,9 @@ show_root = function(focus)
 end
 
 math.randomseed(os.time())
-menu.install(show_root, function() return not run.active() end)
+-- The bell entry appears once the start-up check has passed (doc/UPDATE.md); a failed check stops the mod.
+health.start()
+menu.install(show_root, function() return health.ready() and not run.active() end)
 local pause = require("pause")
 pause.install(run.active, run.abort)
 run.on_start(pause.watch)
@@ -245,7 +249,7 @@ run.on_start(pause.watch)
 -- Development only: devtools.lua is not shipped (src/tools/build_release.py leaves it out).
 if config.debug then
     local ok, dev = pcall(require, "devtools")
-    if ok and dev then dev.install(run, arenas) end
+    if ok and dev then dev.install(run, arenas, health, roster) end
     -- Group data check (DESIGN §5.0b): every open boss in some 千影 stage (a newly opened boss is placed by hand),
     -- every listed boss in the roster, every arena key known.
     local staged = {}

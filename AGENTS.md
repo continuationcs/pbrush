@@ -46,6 +46,18 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
   二周目 save (both bells unrung) 金面具黑衣人 went to the Realm of Mirage, a death there ended as 饮恨 and the
   player got home, and 舞狮尊主 was refused with the notice. Bells reset in a new playthrough: an arena or a
   travel target that worked in the first playthrough may be unrung in the next one.
+- **Game updates and DLC**: the plan is `doc/UPDATE.md`. The start-up check (`health.lua`) looks up, by name,
+  every game class, function and property the mod uses, and the bosses' classes, helper points and arena maps (in
+  the asset registry, never loaded): a missing core part stops the mod with a notice, a missing boss or map leaves
+  out that one. **A new call on a game class goes into its lists** (`NATIVE`, `WIDGETS`, `OPTIONAL_ASSETS`), names
+  checked against `CXXHeaderDump`: a wrong name there stops the mod for every player. Update `TESTED_BUILD` (Steam
+  buildid) with each release. Development keys F7 / F8 show what a missing boss / core part does.
+  The asset registry singleton is the class default object `/Script/AssetRegistry.Default__AssetRegistryImpl`
+  (`U.find_all` skips defaults and found nothing); `K2_GetAssetByObjectPath` works from Lua and is calibrated with a
+  known, a made-up and the current map's path (confirmed 2026-11-16: 117 lookups, nothing loaded). An asset path
+  given to it must carry the mount: `asset_scan.py list` prints paths without it, and a plugin's content mounts at
+  `/<Plugin>/` (`ProjectPBZ/Plugins/Secret/PBZCombatAsset/Content/Prototypes/...` is
+  `/PBZCombatAsset/Prototypes/...`, not `/Game/...`): the check reported the identity action missing until fixed.
 - A test round is expensive, so make one round answer the question: log each stage of a new integration (object
   found → page recognised → row added → row on screen → clicked) so the log shows where it stopped, and put a
   read-only description of what was found (names, classes, counts) in the debug log. A missing log line means
@@ -361,10 +373,11 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
   combinations**: F1 god mode, F2 mark a spot for a new arena and survey it right there (grades on screen), F3
   arena survey (only the `FOCUS` arena when `devtools.lua` sets one), F4 forced error, F5 go to the `FOCUS` arena
   (for an arena whose bell the bell menu cannot reach), F6 every run in the Realm of Mirage on / off (it is
-  otherwise only the fallback when no arena is available). The discovery probe mod was retired (git history has it;
+  otherwise only the fallback when no arena is available), F7 treat the first open boss as missing from the game, F8 run the start-up
+  check again with a made-up core part missing (the mod stops). The discovery probe mod was retired (git history has it;
   UE4SS's own keybinds dump the CXX headers). **Never bind F10, F11 or F12**: F10 opens the UE4SS console
   (ConsoleEnablerMod), F11 is the game's (user report), F12 is Steam's screenshot. A new tool takes the next free
-  F key (F7-F9; F7-F9 picked the entrance effects and were removed once chosen, 2026-11-15); UE4SS's own keys all
+  F key (F9; F7-F9 had picked the entrance effects and were removed once chosen, 2026-11-15); UE4SS's own keys all
   use Ctrl.
 - **Loading an asset that is not in memory**: UE4SS's `LoadAsset` left six of eight Niagara effects "not found"
   (2026-11-15; the two that played were already loaded). `U.load` falls back to the engine's

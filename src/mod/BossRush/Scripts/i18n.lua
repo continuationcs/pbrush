@@ -27,6 +27,8 @@ local S = {
     best         = { "最佳", "Best" },
     new_record   = { "新纪录！", "NEW RECORD!" },
     failed       = { "残影试炼出错，已停用，重启游戏后恢复", "Trial of Echoes hit an error and is off until the game restarts" },
+    -- The start-up check (health.lua) found a part of the game the mod needs missing: a game update or DLC.
+    outdated     = { "游戏已更新，残影试炼暂停，待 mod 更新后恢复", "The game has been updated. Trial of Echoes is paused until the mod is updated." },
 }
 
 local M = {}

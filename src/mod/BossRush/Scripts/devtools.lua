@@ -1,4 +1,4 @@
--- Development tools (never shipped: src/tools/build_release.py leaves this file out). Single keys F1-F6, no
+-- Development tools (never shipped: src/tools/build_release.py leaves this file out). Single keys F1-F8, no
 -- combinations (user decision, 2026-11-14). Taken elsewhere: F10 (UE4SS console, ConsoleEnablerMod), F11 (the
 -- game), F12 (Steam screenshot); UE4SS's own keys use Ctrl (Ctrl+R reload, Ctrl+O GUI, Ctrl+J / Ctrl+H dumps).
 --   F1  god mode: off -> unkillable, full Sha-Chi, attack and 破气 x10 -> the same with one-hit kills -> off
@@ -9,6 +9,8 @@
 --   F4  raise an error inside the mod, to check the stop path (log, tip strip, entry removed, run ended)
 --   F5  go to the arena in FOCUS (for one whose bell the bell menu cannot reach, e.g. 龙柱)
 --   F6  every run in the Realm of Mirage, on / off (to test deaths and the way back there)
+--   F7  start-up check (health.lua): treat the first open boss as missing from the game; it leaves the lists
+--   F8  start-up check: run it again with a made-up core part missing, to see the stop a game update causes
 -- Results: [BossRush] DEV lines in UE4SS.log and dev.tsv / marks.tsv in the mod folder.
 local U = require("util")
 local ui = require("ui")
@@ -32,7 +34,7 @@ local function out(line)
     append("dev.tsv", os.date("%H:%M:%S") .. "\t" .. line)
 end
 
-function M.install(run, arenas)
+function M.install(run, arenas, health, roster)
     -- ------------------------------------------------------------ god mode (F1)
     -- Health_Max and Shachi_Max x100 and kept full; attack and 破气 multiplied. Re-applied every 100 ms: a respawn or a level load resets
     -- the attributes. The arena survey turns mode 1 on while it runs.
@@ -375,7 +377,22 @@ function M.install(run, arenas)
         out("Realm of Mirage for every run: " .. tostring(mirage))
         ui.toast(mirage and "调试：挑战都在镜花水月" or "调试：恢复自动选场地", 2)
     end)
-    U.log("devtools ready: F1 god mode, F2 mark and survey a spot, F3 arena survey%s, F4 forced error, F5 go to %s, F6 Realm of Mirage",
+    -- F7 / F8: what a game update does to the mod (doc/UPDATE.md), without one.
+    U.key(Key.F7, function()
+        for _, b in ipairs(roster) do
+            if b.state == "open" and health.boss_ok(b) and not b.part_of then
+                health.pretend_missing(b.class)
+                out("pretend missing: " .. b.id)
+                ui.toast("调试：假装 " .. b.zh .. " 不在游戏中", 3)
+                return
+            end
+        end
+    end)
+    U.key(Key.F8, function()
+        out("start-up check with a made-up core part (F8)")
+        health.start("/Script/ProjectPBZ.PBZSaveLoadSubsystem:BossRushNoSuchFunction (F8)")
+    end)
+    U.log("devtools ready: F1 god mode, F2 mark and survey a spot, F3 arena survey%s, F4 forced error, F5 go to %s, F6 Realm of Mirage, F7 pretend a boss missing, F8 pretend the game changed",
         FOCUS and (" (" .. FOCUS .. " only)") or "", tostring(FOCUS))
 end
 
