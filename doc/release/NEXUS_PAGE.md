@@ -15,6 +15,9 @@
   of the progress and New Game+ scaling, and shorten the boss's breaks. The tier applies to Duel and Gauntlet
   alike and is kept across restarts; best times are kept per tier (times so far count as Tier I), and the result
   screen shows the tier after the difficulty. Thanks to a1435033075 for asking for it.
+- Bosses make an entrance instead of popping up and attacking at once: a mark rises where the boss will stand,
+  the boss appears in it 1.5 s later and holds still for 1.5 s before it moves. Bosses now appear 12 m away
+  (was 8 m), closer only where the arena is narrow.
 - Fixed: dying in a fight next to a Bell revived you in the arena and the fight went on; a death now ends the
   run as Undying Grudge. Deaths in the Realm of Mirage, which counted as Sheathe Your Blade, are fixed too.
 - Fixed (New Game+): The Lóng Pillar and The Sealed Lion are used only once their Bell is rung in this
@@ -31,6 +34,8 @@
   二重～五重在进度和周目提升之上，首领生命和杀气 ×1.5 / ×2.25 / ×3.4 / ×5，攻击和破气 ×1.4 / ×2 / ×2.7 / ×3.8，破势硬直更短。
   单挑、连战都用这一档，重启游戏后保留；最佳用时按档分开记（以前的纪录算一重），结算画面在难度后面显示档位。
   感谢 a1435033075 的建议。
+- 首领出场：不再凭空出现、立刻出手。先在它要出现的位置浮现征兆，1.5 秒后首领在其中现身，原地停 1.5 秒再行动；
+  出现距离从 8 米改为 12 米，场地窄时自动近一些。
 - 修复：在铃铛旁的场地战死后会原地复活、挑战继续；现在战死即以「饮恨」结束；镜花水月中战死被记成「收刃离去」的问题也一并修好。
 - 修复（多周目）：专属战场「龙柱」「尊主封印地」只在本周目已敲响其铃铛时使用。之前在铃铛未敲的龙柱战死，可能导致游戏崩溃，
   存档也停在那个铃铛。铃铛未敲时，金面具黑衣人改在其他场地打；舞狮尊主会提示先敲响尊主封印地的铃铛。
