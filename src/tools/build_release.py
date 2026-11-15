@@ -17,10 +17,29 @@ ROOT = Path(__file__).resolve().parents[2]     # repo root (this file is src/too
 SRC = ROOT / 'src' / 'mod' / 'BossRush'
 OUT = ROOT / 'out'
 RELEASE_DOCS = ROOT / 'doc' / 'release'
+# The game the release is tested on (install.ps1's default) and its Steam app manifest, two folders up.
+GAME = Path(r'G:\G\Steam\steamapps\common\PBZ')
+MANIFEST = GAME.parents[1] / 'appmanifest_4115450.acf'
+
+
+def check_tested_build():
+    """The start-up check logs the game build next to health.lua's TESTED_BUILD (doc/UPDATE.md): a release must
+    name the build it was tested on, i.e. the one installed here."""
+    m = re.search(r'local TESTED_BUILD = "(\d+)"', (SRC / 'Scripts' / 'health.lua').read_text(encoding='utf-8'))
+    if not m:
+        sys.exit('health.lua: TESTED_BUILD not found')
+    try:
+        build = re.search(r'"buildid"\s+"(\d+)"', MANIFEST.read_text(encoding='utf-8')).group(1)
+    except (OSError, AttributeError):
+        sys.exit(f'cannot read the game build from {MANIFEST}')
+    if build != m.group(1):
+        sys.exit(f'health.lua TESTED_BUILD is {m.group(1)}, the installed game is {build}: test on this build, '
+                 'then update TESTED_BUILD (doc/UPDATE.md)')
 
 
 def main():
     version = sys.argv[1] if len(sys.argv) > 1 else '0.1.0'
+    check_tested_build()
     stage = OUT / f'BossRush-{version}'
     if stage.exists():
         shutil.rmtree(stage)

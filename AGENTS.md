@@ -51,7 +51,10 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
   the asset registry, never loaded): a missing core part stops the mod with a notice, a missing boss or map leaves
   out that one. **A new call on a game class goes into its lists** (`NATIVE`, `WIDGETS`, `OPTIONAL_ASSETS`), names
   checked against `CXXHeaderDump`: a wrong name there stops the mod for every player. Update `TESTED_BUILD` (Steam
-  buildid) with each release. Development keys F7 / F8 show what a missing boss / core part does.
+  buildid) with each release: `build_release.py` refuses a build when it differs from the installed game's.
+  `src/tools/header_baseline.py` keeps those classes' header text per build (`src/data/game_baseline/`); after an
+  update, regenerate the dump (Ctrl+H, after opening a bell menu and finishing a fight so the Blueprints are
+  loaded), run it again and `diff`. Development keys F7 / F8 show what a missing boss / core part does.
   The asset registry singleton is the class default object `/Script/AssetRegistry.Default__AssetRegistryImpl`
   (`U.find_all` skips defaults and found nothing); `K2_GetAssetByObjectPath` works from Lua and is calibrated with a
   known, a made-up and the current map's path (confirmed 2026-11-16: 117 lookups, nothing loaded). An asset path
@@ -90,8 +93,8 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
 ## Repository layout
 
 - `src/`: everything the build uses. `src/mod/BossRush` (the mod, incl. the dev-only `devtools.lua`), `src/tools` (install, release build, generators, `lua_check.py`,
-  `crash_dump.py`, `asset_scan.py`),
-  `src/data` (bell and arena tables, test results), `src/ue4ss` (UE4SS layout and signatures for this game
+  `crash_dump.py`, `asset_scan.py`, `header_baseline.py`),
+  `src/data` (bell and arena tables, test results, game header baselines), `src/ue4ss` (UE4SS layout and signatures for this game
   build), `src/vendor` (third-party files).
 - `doc/`: design (`DESIGN.md`), text (`COPY.md`), release texts and images (`doc/release`).
 - `out/`: build output (not tracked). `README.md` and `AGENTS.md` stay at the root, where GitHub and coding

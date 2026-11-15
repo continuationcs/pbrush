@@ -26,7 +26,7 @@ mod 自己的数据（`records.tsv`、`settings.tsv`）按 Boss id 存。id 改�
    - 体检通过前不插铃铛入口。结果摘要每次都写进 `UE4SS.log`（发布版也写，以 `[BossRush] health:` 开头），玩家发来日志即可知道坏在哪；
    - 清单在 `health.lua` 的 `NATIVE` / `WIDGETS` / `OPTIONAL_ASSETS`：**新加一处对游戏类的调用，就把它加进清单**。清单里的类名、模块名、成员名用 `CXXHeaderDump` 核对过（2026-11-15，全部存在）；
    - 开发版 F7 假装第一个开放 Boss 不在游戏里（它从列表消失），F8 假装缺一个核心部件（mod 停用并提示），不等真的更新就能看停用路径。
-2. **记下测试过的版本**：`health.lua` 的 `TESTED_BUILD`（当前 26367565）。启动时读 Steam 的 `appmanifest_4115450.acf`（mod 目录往上六层的 `steamapps\`；读不到就跳过，不猜），日志写一行「game build X (tested with Y)」，不一致只多一句提醒，不打扰玩家（体检才决定能不能用）。每次发版更新这个值。
+2. **记下测试过的版本**：`health.lua` 的 `TESTED_BUILD`（当前 26367565）。启动时读 Steam 的 `appmanifest_4115450.acf`（mod 文件夹往上七层的 `steamapps\`；读不到就跳过，不猜），日志写一行「game build X (tested with Y)」，不一致只多一句提醒，不打扰玩家（体检才决定能不能用）。每次发版更新这个值。
 3. **离线差异工具**（待做，`src/tools/game_diff.py`）：用 pbzero 读新旧两份 `utoc`，对比
    - roster 和 arenas 里每个类路径、地图路径是否还在；
    - 每个 Boss 的能力里查找关卡物件的方式（`asset_scan.py deps`）有没有变化，新增的查找要重新判 `helpers` / `anchored`；
@@ -35,17 +35,19 @@ mod 自己的数据（`records.tsv`、`settings.tsv`）按 Boss id 存。id 改�
    - 我们用到的控件蓝图（`W_BellMenu`、`wb_settlement`、`WB_TipsText`、设置面板）的依赖表是否变了。
    旧版本只需保存一份「快照」（上面各项的清单和哈希，存在 `src/data/game_snapshot/<buildid>.json`），不用留整个旧 pak。
 4. **固定冒烟测试清单**（本文 §7），每次更新都跑同一份，一轮答完。
-5. **CXXHeaderDump 留底**：更新前把关键头文件（`W_BellMenu*`、`W_PBZSettingPanel*`、`PBZSaveLoadSubsystem`、`PBZGameSystem`、`AttributeSetBase`）的哈希记进快照，更新后重新 dump 再对比，属性改名一眼可见。
+5. **CXXHeaderDump 留底**（2026-11-16 做好）：`python src\tools\header_baseline.py` 把体检清单里的每个类（连同父类，去掉偏移量）从头文件里抄进 `src/data/game_baseline/<buildid>.txt`，当前是 `26367565.txt`（50 个类；`wb_settlement` 生成头文件时没加载，不在里面）。游戏更新后：在游戏里打开铃铛、打完一场（让蓝图加载），按 Ctrl+H 重新生成头文件，再跑一次这个工具，然后 `header_baseline.py diff` 对比新旧两份，类和成员的增删改名一眼可见。头文件比游戏的最后更新时间旧时工具会拒绝，免得把旧 dump 当成新版本。
+6. **发版自动核对版本号**（2026-11-16 做好）：`build_release.py` 读本机 Steam 的 buildid，和 `TESTED_BUILD` 不一致就不出包。
 
 ## 3. 更新那天的流程
 
 1. **先别开存档**：备份存档（`save-backup/`）。更新可能改存档格式，mod 不写存档，但测试会推进进度。
 2. **看 UE4SS 是否起来**（A 层）：启动游戏看 `UE4SS.log`。
    - 没起来：玩家那边要等 KintaroModding 的 UE4SS 更新。我们立刻在 Nexus 置顶说明（模板见 §5），本机按 AGENTS「Investigating」的方法重找签名，以便先修我们自己这层。
-3. **看体检表**（B、C 层）：`UE4SS.log` 里 `[BossRush] health:` 开头的几行就是坏点清单（`MISSING:` 是核心，`left out` 是被撤下的 Boss 和场地）。
-4. **跑离线差异**（C 层）：`game_diff.py` 列出变化，逐项判断。
-5. **按 §4 分级处理**，修好后跑 §7 冒烟测试。
-6. **发版**：版本说明写明「适配游戏 buildid xxx」；`health.lua` 的 `TESTED_BUILD` 更新；快照存一份新的。教训照规矩写回 AGENTS / DESIGN。
+3. **对比头文件**（B 层）：打开铃铛、打完一场，Ctrl+H，`header_baseline.py` 再 `header_baseline.py diff`（见 §2.5）。
+4. **看体检表**（B、C 层）：`UE4SS.log` 里 `[BossRush] health:` 开头的几行就是坏点清单（`MISSING:` 是核心，`left out` 是被撤下的 Boss 和场地）。
+5. **跑离线差异**（C 层）：`game_diff.py` 列出变化，逐项判断（工具待做）。
+6. **按 §4 分级处理**，修好后跑 §7 冒烟测试。
+7. **发版**：版本说明写明「适配游戏 buildid xxx」；`health.lua` 的 `TESTED_BUILD` 更新（不更新 `build_release.py` 不出包）；新版本的头文件基线一起提交。教训照规矩写回 AGENTS / DESIGN。
 
 ## 4. 分级
 
