@@ -342,9 +342,10 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
   look there when a boss will not die. Not every floor is a bug: a lock that ends in an execution
   (`GE_LockHealthButCanExecuted`, 舞狮尊主's last lion head) is the fight's mechanic. A current `Health_Min` of 1
   with base 0 near the end (毕峰, 风雪刀客, 2026-11-15) is such an execution lock: the forced `Kill` ends it.
-- **A death in a challenge must not be a game death**: in 66 Days (NightMare) mode each death costs days, every
-  mode takes Remnant Dust and counts the death, and the game saves on revive, so the loss stays in the save (player
-  report 2026-11-16: a 66-day save lost days after a challenge). The same floor works on the player: `run.lua`
+- **A death in a challenge must not be a game death**: in 66 Days (NightMare) mode each death costs days (the only
+  loss a death brings: no mode takes Remnant Dust, user correction 2026-11-16), every mode counts the death, and the
+  game saves on revive, so the loss stays in the save (player report 2026-11-16: a 66-day save lost days after a
+  challenge). The same floor works on the player: `run.lua`
   raises the player's `Health_Min` to 1 from the first boss until the trip home starts (that trip saves), and
   health at the floor ends the run as 饮恨 with no game death. Confirmed 2026-11-16 on a 66 Days save: a lost and a
   won run left `RemainingDays` (65), `ConsciousnessDust` and `DiedTimes` unchanged; the travel itself costs nothing.

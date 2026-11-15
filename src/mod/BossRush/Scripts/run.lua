@@ -40,8 +40,8 @@ local function save_origin()
 end
 
 -- ---------------------------------------------------------------- the player's health floor
--- A death in a challenge must never be a game death: in 66 Days (NightMare) mode each death costs days, the game
--- also takes Remnant Dust and counts the death, and it saves on revive, so the loss is kept in the player's only
+-- A death in a challenge must never be a game death: in 66 Days (NightMare) mode each death costs days (the only
+-- loss: no mode takes Remnant Dust), the game counts the death, and it saves on revive, so the loss is kept in the player's only
 -- slot (player report 2026-11-16: "a 66-day save loses days after a challenge"). While a fight is on, the player's
 -- Health_Min is raised to FLOOR, the same attribute that kept bosses from dying (AGENTS: health floors); health
 -- reaching it ends the run as 饮恨. The death counter stays the fallback for whatever ignores the floor.
@@ -74,7 +74,7 @@ local function clear_floor()
 end
 
 -- What a game death would cost, logged at each stage of a run, so one test shows whether a challenge changed any
--- of it (66 Days: days left; any mode: Remnant Dust, deaths). Log only: read with pcall from the player blueprint
+-- of it (66 Days: days left; any mode: deaths; Remnant Dust as a check). Log only: read with pcall from the player blueprint
 -- (BP_RenewalPlayer_C, properties from the header dump); a name a game update changes reads "?" and costs nothing,
 -- so they are not in the start-up check (health.lua), which would stop the mod for them.
 local LEDGER = { "RemainingDays", "IrretrievableDays", "RemainingDaysOnlastDeerBell", "ConsciousnessDust", "BuffLevel" }
