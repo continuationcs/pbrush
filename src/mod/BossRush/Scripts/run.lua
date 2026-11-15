@@ -80,24 +80,89 @@ local function restore(snap)
     U.log("run: state restored")
 end
 
--- Sets run.center (arena centre) and run.face (yaw the player faces on arrival), then travels.
+-- ---------------------------------------------------------------- placing the player
+-- The fight belongs on the arena's marked spot, away from the bell (user request 2026-11-15). Travel to an arena
+-- lands on it, but two cases start at a bell: a run started at the arena itself (in place: the player stands at
+-- the bell they opened the menu at) and the Realm of Mirage (its entrance is its bell). Once arrived, the player
+-- is moved within the loaded level: fade to black, move, face the arena, fade back. An in-place run takes the
+-- player back to their bell the same way.
+local FADE_MS = 400
+local BLACK = { R = 0, G = 0, B = 0, A = 1 }
+local ON_SPOT = 300        -- cm: closer than this to the spot needs no move
+
+local function camera()
+    local pc = UEHelpers.GetPlayerController()
+    if not U.valid(pc) then return nil end
+    local cam = pc.PlayerCameraManager
+    return U.valid(cam) and cam or nil
+end
+
+local function fade(from, to, hold)
+    local cam = camera()
+    if cam then cam:StartCameraFade(from, to, FADE_MS / 1000, BLACK, false, hold) end
+end
+
+-- done() runs once the player is placed (the screen is fading back in).
+local function place_player(spot, yaw, done)
+    fade(0, 1, true)
+    U.after(FADE_MS, function()
+        local p = U.pawn()
+        if U.valid(p) then
+            p:K2_SetActorLocationAndRotation(spot, { Pitch = 0, Yaw = yaw, Roll = 0 }, false, {}, true)
+            local pc = UEHelpers.GetPlayerController()
+            local pitch = pc:GetControlRotation().Pitch
+            pc:SetControlRotation({ Pitch = pitch, Yaw = yaw, Roll = 0 })
+            local now = p:K2_GetActorLocation()
+            U.log("run: player placed at %.0f %.0f %.0f (%.0f m from the spot), facing %.0f", now.X, now.Y, now.Z,
+                U.dist(now, spot) / 100, yaw)
+        else
+            U.log("run: no player to place")
+        end
+        fade(1, 0, false)
+        done()
+    end)
+end
+
+-- Whether the player is in an animation montage (e.g. getting up from the bell): moving them waits for it.
+local function in_montage(p)
+    local playing = false
+    pcall(function()
+        local mesh = p.Mesh
+        if not U.valid(mesh) then return end
+        local anim = mesh:GetAnimInstance()
+        if U.valid(anim) then playing = anim:IsAnyMontagePlaying() end
+    end)
+    return playing
+end
+
+-- Sets run.land (where the player is when the arena is loaded), run.center (the arena's spot: the fight's
+-- centre) and run.face (yaw the player faces there), then travels.
 local function go_to_arena()
     local a = run.arena
+    run.placed = false
     if run.in_place then
-        -- Already standing at this arena: fight right here.
-        local p = U.pawn()
-        local l = p:K2_GetActorLocation()
-        run.center = { X = l.X, Y = l.Y, Z = l.Z }
-        run.face = p:K2_GetActorRotation().Yaw
+        -- Already at this arena (at its bell): no travel; the player is moved to the spot on arrival.
+        local l = U.pawn():K2_GetActorLocation()
+        run.land = { X = l.X, Y = l.Y, Z = l.Z }
+        run.center = { X = a.x, Y = a.y, Z = a.z }
+        run.face = a.yaw
     elseif a.kind == "jhsy" then
         local tp = FindFirstOf("PBZTeleportSubsystem")
         local out, cam = {}, {}
         tp:GetJhsyBellTeleportTransform(out, cam)
-        run.center = { X = out.Translation.X, Y = out.Translation.Y, Z = out.Translation.Z }
-        run.face = U.pawn():K2_GetActorRotation().Yaw
+        run.land = { X = out.Translation.X, Y = out.Translation.Y, Z = out.Translation.Z }
+        if a.x then
+            run.center = { X = a.x, Y = a.y, Z = a.z }
+            run.face = a.yaw
+        else
+            -- No spot marked yet: fight at the entrance.
+            run.center = run.land
+            run.face = U.pawn():K2_GetActorRotation().Yaw
+        end
         tp:TeleportToJhsy(out)
     else
         run.center = { X = a.x, Y = a.y, Z = a.z }
+        run.land = run.center
         run.face = a.yaw
         teleport_to(a.map, a.x, a.y, a.z, a.yaw, a.bell)
     end
@@ -107,9 +172,13 @@ local function go_home()
     local o = run.origin
     phase("returning")
     if run.in_place then
-        -- Never left: just put the player's state back.
+        -- Never left the level: back to the bell they started at (unless already there, e.g. revived at it),
+        -- then put the player's state back.
         local snap = run.snap
-        U.after(1000, function() restore(snap) run = nil end)
+        local function done() U.after(1000, function() restore(snap) run = nil end) end
+        local home = { X = o.x, Y = o.y, Z = o.z }
+        local okd, d = pcall(function() return U.dist(U.pawn():K2_GetActorLocation(), home) end)
+        if okd and d > ON_SPOT then place_player(home, o.yaw, done) else done() end
         return
     end
     local tp = FindFirstOf("PBZTeleportSubsystem")
@@ -329,15 +398,20 @@ local function check_one(b)
     -- and goes like any other boss, scaled or not (Nexus report on 0.1.4, mastersoul2). Checked every tick: the
     -- floor may be applied after spawning, and again stage by stage: 组织冥主：左殇 (black-haired) got 6400, 4800
     -- and 3200 (80 / 60 / 40% of its base 8000), each cleared, and died (2026-11-15).
-    if b.clear_min then
-        pcall(function()
-            local m = actor.AttributeSetBase.Health_Min
-            if m.CurrentValue > 0 or m.BaseValue > 0 then
-                U.log("run: %s Health_Min %.0f set to 0", b.id, m.CurrentValue)
+    -- Other bosses: a floor that appears during the fight is logged once per value, so the next boss that
+    -- cannot be killed shows it in the log (悲痛欲绝的阿瑾 read 0 at spawn and was locked later, 2026-11-15).
+    pcall(function()
+        local m = actor.AttributeSetBase.Health_Min
+        if m.CurrentValue > 0 or m.BaseValue > 0 then
+            if b.clear_min then
+                U.log("run: %s Health_Min %.0f (base %.0f) set to 0", b.id, m.CurrentValue, m.BaseValue)
                 m.BaseValue, m.CurrentValue = 0, 0
+            elseif b.min_seen ~= m.CurrentValue then
+                b.min_seen = m.CurrentValue
+                U.log("run: %s Health_Min %.0f during the fight (not cleared: not in CLEAR_HEALTH_MIN)", b.id, m.CurrentValue)
             end
-        end)
-    end
+        end
+    end)
     -- Leash: pull a boss back if a skill threw it far away or it fell out of the arena. Logged when it starts and
     -- ends, with whether the pull moved it (追命's second phase sat at 0,0,0 and could not be pulled back,
     -- 2026-11-14), not on every tick.
@@ -764,22 +838,43 @@ local function arena_taken(natives)
     wait_arrival()
 end
 
--- Wait for the arena to load: loading finished, and the player standing near the arena centre for a moment.
+-- Wait for the arena to load: loading finished, and the player standing where the travel puts them (or on the
+-- spot) for a moment. Then, if they are not on the spot (in place, Realm of Mirage), move them there once and
+-- wait again. A montage (getting up from the bell) is let finish first, for up to MONTAGE_TICKS.
+local MONTAGE_TICKS = 20
 function wait_arrival()
-    local stable, tries, seen = 0, 0, nil
+    local stable, tries, seen, placing, montage = 0, 0, nil, false, 0
     U.every(500, function()
         if not run or run.phase ~= "travelling" then return true end
+        if placing then return false end
         tries = tries + 1
         local busy = loading()
-        local near = false
-        pcall(function() near = U.dist(U.pawn():K2_GetActorLocation(), run.center) < 1500 end)
+        local p = U.pawn()
+        local pl = nil
+        pcall(function() pl = p:K2_GetActorLocation() end)
+        local near = pl ~= nil and (U.dist(pl, run.land) < 1500 or U.dist(pl, run.center) < 1500)
         local state = string.format("loading screen %s, at the arena %s", tostring(busy), tostring(near))
         if state ~= seen then
             seen = state
             U.log("run: %s (tick %d)", state, tries)
         end
         stable = (near and not busy) and stable + 1 or 0
+        if stable >= 4 and not run.placed and U.dist(pl, run.center) > ON_SPOT then
+            if in_montage(p) and montage < MONTAGE_TICKS then
+                if montage == 0 then U.log("run: waiting for the player's montage before the move") end
+                montage = montage + 1
+                return false
+            end
+            local bd, bn = U.nearest_bell(pl)
+            U.log("run: moving the player %.0f m to the spot (montage %s; nearest bell %s m, %s)", U.dist(pl, run.center) / 100,
+                montage >= MONTAGE_TICKS and "still playing" or "none", bd and string.format("%.0f", bd / 100) or "?", tostring(bn))
+            run.placed, placing = true, true
+            place_player(run.center, run.face, function() placing, stable = false, 0 end)
+            return false
+        end
         if stable >= 4 then
+            local bd, bn = U.nearest_bell(pl)
+            U.log("run: arrived, nearest bell %s m (%s)", bd and string.format("%.0f", bd / 100) or "?", tostring(bn))
             local natives = native_bosses_near(run.center)
             if #natives > 0 then arena_taken(natives) return true end
             phase("arrived")
@@ -799,6 +894,9 @@ end
 -- The mod turned itself off after an error (U.failed): end a running challenge and send the player home with
 -- their state restored. A run already ending or returning finishes on its own.
 U.on_fail(function()
+    -- An error while the player was being placed would leave the screen black (the fade out holds).
+    local cam = camera()
+    if cam then pcall(function() cam:StopCameraFade() end) end
     if run and run.phase ~= "ending" and run.phase ~= "returning" then finish("error") end
 end)
 

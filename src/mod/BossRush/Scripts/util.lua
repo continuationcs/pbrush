@@ -191,6 +191,18 @@ function U.game_system(field)
     return v
 end
 
+-- The loaded bell nearest to p (a world position): distance (cm) and the bell's object name, or nil when no bell
+-- is loaded. Bells of every kind (melodious, broken, stone crane) are PBZCheckPoint actors; world partition loads
+-- only the ones nearby. A fight is not to be next to a bell (user request 2026-11-15, DESIGN 5.0a).
+function U.nearest_bell(p)
+    local best, name = nil, nil
+    for _, b in ipairs(U.find_all("PBZCheckPoint")) do
+        local ok, d = pcall(function() return U.dist(b:K2_GetActorLocation(), p) end)
+        if ok and (not best or d < best) then best, name = d, b:GetFName():ToString() end
+    end
+    return best, name
+end
+
 -- Load a class by "/Pkg/Path/Asset.Asset_C".
 function U.load_class(path)
     if type(path) ~= "string" then error("U.load_class: path expected, got " .. type(path)) end

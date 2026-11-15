@@ -152,6 +152,9 @@ function M.install(run, arenas)
     local DETOUR = 1.3
     local OPEN_ENOUGH = 1500                          -- a direction counts as open from 15 m
     local BOSS_AHEAD = 800
+    -- The player's spot must be at least this far from the nearest bell (user request 2026-11-15: no fight right
+    -- next to a bell; DESIGN 5.0a). Closer is graded 差 whatever the ground.
+    local BELL_MIN = 1200
     local EDGE_EXTENT = { X = 50, Y = 50, Z = 250 }   -- small: a sample off the mesh must fail, not snap back
     local CENTER_EXTENT = { X = 200, Y = 200, Z = 500 }
     local nav_path = "/Script/NavigationSystem.Default__NavigationSystemV1"
@@ -189,14 +192,16 @@ function M.install(run, arenas)
         return open, why, maxdz
     end
 
-    -- Grade by doc/DESIGN.md 5.0a.
-    local function grade(enough, min_m, dz_m)
+    -- Grade by doc/DESIGN.md 5.0a. bell: distance to the nearest bell (cm), only for the player's spot.
+    local function grade(enough, min_m, dz_m, bell)
+        if bell and bell < BELL_MIN then return "差" end
         if enough >= 14 and min_m >= 10 and dz_m <= 3 then return "良" end
         if enough >= 11 and min_m >= 6 and dz_m <= 4 then return "可" end
         return "差"
     end
 
-    local function summary(arena, label, res)
+    -- bell: { dist, name } of the nearest bell, for the player's spot (dist nil: no bell loaded nearby).
+    local function summary(arena, label, res, bell)
         local opens, reasons, enough, maxdz = {}, {}, 0, 0
         for _, r in ipairs(res) do
             opens[#opens + 1] = r.open
@@ -209,11 +214,17 @@ function M.install(run, arenas)
         for k, v in pairs(reasons) do why[#why + 1] = k .. " " .. v end
         local dirs = {}
         for _, r in ipairs(res) do dirs[#dirs + 1] = string.format("%.0f", r.open / 100) end
-        local g = grade(enough, opens[1] / 100, maxdz / 100)
-        out(string.format("survey\t%s\t%s\t%s\topen>=15m %d/%d\tmin %.0f m\tmedian %.0f m\tmax dz %.1f m\t%s\tdirs %s",
+        local g = grade(enough, opens[1] / 100, maxdz / 100, bell and bell.dist)
+        local bell_text = ""
+        if bell then
+            bell_text = bell.dist and string.format("\tbell %.0f m (%s)", bell.dist / 100, bell.name) or "\tbell none loaded"
+        end
+        out(string.format("survey\t%s\t%s\t%s\topen>=15m %d/%d\tmin %.0f m\tmedian %.0f m\tmax dz %.1f m%s\t%s\tdirs %s",
             arena.key, label, g, enough, #res, opens[1] / 100, opens[math.floor(#opens / 2) + 1] / 100, maxdz / 100,
-            table.concat(why, ", "), table.concat(dirs, " ")))
-        return string.format("%s %s %d/16 最窄 %.0f m", label == "player" and "站位" or "首领点", g, enough, opens[1] / 100)
+            bell_text, table.concat(why, ", "), table.concat(dirs, " ")))
+        local line = string.format("%s %s %d/16 最窄 %.0f m", label == "player" and "站位" or "首领点", g, enough, opens[1] / 100)
+        if bell and bell.dist then line = line .. string.format(" 离铃铛 %.0f m", bell.dist / 100) end
+        return line
     end
 
     local surveying = false
@@ -275,6 +286,8 @@ function M.install(run, arenas)
                     local f = math.rad(a.yaw)
                     local b = project(nav, world, { X = p.X + math.cos(f) * BOSS_AHEAD, Y = p.Y + math.sin(f) * BOSS_AHEAD, Z = p.Z }, CENTER_EXTENT)
                     jobs, res = {}, { player = {}, boss = {} }
+                    local bd, bn = U.nearest_bell(p)
+                    res.bell = { dist = bd, name = bn }
                     for d = 0, DIRS - 1 do jobs[#jobs + 1] = { "player", p, a.yaw + d * 360 / DIRS } end
                     if b then
                         for d = 0, DIRS - 1 do jobs[#jobs + 1] = { "boss", b, a.yaw + d * 360 / DIRS } end
@@ -294,7 +307,7 @@ function M.install(run, arenas)
                     table.insert(res[job[1]], { open = open, why = why, dz = dz })
                     return false
                 end
-                local lines = { summary(list[i], "player", res.player) }
+                local lines = { summary(list[i], "player", res.player, res.bell) }
                 if #res.boss > 0 then lines[#lines + 1] = summary(list[i], "boss", res.boss) end
                 if here then ui.toast("调试：" .. table.concat(lines, "；"), 8) end
                 step = "go"

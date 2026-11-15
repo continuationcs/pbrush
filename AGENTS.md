@@ -26,7 +26,9 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
 - New or moved arenas: mark the spot with F2 (it surveys the spot at once), then run the arena survey
   (development build, F3), and grade them by the standard in `doc/DESIGN.md` §5.0a before offering them.
   Never take a bell's teleport point as the standing spot: the 龙柱 bell's point was a cramped nook (3/16 open,
-  0 m); have the user mark one in the open ground (2026-11-14).
+  0 m); have the user mark one in the open ground (2026-11-14). A spot under 12 m from the nearest bell grades 差
+  (user decision 2026-11-15: no fight right next to a bell); the survey logs the distance. Runs that start at a
+  bell (in place, Realm of Mirage) move the player onto the spot behind a camera fade (`run.lua` `place_player`).
 - **Some bells cannot be travelled to from the bell menu** (龙柱 `Bell_DP_001`, in Xigu's separate Discordance
   space), yet `PBZSaveLoadSubsystem:TeleportTo` with the bell id takes the player there and the run works. A
   boss's original battlefield in such a space is an arena of kind `own` (as 尊主封印地); to work on it, set
@@ -305,7 +307,12 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
   screen. Setting `Health_Min` to 0 lets it die normally (roster `clear_health_min`; Nexus report by mastersoul2,
   confirmed with the 0.1.5 release build 2026-11-14). A story fight can set it too: 组织冥主：左殇 (black-haired)
   gets `Health_Min` 6400, 4800, then 3200 (80 / 60 / 40% of its base 8000) as its scripted fight goes on: it could
-  not be killed until the run cleared each one as it came (checked every tick, 2026-11-15). Each boss's
+  not be killed until the run cleared each one as it came (checked every tick, 2026-11-15). 悲痛欲绝的阿瑾 read 0
+  at spawn and was locked later by its passive (`GE_LockHealth`, tied to its red troop's soldiers dying, found
+  offline in the passive's name map): a floor at spawn is not the whole story. Cleared, it fell to 0 and the
+  forced `Kill` ended it (confirmed 2026-11-15; the floor showed in the base value while the current read 0, so
+  check both). The run now logs any boss's
+  `Health_Min` that rises during a fight, flagged or not. Each boss's
   `Health_Min` at spawn is in the development log:
   look there when a boss will not die. Not every floor is a bug: a lock that ends in an execution
   (`GE_LockHealthButCanExecuted`, 舞狮尊主's last lion head) is the fight's mechanic.

@@ -101,7 +101,13 @@ SUMMONS = {
 # die. 魔渊 in a 二周目 started at Health_Min 24 and could not be killed (Nexus report on 0.1.4, mastersoul2).
 # 组织冥主：左殇 (black-haired): its story fight sets Health_Min to 80, 60 and 40% of its base 8000 in turn (6400,
 # 4800, 3200); it could not be killed until each was cleared (user tests 2026-11-15).
-CLEAR_HEALTH_MIN = ['BP_Monster_MoTian', 'BP_Monster_ZuoShang']
+# 悲痛欲绝的阿瑾 (HuaShan_RedTroop_BigBro): its passive GA_HuaShan_RedTroop_BigBro_Passive applies GE_LockHealth
+# (Health_Min, CharacterState.CanNotBeExecuted) and watches the tag CharacterState.AbilityState.HuaShan.RedTroop.
+# SoldierDead: in its story fight the lock goes with the red troop's soldiers, who are not there in a run. Health_Min
+# read 0 at spawn (the passive applies it later); the player could not kill it, god mode one-hit kills included
+# (user test 2026-11-15; read offline from the passive's and the effect's name maps). With the floor cleared it fell
+# to 0, waited there (the effect also forbids execution), the forced Kill ended it and the run won (2026-11-15).
+CLEAR_HEALTH_MIN = ['BP_Monster_MoTian', 'BP_Monster_ZuoShang', 'BP_Monster_HuaShan_RedTroop_BigBro']
 
 # Bosses fought in several phases (user decision 2026-11-14): one entry, the phases fought straight on. First
 # phase -> its later phases, each a list of bosses that appear together (玉琮's second phase is its three forms at

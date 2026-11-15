@@ -37,7 +37,8 @@ return {
     -- A boss further than this from the arena centre (cm) is pulled back. Only meant to catch a boss thrown
     -- away by a skill or fallen out of the world, not a boss walking around.
     leash = 10000,
-    -- Standing within this distance (cm) of an arena's marked spot starts the fight right here, no travel.
+    -- Standing within this distance (cm) of an arena's marked spot starts the fight there without travel: the
+    -- player is moved from the bell onto the spot (run.lua place_player).
     in_place_radius = 3000,
     -- The player further than this from the arena centre (cm) during a fight has left: the run ends.
     player_leave = 15000,

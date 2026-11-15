@@ -1,7 +1,7 @@
--- Arenas (src/data/arenas_final.tsv, DESIGN §5.0). Coordinates are the user's marked standing spots, adjusted by
--- the arena survey (DESIGN §5.0a, 2026-11-14): camp_lady and camp_tower turned toward their open side; pz_lake
--- (formerly pz_dock, 陆家村浅滩船坞) marked again by the user (F4) after moving it off the raised dock was not enough,
--- and renamed after the lake it now looks over.
+-- Arenas (src/data/arenas_final.tsv, DESIGN §5.0). Coordinates are the user's marked standing spots (F2), each
+-- graded by the arena survey (DESIGN §5.0a). Spots are kept away from bells (user decision 2026-11-15): the
+-- earlier ones stood on the bell's teleport point (1 m); xigu_axe, fuji_tree, ddsd_blade and houjie_lion were
+-- marked again, lyz_white and sz_shrine added, camp_lady and camp_tower removed (user decision 2026-11-15).
 -- kind: "scenic" (名胜; `boss` marks a spot that is also that boss's original battlefield), "own" (a boss's own
 -- battlefield, where the level holds what its fight needs: that boss is fought only there, and nobody else is),
 -- "jhsy" (Realm of Mirage).
@@ -14,21 +14,22 @@
 local U = require("util")
 
 local A = {
-    { key = "xigu_axe",   kind = "scenic", map = "/Game/Maps/B02/PBZ_Xigu_WP",                       bell = "NLES_023",     zh = "斧老大斩落处",   en = "The Axemaster's Fall",        x = -53341, y = 258560, z = -24485, yaw = 0,   boss = "BP_Monster_PengMeng_Axe" },
-    { key = "fuji_tree",  kind = "scenic", map = "/Game/Maps/B03/PBZ_Fujizhilin_WP",                 bell = "LZSJ_010",     zh = "丝线缠绕的巨树", en = "Threadbound Great Tree",      x = 14830,  y = 154293, z = -1974,  yaw = 318 },
-    { key = "camp_lady",  kind = "scenic", map = "/Game/Maps/B04_05/PBZ_Zhengdaodaying_WP",          bell = "SXC_01_06",    zh = "圣母雕像场",     en = "The Lady Grounds",            x = -47348, y = 104312, z = 950,    yaw = 50 },
-    { key = "camp_tower", kind = "scenic", map = "/Game/Maps/B04_05/PBZ_Zhengdaodaying_WP",          bell = "YXZR_006",     zh = "高塔后方出口",   en = "Tower Rear Exit",             x = 29167,  y = 71243,  z = 6937,   yaw = 88 },
-    { key = "pz_lake",    kind = "scenic", map = "/Game/Maps/B08_09_10/PBZ_Pangzhen_WP",             bell = "Bell_MGH_008", zh = "陆家村湖畔",     en = "Lu Village Lakeside", x = -67150, y = 80676,  z = 805,    yaw = 255 },
-    -- Added 2026-11-14 (user marked the spot, F4); the bell is a broken bell ("BrokenBell_" id).
-    { key = "lakeside",   kind = "scenic", map = "/Game/Maps/B04_05/PBZ_Zhengdaodaying_WP",          bell = "BrokenBell_LJC_02", zh = "湖畔",      en = "Lakeside",                    x = -66429, y = 82003,  z = 911,    yaw = 264 },
-    { key = "ddsd_blade", kind = "scenic", map = "/Game/Maps/DengDingShanDao/PBZ_DengDingShanDao_WP", bell = "JJYBP_005",    zh = "横刀平台",       en = "Commander's Platform",        x = -61980, y = -56140, z = 18381,  yaw = 81,  boss = "BP_Monster_GreatBladeMan" },
+    { key = "xigu_axe",   kind = "scenic", map = "/Game/Maps/B02/PBZ_Xigu_WP",                       bell = "NLES_023",     zh = "斧老大斩落处",   en = "The Axemaster's Fall",        x = -50661, y = 260340, z = -24492, yaw = 216, boss = "BP_Monster_PengMeng_Axe" },
+    { key = "fuji_tree",  kind = "scenic", map = "/Game/Maps/B03/PBZ_Fujizhilin_WP",                 bell = "LZSJ_010",     zh = "丝线缠绕的巨树", en = "Threadbound Great Tree",      x = 15588,  y = 154245, z = -1963,  yaw = 328 },
+    { key = "pz_lake",    kind = "scenic", map = "/Game/Maps/B08_09_10/PBZ_Pangzhen_WP",             bell = "Bell_MGH_008", zh = "梅谷湖畔",       en = "Meigu Lakeside",              x = -67150, y = 80676,  z = 805,    yaw = 255 },
+    -- 白影陨落之处: the bell 风雪刀客's fight lights (DESIGN 5.1); that boss is not in the roster, so no `boss`.
+    { key = "lyz_white",  kind = "scenic", map = "/Game/Maps/B08_09_10/PBZ_Pangzhen_WP",             bell = "LYZ_014",      zh = "白影陨落之处",   en = "Whiteshadow's Fall",          x = -151389, y = -22294, z = 823,   yaw = 23 },
+    -- The bell is a broken bell ("BrokenBell_" id). 10 m from it: kept by the user (2026-11-15).
+    { key = "lakeside",   kind = "scenic", map = "/Game/Maps/B04_05/PBZ_Zhengdaodaying_WP",          bell = "BrokenBell_LJC_02", zh = "初见湖畔",  en = "First Meeting Lakeside",      x = -66429, y = 82003,  z = 911,    yaw = 264 },
+    { key = "ddsd_blade", kind = "scenic", map = "/Game/Maps/DengDingShanDao/PBZ_DengDingShanDao_WP", bell = "JJYBP_005",    zh = "横刀平台",       en = "Commander's Platform",        x = -62013, y = -58239, z = 18363,  yaw = 89,  boss = "BP_Monster_GreatBladeMan" },
+    { key = "sz_shrine",  kind = "scenic", map = "/Game/Maps/B09/PBZ_Houjie_WP",                      bell = "SZ_023",       zh = "祠堂广场",       en = "Ancestral Shrine Square",     x = -255090, y = 48762, z = -6172,  yaw = 322 },
     -- 舞狮尊主 phase 2: after the last lion head is executed the player jumps on poles and shoots fire, which needs
     -- the level's lion-dance area (BP_LionDance_Area: poles, jump input, telling the boss the player is in). An
     -- area spawned elsewhere made poles that never activated (2026-11-13). The bell 尊主封印地 is 15 m from the
-    -- poles. Facing 225 (user request, 2026-11-14): toward the widest open side by the arena survey (right and
-    -- behind of the old facing toward the poles, 102, were open 30 m; the boss appeared 10 m from the poles' edge).
-    { key = "houjie_lion", kind = "own",  map = "/Game/Maps/B09/PBZ_Houjie_WP",                      bell = "SZ_021",       zh = "尊主封印地",     en = "The Sealed Lion",             x = -271650, y = 46568, z = -3399,  yaw = 225, boss = "BP_Monster_LionDancer_P2", bound = true },
-    -- 金面具黑衣人 → 魔渊 (user decision 2026-11-14: Duel always at their original battlefield). Both classes
+    -- poles. Spot marked again by the user (2026-11-15): 7 m from the bell, near enough to the poles; kept although
+    -- under the 12 m rule, the bell does not get in the way of the fight (user decision).
+    { key = "houjie_lion", kind = "own",  map = "/Game/Maps/B09/PBZ_Houjie_WP",                      bell = "SZ_021",       zh = "尊主封印地",     en = "The Sealed Lion",             x = -271652, y = 45888, z = -3457,  yaw = 230, boss = "BP_Monster_LionDancer_P2", bound = true },
+-- 金面具黑衣人 → 魔渊 (user decision 2026-11-14: Duel always at their original battlefield). Both classes
     -- share one spawner, in Xigu's separate Discordance space (z ~ 10,000,000; src/data/anchored_cells.lua.txt);
     -- the bell 龙柱 (Bell_DP_001) is 30 m from it. The bell's own spot was cramped (survey 3/16, 0 m): the user
     -- marked this one in the open ground (F2, 2026-11-14), facing 103. The bell cannot be travelled to from the
@@ -36,7 +37,10 @@ local A = {
     -- nothing from the level (Skill_08 spawns its own pillars): this is about the setting, not a fix.
     -- 魔渊 may have a second original spot (Pangzhen's 龙柱, Bell_DP_004): phases cannot change maps, so Xigu.
     { key = "xigu_pillar", kind = "own",  map = "/Game/Maps/B02/PBZ_Xigu_WP",                       bell = "DP_001",       zh = "龙柱",           en = "The Lóng Pillar",             x = -38650,  y = 234117, z = 10009000, yaw = 103, boss = "BP_Monster_MoTian_LongZhu_01" },
-    { key = "jhsy",       kind = "jhsy",   zh = "镜花水月", en = "Realm of Mirage" },
+    -- The Realm of Mirage is entered at its bell; the run moves the player to this spot on arrival (run.lua
+    -- place_player). Marked by the user with F2 (2026-11-15): 8 m from the entrance, survey 良 (16/16, 28 m); no
+    -- bell actor is loaded near it (the nearest PBZCheckPoint was 298 m away).
+    { key = "jhsy",       kind = "jhsy",   zh = "镜花水月", en = "Realm of Mirage", x = 8890, y = -28068, z = 5000799, yaw = 357 },
 }
 
 local M = {}
