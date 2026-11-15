@@ -4,6 +4,8 @@
   python src/tools/asset_scan.py grep  <path part> <text> [<text> ...] assets whose bytes contain any text
   python src/tools/asset_scan.py names <path part> <regex>          readable names inside each asset
   python src/tools/asset_scan.py deps  <path part>                  what a boss's assets look up or spawn
+  python src/tools/asset_scan.py maps  <text> [<text> ...]          map packages (.umap, incl. World Partition
+                                                                     cells) whose bytes contain any text (~8 min)
 
 `deps` is the level-dependency check behind 补点 (DESIGN 5.2): a class named next to GetActorOfClass /
 GetAllActorsOfClass is looked up in the level; GetTargets / FindNearestActor look up actors that registered with
@@ -97,6 +99,14 @@ def main():
             print(short(n))
             print("    looks up:", ", ".join(look) or "-", "| spawns:", ", ".join(spawn) or "-")
             print("    classes:", ", ".join(classes)[:400] or "-")
+    elif cmd == "maps":
+        # Map packages are .umap (World Partition cells under _Generated_), which the commands above skip.
+        needles = [t.encode() for t in [part] + rest]
+        for n in sorted(n for n in store.files if "/Maps/" in n and n.endswith(".umap")):
+            d = read(store, n)
+            hit = [t.decode() for t in needles if d and t in d]
+            if hit:
+                print(short(n), "|", ", ".join(hit))
     else:
         sys.exit(__doc__)
 

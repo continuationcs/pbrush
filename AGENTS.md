@@ -216,6 +216,14 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
   hidden and fell out of the world. The tag is in the action's instance data, not in the asset's name map
   (read it at runtime: the actions are templates inside the ability's class default, `U.find_all(cls, true)`).
   `run.lua` `place_identity_points` registers a point for every such tag the level lacks (confirmed 2026-11-14).
+  **Check that a "level object" is in the level**: 龙体左殇 was closed for its dragon pillars, taken to be placed in
+  the level, but no map package holds one (`asset_scan.py maps BP_ZuoShang_P2_DragonPillar`, all 80974 .umap):
+  the boss blueprint prepares, throws and cancels them itself (2026-11-15). The other commands read only .uasset.
+  `maps` also shows where a boss's spawner is (the persistent level names `BP_AISpawner_C_<boss class>`) and
+  which bosses share a fight: 龙体左殇's spawner sits next to the silver-haired 左殇's in `PBZ_Duanhun_WP`.
+  **`bosses.json` can name a stand-in class**: 荡秽 was `BP_Monster_Danghui_StuntDouble`; `BP_Monster_Danghui` is
+  used instead (`CLASS_FIX`, 2026-11-15): the level's spawner cell (Zhengdaodaying `4DYOM2…`) names
+  `BP_Monster_Danghui_C`; the stand-in appears only in `Maps/Performance/PSOCombat` (shader warm-up).
 - **Scale a boss's summons with it**: the game sizes some summon values from the boss's. 舞狮尊主's last lion
   head gets a health floor of 1% of the boss's `Health_Max`; with only the boss scaled (x18.51) the floor
   (1851) was above the head's maximum (500), so it could not be hurt or executed (2026-11-13). Roster `summons`
@@ -295,7 +303,10 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
 - **A health floor above 0 makes a boss unkillable**: in a player's 二周目 魔渊 spawned with `Health_Min` 24 (of
   12000), stopped there with `IsDead` false, and a forced `Kill` at 24 left it attacking through the result
   screen. Setting `Health_Min` to 0 lets it die normally (roster `clear_health_min`; Nexus report by mastersoul2,
-  confirmed with the 0.1.5 release build 2026-11-14). Each boss's `Health_Min` at spawn is in the development log:
+  confirmed with the 0.1.5 release build 2026-11-14). A story fight can set it too: 组织冥主：左殇 (black-haired)
+  gets `Health_Min` 6400, 4800, then 3200 (80 / 60 / 40% of its base 8000) as its scripted fight goes on: it could
+  not be killed until the run cleared each one as it came (checked every tick, 2026-11-15). Each boss's
+  `Health_Min` at spawn is in the development log:
   look there when a boss will not die. Not every floor is a bug: a lock that ends in an execution
   (`GE_LockHealthButCanExecuted`, 舞狮尊主's last lion head) is the fight's mechanic.
 - **Player deaths in the Realm of Mirage were not seen** (fixed 2026-11-15): the game sends the player out at once, `IsDead` is

@@ -326,8 +326,9 @@ local function check_one(b)
     -- Roster clear_health_min: the boss's health floor stays above 0 outside its own level, so it can never die.
     -- 魔渊 started with Health_Min 24 (Health_Max 12000) in a player's 二周目 and stopped there, IsDead false;
     -- a forced Kill at 24 left it attacking through the result screen. With the floor set to 0 it falls, dies
-    -- and goes like any other boss, scaled or not; the game does not set it again (Nexus report on 0.1.4,
-    -- mastersoul2). Checked every tick: the floor may be applied after spawning.
+    -- and goes like any other boss, scaled or not (Nexus report on 0.1.4, mastersoul2). Checked every tick: the
+    -- floor may be applied after spawning, and again stage by stage: 组织冥主：左殇 (black-haired) got 6400, 4800
+    -- and 3200 (80 / 60 / 40% of its base 8000), each cleared, and died (2026-11-15).
     if b.clear_min then
         pcall(function()
             local m = actor.AttributeSetBase.Health_Min

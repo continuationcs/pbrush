@@ -21,6 +21,11 @@ story = ['Tutorial', 'HorseCart', 'Prologue']
 CLASS_FIX = {
     'BP_Monster_EMei_Sword_JianZhen': ('BP_Monster_HuaShan_Blue', '/PBZCombatAsset/ActorData/Mobs/035_HuaShan/'
                                        'BP_Monster_HuaShan_Blue.BP_Monster_HuaShan_Blue_C'),
+    # bosses.json gives 荡秽 the class BP_Monster_Danghui_StuntDouble (a stand-in), which flew to 0,0,0 even with
+    # its centre point placed (autotest 2026-11-13). The level's spawner cell names BP_Monster_Danghui
+    # (asset_scan.py maps); the stand-in appears only in the PSO warm-up map. Tried from 2026-11-15.
+    'BP_Monster_Danghui': ('BP_Monster_Danghui', '/PBZCombatAsset/ActorData/Mobs/DangHui/'
+                           'BP_Monster_Danghui.BP_Monster_Danghui_C'),
 }
 for x in b:
     if x['id'] in CLASS_FIX:
@@ -44,6 +49,12 @@ for x in EXTRA:
 # (GetActorOfClass / targeting subsystem lookups, offline scan 2026-11-13); all are root-only marker actors.
 M = '/PBZCombatAsset/ActorData/Mobs/'
 GUICHAI = M + '069_GuiChai_Red/Setup/BP_Monster_GuiChai_Red_'
+# CA_02 snaps to its snap point; CA_03 (the leap) to its snap point and lands on its landing point; GEd_01 reads the
+# domain centre. GEx_01 (the roof chop, BP_ZuoShang_House) belongs to the prologue boss only. The original layout
+# is not known: all at the centre.
+ZUOSHANG = [(M + '054_ZuoShang/' + n + '.' + n + '_C', 0, 0) for n in (
+    'BP_ZuoShang_CA_02_SnapPoint', 'BP_ZuoShang_CA_03_SnapPoint', 'BP_ZuoShang_CA_03_LandingPoint',
+    'BP_ZuoShang_CA_03_DomainCenter')]
 HELPERS = {
     'BP_Monster_YuBi': [(M + 'YuBi/BP_YuBi_SnapPoint.BP_YuBi_SnapPoint_C', 0, 0)],
     'BP_Monster_MengHua': [(M + '078_MengHua/BP_MengHua_XuKong_SnapPoint.BP_MengHua_XuKong_SnapPoint_C', 0, 0)],
@@ -63,12 +74,19 @@ HELPERS = {
     'BP_Monster_ChiLian_P2': [(M + '065_ChiLian_P2/BP_ChiLian_P2_Center.BP_ChiLian_P2_Center_C', 0, 0)] + [
         (M + '065_ChiLian_P2/BP_ChiLian_CA_SnakeSpawner.BP_ChiLian_CA_SnakeSpawner_C', f, r)
         for f, r in ((1000, 0), (-1000, 0), (0, 1000), (0, -1000))],
-    # CA_02 snaps to its snap point; CA_03 (the leap) to its snap point and lands on its landing point; GEd_01
-    # reads the domain centre. GEx_01 (the roof chop, BP_ZuoShang_House) belongs to the prologue boss only.
-    # The original layout is not known: all at the centre.
-    'BP_Monster_ZuoShang_Ending': [(M + '054_ZuoShang/' + n + '.' + n + '_C', 0, 0) for n in (
-        'BP_ZuoShang_CA_02_SnapPoint', 'BP_ZuoShang_CA_03_SnapPoint', 'BP_ZuoShang_CA_03_LandingPoint',
-        'BP_ZuoShang_CA_03_DomainCenter')],
+    'BP_Monster_ZuoShang_Ending': ZUOSHANG,
+    # 组织冥主：左殇 (black-haired, fought in 竹林故屋) uses the same skills as the silver-haired one. GEx_01 (the roof
+    # chop) also reads its spawner and BP_ZuoShang_House: not placed, the log will tell whether it is used.
+    'BP_Monster_ZuoShang': ZUOSHANG,
+    # 寒岁: ShowUp snaps to BP_Monster_GuiChai_Red_SnapPoint_01, the summon passive to its own snap and summon
+    # points (scavengers). Original layout not known: where the boss stands (8 m ahead), the summon point 5 m aside.
+    'BP_Monster_QiShu_Bing': [(GUICHAI + 'SnapPoint_01.BP_Monster_GuiChai_Red_SnapPoint_01_C', 800, 0),
+                              (M + 'QiShu/ShowUp/BP_Monster_QiShu_SnapPoint_01.BP_Monster_QiShu_SnapPoint_01_C', 800, 0),
+                              (M + 'QiShu/ShowUp/BP_Monster_QiShu_SummonPoint_01.BP_Monster_QiShu_SummonPoint_01_C',
+                               800, 500)],
+    # 荡秽: its summon attack (GA_DangHui_SummonAttack) looks up the centre point.
+    'BP_Monster_Danghui': [(M + 'DangHui/Ability/Passive/BP_Monster_DangHui_ToCenter.BP_Monster_DangHui_ToCenter_C',
+                            0, 0)],
 }
 
 # Summons scaled like their boss (the game sizes some of their values from the boss's, see run.lua check_summons);
@@ -81,7 +99,9 @@ SUMMONS = {
 
 # Bosses whose health floor (Health_Min) the run sets to 0: it stays above 0 outside their level, so they cannot
 # die. 魔渊 in a 二周目 started at Health_Min 24 and could not be killed (Nexus report on 0.1.4, mastersoul2).
-CLEAR_HEALTH_MIN = ['BP_Monster_MoTian']
+# 组织冥主：左殇 (black-haired): its story fight sets Health_Min to 80, 60 and 40% of its base 8000 in turn (6400,
+# 4800, 3200); it could not be killed until each was cleared (user tests 2026-11-15).
+CLEAR_HEALTH_MIN = ['BP_Monster_MoTian', 'BP_Monster_ZuoShang']
 
 # Bosses fought in several phases (user decision 2026-11-14): one entry, the phases fought straight on. First
 # phase -> its later phases, each a list of bosses that appear together (玉琮's second phase is its three forms at
@@ -110,11 +130,25 @@ PART_OF = {later: first for first, steps in PHASES.items() for step in steps for
 # closed only because their spawner sits in a level-only space.
 opened = ['BP_Monster_MengHua', 'BP_Monster_FemaleVessel_YuZan', 'BP_Monster_DuYanBoss', 'BP_Monster_YanQianSui',
           'BP_Monster_CanQu_BiHai', 'BP_Monster_GuiChai_Red', 'BP_Monster_GuiChai_Red_P2', 'BP_Monster_ChiLian_P2',
-          'BP_Monster_MoTian', 'BP_Monster_MoTian_LongZhu_01', 'BP_Monster_ZuoShang_Ending', 'BP_Monster_LionDancer_P2']
+          'BP_Monster_MoTian', 'BP_Monster_MoTian_LongZhu_01', 'BP_Monster_ZuoShang_Ending', 'BP_Monster_LionDancer_P2',
+          # Opened 2026-11-15 (user test in the Realm of Mirage: each fought to the end, killed, result screen).
+          'BP_Monster_QiShu_Huo', 'BP_Monster_QiShu_Lei', 'BP_Monster_QiShu_Du', 'BP_Monster_QiShu_Bing',
+          'BP_Monster_Danghui', 'BP_Monster_ZuoShang_P2',
+          'BP_Monster_ZuoShang']   # with CLEAR_HEALTH_MIN, second test 2026-11-15
 # Bosses still being tried: offered in development builds only (config.debug); moved to `opened` once tested.
 # BP_Monster_ZuoShang_Ending (opened 2026-11-13) was fought at its original arena until the player was put inside
 #   a building there (its CA_03 snap point lies in an interior space); with its points in the arena it passed.
 # BP_Monster_LionDancer_P2 (opened 2026-11-14) is fought only at its own battlefield (arenas.lua kind "own").
+# Round of 2026-11-15 (all opened but one, see `opened`):
+# - 炎茹, 雷婷, 蛊鹤 (QiShu_Huo / _Lei / _Du): no level lookup found offline and none at run time (no identity
+#   action loaded). 炎茹's flight to 0,0,0 in round 11 did not happen again.
+# - 寒岁, 荡秽: helper points (HELPERS), 荡秽 with its fighting class (CLASS_FIX).
+# - 龙体左殇 (ZuoShang_P2): its dragon pillars are the boss's own (the boss blueprint prepares, throws and cancels
+#   them; no map cell holds one: offline scan of all 80974 map packages). Its spawner sits in 断魂崖's persistent
+#   level next to the silver-haired 左殇's (PBZ_Duanhun_WP), so in the game it is that fight's second phase. Its
+#   original battlefield cannot be walked to (user, 2026-11-15): fought in the usual arenas, as its own entry
+#   (user decision 2026-11-15: not a second phase of the silver-haired 左殇).
+# - 组织冥主：左殇 (black-haired): could not be killed (Health_Min 6400); opened with CLEAR_HEALTH_MIN.
 testing = []
 
 def q(s):
