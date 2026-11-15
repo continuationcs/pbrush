@@ -10,8 +10,7 @@ left out (they shift with any change and say nothing about names).
 The dump must be of the installed build: after a game update, regenerate it in game (Ctrl+H, UE4SS's
 CXXHeaderGenerator) first; the tool refuses a dump older than the game's last update. Blueprint classes appear in
 the dump only if they were loaded when it was made: open a bell menu and finish a fight (result screen,
-wb_settlement) before Ctrl+H, or they are listed as not in the dump (the first baseline, 26367565, lacks
-wb_settlement).
+wb_settlement) before Ctrl+H, or they are listed as not in the dump.
 """
 import difflib
 import re

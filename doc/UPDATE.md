@@ -36,7 +36,7 @@ mod 自己的数据（`records.tsv`、`settings.tsv`）按 Boss id 存。id 改�
    - 我们用到的控件蓝图（`W_BellMenu`、`wb_settlement`、`WB_TipsText`、设置面板）的依赖表是否变了。
    旧版本只需保存一份「快照」（上面各项的清单和哈希，存在 `src/data/game_snapshot/<buildid>.json`），不用留整个旧 pak。
 4. **固定冒烟测试清单**（本文 §7），每次更新都跑同一份，一轮答完。
-5. **CXXHeaderDump 留底**（2026-11-16 做好）：`python src\tools\header_baseline.py` 把体检清单里的每个类（连同父类，去掉偏移量）从头文件里抄进 `src/data/game_baseline/<buildid>.txt`，当前是 `26367565.txt`（50 个类；`wb_settlement` 生成头文件时没加载，不在里面）。游戏更新后：在游戏里打开铃铛、打完一场（让蓝图加载），按 Ctrl+H 重新生成头文件，再跑一次这个工具，然后 `header_baseline.py diff` 对比新旧两份，类和成员的增删改名一眼可见。头文件比游戏的最后更新时间旧时工具会拒绝，免得把旧 dump 当成新版本。
+5. **CXXHeaderDump 留底**（2026-11-16 做好）：`python src\tools\header_baseline.py` 把体检清单里的每个类（连同父类，去掉偏移量）从头文件里抄进 `src/data/game_baseline/<buildid>.txt`，当前是 `26367565.txt`（60 个类，2026-11-16 打完一场后重新生成，结算页 `wb_settlement` 也在内）。游戏更新后：在游戏里打开铃铛、打完一场（让蓝图加载），按 Ctrl+H 重新生成头文件，再跑一次这个工具，然后 `header_baseline.py diff` 对比新旧两份，类和成员的增删改名一眼可见。头文件比游戏的最后更新时间旧时工具会拒绝，免得把旧 dump 当成新版本。
 6. **发版自动核对版本号**（2026-11-16 做好）：`build_release.py` 读本机 Steam 的 buildid，和 `TESTED_BUILD` 不一致就不出包。
 
 ## 3. 更新那天的流程

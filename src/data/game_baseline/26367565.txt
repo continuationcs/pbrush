@@ -3645,6 +3645,28 @@ class UW_DialogueButton_C : public UPBZButtonBase   // W_DialogueButton.hpp
     void UpdateButtonText(const FText& InText);
     void ExecuteUbergraph_W_DialogueButton(int32 EntryPoint);
 
+class Uwb_settlement_C : public UUserWidget   // wb_settlement.hpp
+    class UImage* Image_385;
+    class UImage* Image_3;
+    class UImage* Image_2;
+    class UImage* Image_1;
+    class UImage* Image;
+    class UCommonRichTextBlock* CommonRichTextBlock_419;
+    class UCommonRichTextBlock* CommonRichTextBlock_349;
+    class UCommonRichTextBlock* CommonRichTextBlock_70;
+    class UCommonRichTextBlock* CommonRichTextBlock_8;
+    class UCommonRichTextBlock* CommonRichTextBlock_7;
+    class UCommonRichTextBlock* CommonRichTextBlock_6;
+    class UCommonRichTextBlock* CommonRichTextBlock_5;
+    class UCommonRichTextBlock* CommonRichTextBlock_4;
+    class UCommonRichTextBlock* CommonRichTextBlock_3;
+    class UCommonRichTextBlock* CommonRichTextBlock_2;
+    class UCommonRichTextBlock* CommonRichTextBlock_1;
+    class UCommonRichTextBlock* CommonRichTextBlock;
+    class UImage* BgStart;
+    class UWidgetAnimation* Show;
+    class UWidgetAnimation* Loop;
+
 class UWB_TipsText_C : public UUserWidget   // WB_TipsText.hpp
     FPointerToUberGraphFrame UberGraphFrame;
     class UPBZCommonLocRichText* ItemText;
@@ -3674,5 +3696,3 @@ class UW_SettingsListEntry_Action_C : public UGameSettingListEntrySetting_Action
     void BP_OnDeselected();
     void BP_OnSelected();
     void ExecuteUbergraph_W_SettingsListEntry_Action(int32 EntryPoint);
-
-// not in the dump (a Blueprint not loaded when it was made, or gone): wb_settlement_C
