@@ -928,14 +928,15 @@ local wait_arrival
 -- and the player is told to beat the boss in this playthrough first.
 local function arena_taken(natives)
     U.log("run: arena %s held by a native boss (%s)", run.arena.key, table.concat(natives, ", "))
-    if run.arena.kind == "own" then
+    -- Another boss's own battlefield chosen as a group's arena (鬼差夜巡 at 尊主封印地) is left like any other.
+    if run.arena.kind == "own" and run.arena.boss == run.arena_spec.boss then
         ui.toast(i18n.t("arena_taken_own"), 5)
         U.after(2000, function() finish("error") end)
         return
     end
     run.excluded = run.excluded or {}
     run.excluded[run.arena.key] = true
-    run.arena = arenas.pick(run.origin_of, U.active_bells(), nil, nil, 0, run.excluded)
+    run.arena = arenas.pick(run.arena_spec, U.active_bells(), nil, nil, 0, run.excluded)
     run.in_place = false
     U.log("run: moving to %s", run.arena.key)
     ui.toast(i18n.t("arena_taken"), 3)
@@ -1026,13 +1027,13 @@ end
 
 -- queue: list of fights { rec, steps = { {roster records}, ... } } (see the top of this file); difficulty: game
 -- EDifficultMode; arena: arenas.lua record; opts: { tier (敌方强度 tier, tier.lua), record_key, mode, name (first line of the result screen: 单挑 / 连战 and the boss or group),
--- in_place = bool }.
+-- in_place = bool, arena_spec (what arenas.pick chose the arena by, used again when it is found occupied) }.
 function M.start(queue, difficulty, arena, opts)
     if run then U.log("run: already running") return end
     opts = opts or {}
     run = { queue = queue, fi = 0, si = 0, actors = {}, identity_tags = {}, difficulty = difficulty, arena = arena, origin = save_origin(),
             tier = opts.tier or 1, record_key = opts.record_key, mode = opts.mode, name = opts.name, in_place = opts.in_place,
-            origin_of = opts.origin_of, snap = snapshot(),
+            arena_spec = opts.arena_spec or {}, snap = snapshot(),
             helpers = {}, died_at_start = U.game_system("DiedTimes") }
     U.log("run: start %d boss(es), difficulty %d, tier %d, arena %s, from %s / %s, deaths so far %s", #queue, difficulty,
         run.tier, arena.key, run.origin.map, run.origin.bell, tostring(run.died_at_start))

@@ -362,13 +362,13 @@ function M.install(run, arenas)
     -- release code has nothing of it. A boss fought only on its own battlefield still goes there.
     local mirage = false
     local pick = arenas.pick
-    arenas.pick = function(boss_id, ...)
-        if mirage and not (boss_id and arenas.own(boss_id)) then
+    arenas.pick = function(spec, ...)
+        if mirage and not (spec.boss and arenas.own(spec.boss)) then
             for _, a in ipairs(arenas.all()) do
                 if a.kind == "jhsy" then out("arena forced: Realm of Mirage (F6)") return a, false end
             end
         end
-        return pick(boss_id, ...)
+        return pick(spec, ...)
     end
     U.key(Key.F6, function()
         mirage = not mirage

@@ -4,7 +4,8 @@
 -- marked again, lyz_white and sz_shrine added, camp_lady and camp_tower removed (user decision 2026-11-15).
 -- kind: "scenic" (名胜; `boss`: the boss this arena is recommended for, its original battlefield or a spot the
 -- user chose: a Duel with that boss goes there when its bell is rung), "own" (a boss's own
--- battlefield, where the level holds what its fight needs: that boss is fought only there, and nobody else is),
+-- battlefield, where the level holds what its fight needs: that boss is fought only there; others only as part of
+-- a 连战 group that is fought there, DESIGN §5.0b),
 -- "jhsy" (Realm of Mirage).
 -- An own battlefield is used only while its bell is rung in this playthrough: TeleportTo makes the bell it is
 -- given the player's bell, so a death there revives the player at a bell the game has not unlocked. A player in
@@ -47,27 +48,21 @@ local A = {
 
 local M = {}
 
-local function is_rung(a, rung) return rung[U.bell_name(a.bell)] == true end
-
--- Arenas offered for a boss: spots whose bell is rung, that boss's origin first, Realm of Mirage last.
-function M.for_boss(boss_id, rung)
-    local out = {}
-    for _, a in ipairs(A) do
-        if boss_id and a.boss == boss_id and is_rung(a, rung) then out[#out + 1] = { arena = a, origin = true } end
-    end
-    for _, a in ipairs(A) do
-        if a.kind == "scenic" and (not boss_id or a.boss ~= boss_id) and is_rung(a, rung) then
-            out[#out + 1] = { arena = a }
-        end
-    end
-    for _, a in ipairs(A) do
-        if a.kind == "jhsy" then out[#out + 1] = { arena = a } end
-    end
-    return out
+-- Whether the arena can be travelled to in this playthrough: its bell is rung (the Realm of Mirage needs none).
+function M.usable(a, rung)
+    return a.kind == "jhsy" or rung[U.bell_name(a.bell)] == true
 end
 
 -- Every arena (the development arena survey walks them all).
 function M.all() return A end
+
+-- The arena with this key, or nil.
+function M.get(key)
+    for _, a in ipairs(A) do
+        if a.key == key then return a end
+    end
+    return nil
+end
 
 -- The boss's own battlefield (kind "own"), or nil.
 function M.own(boss_id)
@@ -77,36 +72,50 @@ function M.own(boss_id)
     return nil
 end
 
--- No arena choice for the player (user decision): if they already stand at a suitable arena, fight there;
--- otherwise pick one at random. Suitable = this boss's origin, or a scenic spot, whose bell is rung; a boss with
--- its own battlefield is fought only there while its bell is rung (see the top of this file). The Realm of
--- Mirage is the fallback when nothing else is available.
+-- No arena choice for the player (user decision). spec = { boss = the boss whose own battlefield or recommended
+-- arena counts (单挑: its boss; 连战: the group's boss with an own battlefield, if any), prefer = the group's
+-- arena key (连战, DESIGN §5.0b) }.
+-- A boss with its own battlefield is fought only there while its bell is rung (see the top of this file).
+-- Otherwise, in this order (user decisions 2026-11-15): where the player stands, if within `radius` of a usable
+-- arena; the group's arena; the boss's recommended arena (`boss`); a random scenic arena whose bell is rung; the
+-- Realm of Mirage.
 -- exclude: optional set of arena keys to leave out (an arena found occupied on arrival, run.lua).
 -- Returns arena, in_place; or nil, own arena when the fight is bound to a battlefield whose bell is not rung.
-function M.pick(boss_id, rung, map, pos, radius, exclude)
+function M.pick(spec, rung, map, pos, radius, exclude)
+    local function open(a) return M.usable(a, rung) and not (exclude and exclude[a.key]) end
     local pool = {}
-    local own = boss_id and M.own(boss_id)
-    if own and is_rung(own, rung) then
+    local own = spec.boss and M.own(spec.boss)
+    if own and M.usable(own, rung) then
         pool = { own }
     elseif own and own.bound then
         U.log("arena: %s needs its bell %s, not rung in this playthrough", own.key, U.bell_name(own.bell))
         return nil, own
     else
         if own then U.log("arena: %s's bell %s is not rung; usual arenas instead", own.key, U.bell_name(own.bell)) end
-        for _, e in ipairs(M.for_boss(boss_id, rung)) do
-            if e.arena.kind ~= "jhsy" and not (exclude and exclude[e.arena.key]) then pool[#pool + 1] = e.arena end
+        for _, a in ipairs(A) do
+            if a.kind == "scenic" and open(a) then pool[#pool + 1] = a end
         end
+        -- A group's arena may be another boss's own battlefield (鬼差夜巡 at 尊主封印地) or the Realm of Mirage.
+        local pref = spec.prefer and M.get(spec.prefer)
+        if spec.prefer and not pref then U.log("arena: unknown group arena %s", spec.prefer) end
+        if pref and pref.kind ~= "scenic" and open(pref) then pool[#pool + 1] = pref end
+        if pref and not open(pref) then U.log("arena: group arena %s not usable (bell not rung or excluded)", pref.key) end
     end
     for _, a in ipairs(pool) do
-        if a.map == map and pos and math.sqrt((pos.X - a.x) ^ 2 + (pos.Y - a.y) ^ 2 + (pos.Z - a.z) ^ 2) < radius then
+        if a.map and a.map == map and pos and math.sqrt((pos.X - a.x) ^ 2 + (pos.Y - a.y) ^ 2 + (pos.Z - a.z) ^ 2) < radius then
             return a, true
         end
     end
-    -- The boss's recommended arena (`boss`) when its bell is rung (user decision 2026-11-15), else a random one.
     for _, a in ipairs(pool) do
-        if boss_id and a.boss == boss_id then return a, false end
+        if spec.prefer and a.key == spec.prefer then return a, false end
     end
-    if #pool > 0 then return pool[math.random(#pool)], false end
+    for _, a in ipairs(pool) do
+        if spec.boss and a.boss == spec.boss then return a, false end
+    end
+    local scenic = {}
+    for _, a in ipairs(pool) do if a.kind == "scenic" then scenic[#scenic + 1] = a end end
+    if #scenic > 0 then return scenic[math.random(#scenic)], false end
+    for _, a in ipairs(pool) do return a, false end
     for _, a in ipairs(A) do if a.kind == "jhsy" then return a, false end end
 end
 

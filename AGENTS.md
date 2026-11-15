@@ -38,6 +38,10 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
   died at 龙柱, was revived inside the arena, the game crashed (GPU device removed) on the next teleport and the
   save was left at `Bell_DP_001` (Nexus report by mastersoul2 on 0.1.5; crash not reproduced, cause inferred).
   `arenas.pick` now checks own battlefields' bells too; one marked `bound` (舞狮尊主) is not fought while unrung.
+  The same holds for a 连战 group's arena (`gauntlets.lua` `arena`, DESIGN §5.0b): a group goes to its own boss's
+  battlefield or its arena only while that bell is rung, and a `bound` boss is left out of the run otherwise; an
+  own battlefield used as another group's arena (鬼差夜巡 at 尊主封印地) is swapped like a scenic one when a native
+  boss holds it, not ended.
   Confirmed 2026-11-15: with 龙柱 rung, a death there ends as 饮恨 and the player gets home without a crash; with a
   二周目 save (both bells unrung) 金面具黑衣人 went to the Realm of Mirage, a death there ended as 饮恨 and the
   player got home, and 舞狮尊主 was refused with the notice. Bells reset in a new playthrough: an arena or a
@@ -101,6 +105,12 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
 - **Assets offline**: `python src\tools\asset_scan.py list|grep|names|deps <path part> ...` (see its docstring).
   `deps` tells whether a boss's skills look things up in the level or spawn them themselves. Names come from name
   maps: they show what an asset uses, not how it is wired, so confirm in game.
+- **Which map a boss is on** (how the 千影 stages were made, 2026-11-15): search every map's World Partition cells
+  (`Maps/*/_Generated_/*.umap`, ~100k packages, a few minutes) for `BP_Monster_<id>_C`; bosses spawned by the level
+  itself are not in any cell but in the persistent map (`PBZ_*_WP.umap`; `asset_scan.py maps`). Ignore
+  `Maps/Performance/PSOCombat` (shader warm-up, names every boss). A boss found on several maps (残钢, 玉妖, 金面
+  ...) or in codex order away from its map (寒岁, 风雪刀客) needs a human decision: the codex order is the order the
+  player meets them, so maps visited twice (正道大营, 庞镇) show up as two runs of it.
 - **Which UE4SS Lua function is native code X?** UE4SS registers them as `register_function("Name", &fn)`: find
   the RIP-relative LEA of `fn` in `.text` and the string LEA next to it (done once by hand, 2026-11-13).
 
