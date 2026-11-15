@@ -2,11 +2,11 @@
 
 **已发布（2026-11-12）**：https://www.nexusmods.com/phantombladezero/mods/1099 ，名称 BOSS RUSH，文件 BOSS RUSH 0.1.0。页面顶部的 mod 版本号仍显示 1，需在 General 页改为 0.1.0。旧草稿 1098 已改名「BOSS RUSH old」，未发布；新版上传页没有删除入口，需要时联系 Nexus 客服删除。
 
-上传文件：`out/BossRush-0.1.5.zip`（0.1.4 之前：0.1.3 未发布，直接跳到 0.1.4）；主图：`doc/release/main_image.png`（1920×1080，上传到 Images，设为 primary）
+上传文件：`out/BossRush-0.1.6.zip`（0.1.4 之前：0.1.3 未发布，直接跳到 0.1.4）；主图：`doc/release/main_image.png`（1920×1080，上传到 Images，设为 primary）
 
-## 下一版（未发布）更新说明
+## 0.1.6 更新说明（Changelog / 文件说明）
 
-自 0.1.5 以来的改动，发布时填上版本号。
+自 0.1.5（541a06f）以来的改动。
 
 ```
 - New: Foe Strength, for a harder fight. Trial of Echoes has a new Settings page; its row
@@ -41,6 +41,11 @@
   Bell. Until the Bell is rung, the Gold-Masked One is fought at another arena, and the Lion Dance Grandmaster
   asks you to ring the Bell at The Sealed Lion first.
 - Thanks to mastersoul2 for the reports and tests behind both fixes.
+- A death in a challenge is no longer a game death: it ends the run as Undying Grudge and costs no Remnant
+  Dust, no days in 66 Days and adds no death to the count. On 66 Days, entering Trial of Echoes still shows a
+  notice suggesting another difficulty, in case an unexpected death slips through.
+- After a game update, the mod checks at start-up that the game parts it uses are still there. If a core part
+  is missing, Trial of Echoes pauses with a notice until the mod is updated; a missing boss or arena is left out.
 ```
 
 中文：
@@ -67,6 +72,10 @@
 - 修复（多周目）：专属战场「龙柱」「尊主封印地」只在本周目已敲响其铃铛时使用。之前在铃铛未敲的龙柱战死，可能导致游戏崩溃，
   存档也停在那个铃铛。铃铛未敲时，金面具黑衣人改在其他场地打；舞狮尊主会提示先敲响尊主封印地的铃铛。
 - 感谢 mastersoul2 的反馈和测试，这两项修复都来自这位玩家的排查。
+- 挑战中战死不再算游戏里的死亡：直接以「饮恨」结束，不掉意识尘埃、六十六天难度不折损天数，也不计入死亡次数。
+  六十六天难度下进入残影试炼仍会提示尽量换用其他难度，以防意外身陨。
+- 游戏更新后，mod 启动时会检查用到的游戏内容是否还在：缺少核心部件时残影试炼暂停并提示，待 mod 更新后恢复；
+  缺少某位首领或某个场地时只去掉那一项。
 ```
 
 ## 0.1.5 更新说明（Changelog / 文件说明）
@@ -137,11 +146,11 @@
 | 字段 | 填写 |
 |---|---|
 | Mod name | BOSS RUSH（名称里不能用中文） |
-| Version | 0.1.5 |
+| Version | 0.1.6 |
 | Category | Gameplay |
 | Language | English（页面描述里同时放了中文） |
 | Requirements → Nexus requirements | UE4SS for Phantom Blade Zero（phantombladezero/mods/13），说明填：Required. Install and test it first. |
-| File name | BOSS RUSH 0.1.5 |
+| File name | BOSS RUSH 0.1.6 |
 | File category | Main files |
 | File description | Extract into <game>\platform\steam\ue4ss\Mods\ |
 | Permissions / credits | 致谢 RE-UE4SS 团队、KintaroModding 与 mastersoul2（见描述末尾）。资产权限按你的意愿选择。 |
