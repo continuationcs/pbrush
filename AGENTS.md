@@ -49,7 +49,7 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
 - **Game updates and DLC**: the plan is `doc/UPDATE.md`. The start-up check (`health.lua`) looks up, by name,
   every game class, function and property the mod uses, and the bosses' classes, helper points and arena maps (in
   the asset registry, never loaded): a missing core part stops the mod with a notice, a missing boss or map leaves
-  out that one. **A new call on a game class goes into its lists** (`NATIVE`, `WIDGETS`, `OPTIONAL_ASSETS`), names
+  out that one. **A new call on a game class goes into its lists** (`NATIVE`, `BLUEPRINTS`, `OPTIONAL_ASSETS`; the level curves come from `scale.curve_paths()`), names
   checked against `CXXHeaderDump`: a wrong name there stops the mod for every player. Update `TESTED_BUILD` (Steam
   buildid) with each release: `build_release.py` refuses a build when it differs from the installed game's.
   `src/tools/header_baseline.py` keeps those classes' header text per build (`src/data/game_baseline/`); after an

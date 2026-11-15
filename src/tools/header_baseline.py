@@ -3,7 +3,7 @@
   python src/tools/header_baseline.py           write src/data/game_baseline/<buildid>.txt from UE4SS's header dump
   python src/tools/header_baseline.py diff      compare the two newest baselines (or: diff <old build> <new build>)
 
-The classes are the ones the start-up check names (health.lua: NATIVE, WIDGETS), so a class added to the check is
+The classes are the ones the start-up check names (health.lua: NATIVE, BLUEPRINTS), so a class added to the check is
 kept here too. Each is copied from CXXHeaderDump with its parent chain (members can move to a parent), offsets
 left out (they shift with any change and say nothing about names).
 
@@ -36,7 +36,7 @@ def wanted_classes():
     """Short class names the start-up check looks up: "/Script/Module.Class" and "/Pkg/X.X_C"."""
     text = HEALTH.read_text(encoding='utf-8')
     names = re.findall(r'"/Script/\w+\.(?:Default__)?(\w+)"', text)      # a class default object: its class
-    names += re.findall(r'"/Game/[^"]*\.(\w+_C)"', text[text.index('local WIDGETS'):text.index('local OPTIONAL_ASSETS')])
+    names += re.findall(r'"/Game/[^"]*\.(\w+_C)"', text[text.index('local BLUEPRINTS'):text.index('local CORE_ASSETS')])
     return list(dict.fromkeys(names))
 
 

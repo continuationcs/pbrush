@@ -18,8 +18,20 @@ local CURVES = {
     Infliction   = { "Infliction_Max" },
 }
 
+local function curve_path(name)
+    return "/PBZCombatAsset/Config/Level/CV_AttributeCurve_Monster_" .. name .. ".CV_AttributeCurve_Monster_" .. name
+end
+
+-- Every curve's object path (the start-up check, health.lua, looks them up).
+function M.curve_paths()
+    local out = {}
+    for name in pairs(CURVES) do out[#out + 1] = curve_path(name) end
+    table.sort(out)
+    return out
+end
+
 local function curve(name)
-    local path = "/PBZCombatAsset/Config/Level/CV_AttributeCurve_Monster_" .. name .. ".CV_AttributeCurve_Monster_" .. name
+    local path = curve_path(name)
     local cv = StaticFindObject(path)
     if not U.valid(cv) then
         pcall(LoadAsset, (path:gsub("%.[^.]+$", "")))

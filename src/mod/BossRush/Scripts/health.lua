@@ -3,9 +3,9 @@
 -- leaves out the one boss or arena it affects) instead of failing in the middle of a fight.
 --
 -- Read-only and by name only: native classes, functions and properties are looked up with StaticFindObject and the
--- classes' own member lists; four small UI blueprints the mod uses anyway are loaded; bosses, helper points and maps
--- are looked up in the game's asset registry, which never loads them (loading ~70 boss classes would cost
--- gigabytes). Every check gives ok, missing or unknown; only a definite "missing" changes anything:
+-- classes' own member lists; a few blueprints the mod uses anyway (UI widgets, the bosses' base class) are loaded;
+-- bosses, helper points, maps and the monster level curves are looked up in the game's asset registry, which
+-- never loads them (loading ~70 boss classes would cost gigabytes). Every check gives ok, missing or unknown; only a definite "missing" changes anything:
 --   * a core part missing: the mod stops (U.stop) with a notice that the game has changed; no bell entry;
 --   * a boss's class or helper point missing: that boss is not offered (main.lua `offered`);
 --   * an arena's map missing: that arena is not used (arenas.usable);
@@ -47,16 +47,17 @@ local NATIVE = {
     { "/Script/ProjectPBZ.PBZCharacter_NPC", funcs = { "Kill" }, props = { "bExcludeFromCodex" } },
     { "/Script/ProjectPBZ.PBZBlueprintFunctionLibrary", funcs = { "GetDifficulty" } },
     { "/Script/ProjectPBZ.PBZActivatableWidget", funcs = { "ClearBackKey", "BindBackKey" } },
-    { "/Script/ProjectPBZ.PBZButtonBase", funcs = { "UpdateButtonStyle" } },
+    { "/Script/ProjectPBZ.PBZButtonBase", funcs = { "UpdateButtonStyle", "UpdateButtonText" } },
     { "/Script/CharacterBasics.PBZAttributeSetHandler", funcs = { "IsDead" } },
     { "/Script/CharacterBasics.BasicAttributeSet",
       props = { "Health", "Health_Max", "Health_Min", "Shachi", "Shachi_Max", "Attack", "ShachiAttack" } },
     { "/Script/CommonUI.CommonButtonBase",
-      funcs = { "HandleButtonClicked", "SetTriggeringInputAction", "SetTriggeringEnhancedInputAction" } },
+      funcs = { "HandleButtonClicked", "SetTriggeringInputAction", "SetTriggeringEnhancedInputAction", "GetSelected",
+                "SetIsSelected" } },
     { "/Script/CommonUI.CommonButtonGroupBase", funcs = { "OnHandleButtonBaseClicked", "SelectButtonAtIndex",
       "FindButtonIndex", "GetSelectedButtonBase", "DeselectAll", "GetButtonCount" } },
     { "/Script/CommonUI.CommonWidgetGroupBase", funcs = { "AddWidget", "RemoveWidget" } },
-    { "/Script/CommonUI.CommonActivatableWidget", funcs = { "IsActivated" } },
+    { "/Script/CommonUI.CommonActivatableWidget", funcs = { "IsActivated", "DeactivateWidget" } },
     { "/Script/SGameAI.SGameAIController", props = { "SGameAIComponent" } },
     { "/Script/SGameAI.SGameAIComponent", funcs = { "StopAI", "StartAI" } },
     { "/Script/SGameAI.SGameAIWorldSubsystem",
@@ -66,24 +67,38 @@ local NATIVE = {
       funcs = { "K2_ProjectPointToNavigation", "FindPathToLocationSynchronously" } },
     { "/Script/Niagara.NiagaraFunctionLibrary", funcs = { "SpawnSystemAtLocation", "SpawnSystemAttached" },
       optional = true },
-    { "/Script/GameSettings.GameSetting", funcs = { "GetDevName" }, optional = true },     -- pause-menu row
+    -- The 退出挑战 row in the system menu (pause.lua).
+    { "/Script/GameSettings.GameSetting", funcs = { "GetDevName" }, optional = true },
     { "/Script/GameSettings.GameSettingAction", optional = true },
+    { "/Script/GameSettings.GameSettingPanel", props = { "CurrentCollection", "ListView_Settings" }, optional = true },
+    { "/Script/GameSettings.GameSettingListEntryBase", props = { "Setting" }, optional = true },
+    { "/Script/GameSettings.GameSettingListEntrySetting_Action", props = { "Button_Action" }, optional = true },
+    -- Bells, to measure how far a fight is from one (U.nearest_bell).
+    { "/Script/ProjectPBZ.PBZCheckPoint", optional = true },
 }
 
--- The game's UI blueprints the mod builds on; loaded here (small widgets the game loads itself on first use).
-local WIDGETS = {
+-- The game's blueprints the mod builds on, loaded here: UI widgets the game loads itself on first use, and the
+-- base class of every boss, where the loot component sits. Without LootComp a challenge kill would give real loot
+-- and Remnant Dust (run.lua removes it), so it is core.
+local BLUEPRINTS = {
+    { "/Game/RenewalContent/Prototypes/Character/BP_RenewalNPC.BP_RenewalNPC_C", props = { "LootComp" } },
     { "/Game/PBZContent/UI/InGame/Bell/W_BellMenu.W_BellMenu_C",
       funcs = { "ClickCloseButton" }, props = { "TeleportBtn", "CloseBtn" } },
     { "/Game/PBZContent/Blueprint/FlowGraph/UI/W_DialogueButton.W_DialogueButton_C",
       funcs = { "SetWidgetText", "DoSelectedAppearance" } },
     { "/Game/PBZContent/UI/UINew/HUD/wb_settlement.wb_settlement_C" },
     { "/Game/PBZContent/UI/InGame/SwitchUI/WB_TipsText.WB_TipsText_C", funcs = { "SetText" }, props = { "FadeIn", "FadeOut" } },
+    { "/Game/PBZContent/UI/Settings/Editors/W_SettingsListEntry_Action.W_SettingsListEntry_Action_C",     -- 退出挑战 row
+      props = { "SettingName" }, optional = true },
 }
 
--- Assets only looked up (registry), not loaded: their absence costs a feature, not the mod.
+-- Assets looked up in the registry, not loaded. Core: the monster level curves (scale.lua): without them a boss
+-- keeps its base stats, far too weak, and nothing would say so.
+local CORE_ASSETS = require("scale").curve_paths()
+
+-- Their absence costs a feature, not the mod.
 local OPTIONAL_ASSETS = {
     "/Game/PBZContent/UI/GameSystem/Settings/W_PBZSettingPanel.W_PBZSettingPanel_C",           -- pause-menu row
-    "/Game/PBZContent/UI/Settings/Editors/W_SettingsListEntry_Action.W_SettingsListEntry_Action_C",
     "/Game/PBZContent/UI/Hud/WB_AdditionalLoading.WB_AdditionalLoading_C",                    -- end of loading
     "/PBZCombatAsset/Prototypes/Actions/GAA_AssignIdentityTransformToBlackboard.GAA_AssignIdentityTransformToBlackboard_C",
     "/SGameAI/Tools/Teleport/BP_SGameAITargetPoint.BP_SGameAITargetPoint_C",                 -- identity points
@@ -169,7 +184,7 @@ local function calibrated()
         say("asset registry not found (%s): bosses and arenas are not checked", ok and "no object" or tostring(lookup))
         return nil
     end
-    local known = exists(lookup, WIDGETS[1][1])
+    local known = exists(lookup, BLUEPRINTS[1][1])
     local fake = exists(lookup, "/Game/BossRush/NoSuchAsset.NoSuchAsset_C")
     local here = U.world_path()
     local map = here and exists(lookup, map_object(here))
@@ -207,8 +222,8 @@ local function run_check(extra_core)
         local cls = StaticFindObject(e[1])
         unknown = unknown + check_class(e, cls, e.optional and optional or core)
     end
-    for _, e in ipairs(WIDGETS) do
-        unknown = unknown + check_class(e, U.load_class(e[1]), core)
+    for _, e in ipairs(BLUEPRINTS) do
+        unknown = unknown + check_class(e, U.load_class(e[1]), e.optional and optional or core)
     end
     if extra_core then core[#core + 1] = extra_core end
 
@@ -221,6 +236,9 @@ local function run_check(extra_core)
             if found == false then missing[path] = true end
             if found == nil then unknown = unknown + 1 end
             return found ~= false
+        end
+        for _, path in ipairs(CORE_ASSETS) do
+            if not check(path) then core[#core + 1] = path end
         end
         for _, path in ipairs(OPTIONAL_ASSETS) do
             if not check(path) then optional[#optional + 1] = path end
