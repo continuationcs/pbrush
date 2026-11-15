@@ -39,6 +39,57 @@ local function save_origin()
     return { map = U.world_path(), bell = bell, x = l.X, y = l.Y, z = l.Z, yaw = r.Yaw }
 end
 
+-- ---------------------------------------------------------------- the player's health floor
+-- A death in a challenge must never be a game death: in 66 Days (NightMare) mode each death costs days, the game
+-- also takes Remnant Dust and counts the death, and it saves on revive, so the loss is kept in the player's only
+-- slot (player report 2026-11-16: "a 66-day save loses days after a challenge"). While a fight is on, the player's
+-- Health_Min is raised to FLOOR, the same attribute that kept bosses from dying (AGENTS: health floors); health
+-- reaching it ends the run as 饮恨. The death counter stays the fallback for whatever ignores the floor.
+local FLOOR = 1
+
+local function set_floor()
+    if run.floor_was then return end
+    local ok, err = pcall(function()
+        local m = U.pawn().AttributeSetBase.Health_Min
+        run.floor_was = { base = m.BaseValue, cur = m.CurrentValue }
+        m.BaseValue = FLOOR
+        m.CurrentValue = FLOOR
+    end)
+    U.log("run: player health floor %s (was %s)", ok and tostring(FLOOR) or ("not set: " .. tostring(err)),
+        run.floor_was and string.format("%g / %g", run.floor_was.base, run.floor_was.cur) or "?")
+end
+
+-- When the trip home starts (it saves the game), not at the end of the fight: the floor keeps covering the player
+-- while the result screen is up and a boss's lingering hits may still land.
+local function clear_floor()
+    local was = run and run.floor_was
+    if not was then return end
+    run.floor_was = nil
+    pcall(function()
+        local m = U.pawn().AttributeSetBase.Health_Min
+        m.BaseValue = was.base
+        m.CurrentValue = was.cur
+    end)
+    U.log("run: player health floor removed")
+end
+
+-- What a game death would cost, logged at each stage of a run, so one test shows whether a challenge changed any
+-- of it (66 Days: days left; any mode: Remnant Dust, deaths). Log only: read with pcall from the player blueprint
+-- (BP_RenewalPlayer_C, properties from the header dump); a name a game update changes reads "?" and costs nothing,
+-- so they are not in the start-up check (health.lua), which would stop the mod for them.
+local LEDGER = { "RemainingDays", "IrretrievableDays", "RemainingDaysOnlastDeerBell", "ConsciousnessDust", "BuffLevel" }
+local function log_ledger(stage)
+    local parts = {}
+    local p = U.pawn()
+    for _, name in ipairs(LEDGER) do
+        local v = "?"
+        pcall(function() v = tostring(p[name]) end)
+        parts[#parts + 1] = name .. " " .. v
+    end
+    parts[#parts + 1] = "DiedTimes " .. tostring(U.game_system("DiedTimes"))
+    U.log("run: ledger %s: %s", stage, table.concat(parts, ", "))
+end
+
 -- ---------------------------------------------------------------- player state
 -- Taken before leaving, put back after returning: health, Sha-Chi, and every remedy's remaining uses.
 local function snapshot()
@@ -78,6 +129,7 @@ local function restore(snap)
         end)
     end)
     U.log("run: state restored")
+    log_ledger("home")
 end
 
 -- ---------------------------------------------------------------- placing the player
@@ -171,6 +223,8 @@ end
 local function go_home()
     local o = run.origin
     phase("returning")
+    clear_floor()
+    log_ledger("leaving the arena")
     if run.in_place then
         -- Never left the level: back to the bell they started at (unless already there, e.g. revived at it),
         -- then put the player's state back.
@@ -297,8 +351,9 @@ local function finish(result)
             U.after(4000, home)
         end
     end
-    if result == "lose" then
-        -- The game revives the player at a bell first; show the result once that is over.
+    if result == "lose" and not run.floored then
+        -- A game death (something ignored the health floor): the game revives the player at a bell first; show
+        -- the result once that is over.
         U.after(3500, show)
     else
         show()
@@ -554,7 +609,15 @@ local function watch()
         local p = U.pawn()
         local counted = death_counted()
         if counted or not U.valid(p) or is_dead(p) then
-            U.log("run: player died (%s)", counted and "death counter" or "IsDead")
+            U.log("run: player died (%s): a game death, the health floor did not hold",
+                counted and "death counter" or "IsDead")
+            log_ledger("after the death")
+            finish("lose")
+            return true
+        end
+        if run.floor_was and health(p) <= FLOOR then
+            U.log("run: player down at the health floor")
+            run.floored = true
             finish("lose")
             return true
         end
@@ -846,7 +909,11 @@ local function appear(recs, spots, omens)
     run.t0 = run.t0 or os.clock()
     local first = run.phase ~= "between"
     phase("fighting")
-    if first then watch() end
+    if first then
+        log_ledger("first boss")
+        set_floor()
+        watch()
+    end
 end
 
 -- The next step: the same boss's next phase, or the next boss's first. The omen plays at the spots chosen now;
@@ -1037,6 +1104,7 @@ function M.start(queue, difficulty, arena, opts)
             helpers = {}, died_at_start = U.game_system("DiedTimes") }
     U.log("run: start %d boss(es), difficulty %d, tier %d, arena %s, from %s / %s, deaths so far %s", #queue, difficulty,
         run.tier, arena.key, run.origin.map, run.origin.bell, tostring(run.died_at_start))
+    log_ledger("start")
     phase("travelling")
     for _, fn in ipairs(start_listeners) do fn() end
     go_to_arena()
