@@ -27,10 +27,19 @@ end
 local by_id = {}
 for _, b in ipairs(roster) do by_id[b.id] = b end
 
--- A boss with its later phases (roster `phases`; user decision 2026-11-14: one entry, phases fought straight on):
--- { rec = first phase, steps = { {rec}, {later phase's bosses}, ... } }. Later phases not offered are left out.
+-- A boss with its later phases (roster `phases`; user decision 2026-11-14: one entry, phases fought straight on)
+-- and the bosses that appear with it from the start (roster `together`, in spawn order; 玉妖 and 铁鬼, user decision
+-- 2026-11-15): { rec = the entry's boss, label = { zh, en } (the entry's name), steps = { {first step's bosses},
+-- {later phase's bosses}, ... } }. Bosses not offered are left out.
 local function fight_of(b)
-    local steps = { { b } }
+    local first = {}
+    for _, id in ipairs(b.together or { b.id }) do
+        local r = by_id[id]
+        if r and (r == b or offered(r)) then first[#first + 1] = r end
+    end
+    local label = { zh = b.zh, en = b.en }
+    if #first > 1 then label = { zh = b.fight_zh, en = b.fight_en } end
+    local steps = { first }
     for _, ids in ipairs(b.phases or {}) do
         local step = {}
         for _, id in ipairs(ids) do
@@ -39,7 +48,7 @@ local function fight_of(b)
         end
         if #step > 0 then steps[#steps + 1] = step end
     end
-    return { rec = b, steps = steps }
+    return { rec = b, label = label, steps = steps }
 end
 
 -- The boss of the fight that is fought only on its own battlefield (arenas.own), if any: the whole fight goes
@@ -135,11 +144,11 @@ show_bosses = function(page, focus)
     local rows = {}
     for _, f in ipairs(available()) do
         local b = f.rec
-        -- A boss fought in several phases keeps its time under its own key: times from when its first phase
-        -- was fought alone do not count.
-        local key = "duel/" .. b.id .. (#f.steps > 1 and "/all-phases" or "")
-        rows[#rows + 1] = { i18n.name(b), function()
-            begin({ f }, { record = key, mode = T("duel"), name = i18n.name(b) })
+        -- A boss fought in several phases, or with others, keeps its time under its own key: times from when its
+        -- first boss was fought alone do not count.
+        local key = "duel/" .. b.id .. (#f.steps > 1 and "/all-phases" or "") .. (#f.steps[1] > 1 and "/together" or "")
+        rows[#rows + 1] = { i18n.name(f.label), function()
+            begin({ f }, { record = key, mode = T("duel"), name = i18n.name(f.label) })
         end }
     end
     show_paged(rows, page, focus or "paging", show_bosses)

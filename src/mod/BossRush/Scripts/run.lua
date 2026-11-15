@@ -404,11 +404,12 @@ local function check_one(b)
         local m = actor.AttributeSetBase.Health_Min
         if m.CurrentValue > 0 or m.BaseValue > 0 then
             if b.clear_min then
-                U.log("run: %s Health_Min %.0f (base %.0f) set to 0", b.id, m.CurrentValue, m.BaseValue)
+                U.log("run: %s Health_Min %g (base %g) set to 0", b.id, m.CurrentValue, m.BaseValue)
                 m.BaseValue, m.CurrentValue = 0, 0
             elseif b.min_seen ~= m.CurrentValue then
                 b.min_seen = m.CurrentValue
-                U.log("run: %s Health_Min %.0f during the fight (not cleared: not in CLEAR_HEALTH_MIN)", b.id, m.CurrentValue)
+                U.log("run: %s Health_Min %g (base %g) during the fight (not cleared: not in CLEAR_HEALTH_MIN)", b.id,
+                    m.CurrentValue, m.BaseValue)
             end
         end
     end)

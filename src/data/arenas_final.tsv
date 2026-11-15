@@ -2,8 +2,8 @@ key	kind	map	bell	zh	en	x	y	z	yaw	boss
 xigu_axe	scenic,origin	/Game/Maps/B02/PBZ_Xigu_WP	NLES_023	斧老大斩落处	The Axemaster's Fall	-50661	260340	-24492	216	PengMeng
 fuji_tree	scenic	/Game/Maps/B03/PBZ_Fujizhilin_WP	LZSJ_010	丝线缠绕的巨树	Threadbound Great Tree	15588	154245	-1963	328
 pz_lake	scenic	/Game/Maps/B08_09_10/PBZ_Pangzhen_WP	Bell_MGH_008	梅谷湖畔	Meigu Lakeside	-67150	80676	805	255
-lyz_white	scenic	/Game/Maps/B08_09_10/PBZ_Pangzhen_WP	LYZ_014	白影陨落之处	Whiteshadow's Fall	-151389	-22294	823	23
-lakeside	scenic	/Game/Maps/B04_05/PBZ_Zhengdaodaying_WP	BrokenBell_LJC_02	初见湖畔	First Meeting Lakeside	-66429	82003	911	264
+lyz_white	scenic	/Game/Maps/B08_09_10/PBZ_Pangzhen_WP	LYZ_014	白影陨落之处	Whiteshadow's Fall	-151389	-22294	823	23	FengXueDaoKe
+lakeside	scenic	/Game/Maps/B04_05/PBZ_Zhengdaodaying_WP	BrokenBell_LJC_02	初见湖畔	First Meeting Lakeside	-66429	82003	911	264	MuXiaoKui
 ddsd_blade	scenic,origin	/Game/Maps/DengDingShanDao/PBZ_DengDingShanDao_WP	JJYBP_005	横刀平台	Commander's Platform	-62013	-58239	18363	89	HengDaoKe
 sz_shrine	scenic	/Game/Maps/B09/PBZ_Houjie_WP	SZ_023	祠堂广场	Ancestral Shrine Square	-255090	48762	-6172	322
 houjie_lion	own	/Game/Maps/B09/PBZ_Houjie_WP	SZ_021	尊主封印地	The Sealed Lion	-271652	45888	-3457	230	LionDancer_P2

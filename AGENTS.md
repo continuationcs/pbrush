@@ -315,7 +315,8 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
   `Health_Min` that rises during a fight, flagged or not. Each boss's
   `Health_Min` at spawn is in the development log:
   look there when a boss will not die. Not every floor is a bug: a lock that ends in an execution
-  (`GE_LockHealthButCanExecuted`, 舞狮尊主's last lion head) is the fight's mechanic.
+  (`GE_LockHealthButCanExecuted`, 舞狮尊主's last lion head) is the fight's mechanic. A current `Health_Min` of 1
+  with base 0 near the end (毕峰, 风雪刀客, 2026-11-15) is such an execution lock: the forced `Kill` ends it.
 - **Player deaths in the Realm of Mirage were not seen** (fixed 2026-11-15): the game sends the player out at once, `IsDead` is
   never read true and the run ends as 收刃离去 instead of 饮恨 (Nexus report by mastersoul2). Hooks on the revive
   handlers (`PBZPlayerReviveSubsystem:PBZOnPlayerRevived`, `PBZJhsyReturnStreamingSubsystem:HandlePlayerRevived`)
@@ -358,6 +359,10 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
   file (`%TEMP%\BossRush_god_base.tsv`) and the next load restores them; kept only in memory, each reload took
   the boosted values as the originals (player health 3085 -> 30,855,000, 2026-11-14).
 - Low system memory crashes the game (pagefile); it is not the mod. System settings are the user's to change.
+  Measured 2026-11-15 (three crashes that day, exceptions on engine threads): the game holds 12-13 GB private
+  memory from the first load and did not grow per fight over six runs (13 min, sampled every 5 s), while the
+  system's committed memory sat at 24-26 GB of a 27.95 GB commit limit. To check a suspected leak, sample
+  `PBZ` private bytes and `\Memory\Committed Bytes` during a long gauntlet and line them up with the run log.
 - Do not install third-party binaries without asking the user.
 
 ## Commits
