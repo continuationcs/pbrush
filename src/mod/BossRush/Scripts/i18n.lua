@@ -18,6 +18,9 @@ local S = {
     arena_taken_own = { "此地强敌本尊尚在，本周目击败后再来", "The foe itself still holds this ground. Defeat it in this playthrough first." },
     -- A fight bound to its own battlefield (arenas.lua `bound`) whose bell is not rung in this playthrough; %s: the arena.
     own_bell     = { "%s的铃铛本周目尚未敲响，敲响后再来", "The Bell at %s is not yet rung in this playthrough. Ring it first." },
+    -- Entering the trial on 66 Days (NightMare): a death the health floor misses (run.lua) still costs days.
+    nightmare    = { "六十六天难度下，挑战中若意外身陨仍会折损天数，请尽量使用其他难度",
+                     "On 66 Days, an unexpected death in a challenge still costs days. Please use another difficulty if you can." },
     difficulty   = { "难度", "Difficulty" },
     defeated     = { "击败", "Defeated" },
     going_home   = { "按确认键，自里武林醒转，回到铃铛之侧。", "Press confirm to stir from the Discordance and wake beside the Bell." },

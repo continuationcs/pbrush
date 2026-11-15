@@ -112,8 +112,8 @@ local function begin(queue, opts, spec)
     pcall(function() pos = U.pawn():K2_GetActorLocation() end)
     local arena, in_place = arenas.pick(spec, U.active_bells(), U.world_path(), pos, config.in_place_radius)
     if not arena then
-        -- Bound to its own battlefield, whose bell is not rung (arenas.pick logged it). The menu closes first so
-        -- the notice is seen.
+        -- Bound to its own battlefield, whose bell is not rung (arenas.pick logged it): no run, the menu closes
+        -- and a notice says why.
         local own = in_place
         U.log("no arena available")
         menu.close()
@@ -241,7 +241,17 @@ end
 math.randomseed(os.time())
 -- The bell entry appears once the start-up check has passed (doc/UPDATE.md); a failed check stops the mod.
 health.start()
-menu.install(show_root, function() return health.ready() and not run.active() end)
+-- Entering from the bell menu (not coming back from a sub-page): on 66 Days (EDifficultMode 4, NightMare) a tip
+-- strip asks the player to use another difficulty (user request 2026-11-16). Run deaths are kept from being game
+-- deaths (run.lua health floor), but one the floor misses would cost days in the player's only save.
+local NIGHTMARE = 4
+local function enter()
+    show_root()
+    local d = U.game_difficulty()
+    U.log("entry: difficulty %d", d)
+    if d == NIGHTMARE then ui.toast(T("nightmare"), 6) end
+end
+menu.install(enter, function() return health.ready() and not run.active() end)
 local pause = require("pause")
 pause.install(run.active, run.abort)
 run.on_start(pause.watch)

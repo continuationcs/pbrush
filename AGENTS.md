@@ -352,6 +352,9 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
   tested yet. The days live on the player blueprint (`BP_RenewalPlayer_C`: `RemainingDays`, `IrretrievableDays`,
   `RemainingDaysOnlastDeerBell`, `ConsciousnessDust`); the run logs them at each stage (`run: ledger`), read with
   `pcall` and kept out of the start-up check on purpose: they are only logged, and a renamed one must not stop the mod.
+  Entering 残影试炼 on 66 Days shows a tip strip asking for another difficulty (`main.lua` `enter`, user request).
+- **The tip strip (`ui.toast`, `WB_TipsText`) shows over the open bell menu** (user test 2026-11-16, the 66 Days
+  notice): a notice needs no menu close to be seen (an older comment in `main.lua` `begin` assumed it did).
 - **Player deaths in the Realm of Mirage were not seen** (fixed 2026-11-15): the game sends the player out at once, `IsDead` is
   never read true and the run ends as 收刃离去 instead of 饮恨 (Nexus report by mastersoul2). Hooks on the revive
   handlers (`PBZPlayerReviveSubsystem:PBZOnPlayerRevived`, `PBZJhsyReturnStreamingSubsystem:HandlePlayerRevived`)

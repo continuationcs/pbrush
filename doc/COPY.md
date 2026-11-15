@@ -178,6 +178,7 @@
 | 用时 | 用时　最佳　新纪录！ | Time　Best　NEW RECORD! |
 | 结算标题下的小字行 | 残影试炼 0.1.5（入口名 + mod 版本号，开发版显示 dev） | Trial of Echoes 0.1.5 |
 | 结算第三行 | 击败　难度 · 档位（入阵者 / 破局者 / 逆天者 / 六十六天 · 一重～五重） | Defeated　Difficulty · tier (Wayfarer / Pathbreaker / Hellwalker / 66 Days · Tier I-V) |
+| 六十六天难度进入残影试炼（提示条，用户要求 2026-11-16） | 六十六天难度下，挑战中若意外身陨仍会折损天数，请尽量使用其他难度 | On 66 Days, an unexpected death in a challenge still costs days. Please use another difficulty if you can. |
 | 出错停用（提示条） | 残影试炼出错，已停用，重启游戏后恢复 | Trial of Echoes hit an error and is off until the game restarts |
 | 游戏更新后停用（提示条，启动体检发现缺少核心部件） | 游戏已更新，残影试炼暂停，待 mod 更新后恢复 | The game has been updated. Trial of Echoes is paused until the mod is updated. |
 | 返回 | 按确认键，自里武林醒转，回到铃铛之侧。 | Press confirm to stir from the Discordance and wake beside the Bell. |
