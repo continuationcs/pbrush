@@ -5,6 +5,12 @@
 -- kind: "scenic" (名胜; `boss` marks a spot that is also that boss's original battlefield), "own" (a boss's own
 -- battlefield, where the level holds what its fight needs: that boss is fought only there, and nobody else is),
 -- "jhsy" (Realm of Mirage).
+-- An own battlefield is used only while its bell is rung in this playthrough: TeleportTo makes the bell it is
+-- given the player's bell, so a death there revives the player at a bell the game has not unlocked. A player in
+-- a new playthrough (二周目, 龙柱 not rung) died there, was revived inside the arena, the game crashed (GPU device
+-- removed) on the next teleport and the save was left at Bell_DP_001 (Nexus report by mastersoul2 on 0.1.5).
+-- `bound`: the fight needs that level (舞狮尊主's poles) and is not fought at all while the bell is not rung; an
+-- own battlefield without it only restores the setting, and its boss goes to the usual arenas instead.
 local U = require("util")
 
 local A = {
@@ -21,7 +27,7 @@ local A = {
     -- area spawned elsewhere made poles that never activated (2026-11-13). The bell 尊主封印地 is 15 m from the
     -- poles. Facing 225 (user request, 2026-11-14): toward the widest open side by the arena survey (right and
     -- behind of the old facing toward the poles, 102, were open 30 m; the boss appeared 10 m from the poles' edge).
-    { key = "houjie_lion", kind = "own",  map = "/Game/Maps/B09/PBZ_Houjie_WP",                      bell = "SZ_021",       zh = "尊主封印地",     en = "The Sealed Lion",             x = -271650, y = 46568, z = -3399,  yaw = 225, boss = "BP_Monster_LionDancer_P2" },
+    { key = "houjie_lion", kind = "own",  map = "/Game/Maps/B09/PBZ_Houjie_WP",                      bell = "SZ_021",       zh = "尊主封印地",     en = "The Sealed Lion",             x = -271650, y = 46568, z = -3399,  yaw = 225, boss = "BP_Monster_LionDancer_P2", bound = true },
     -- 金面具黑衣人 → 魔渊 (user decision 2026-11-14: Duel always at their original battlefield). Both classes
     -- share one spawner, in Xigu's separate Discordance space (z ~ 10,000,000; src/data/anchored_cells.lua.txt);
     -- the bell 龙柱 (Bell_DP_001) is 30 m from it. The bell's own spot was cramped (survey 3/16, 0 m): the user
@@ -35,14 +41,16 @@ local A = {
 
 local M = {}
 
--- Arenas offered for a boss: scenic spots whose bell is rung, that boss's origin (shown first), Realm of Mirage last.
+local function is_rung(a, rung) return rung[U.bell_name(a.bell)] == true end
+
+-- Arenas offered for a boss: spots whose bell is rung, that boss's origin first, Realm of Mirage last.
 function M.for_boss(boss_id, rung)
     local out = {}
     for _, a in ipairs(A) do
-        if boss_id and a.boss == boss_id then out[#out + 1] = { arena = a, origin = true } end
+        if boss_id and a.boss == boss_id and is_rung(a, rung) then out[#out + 1] = { arena = a, origin = true } end
     end
     for _, a in ipairs(A) do
-        if a.kind == "scenic" and (not boss_id or a.boss ~= boss_id) and rung[U.bell_name(a.bell)] then
+        if a.kind == "scenic" and (not boss_id or a.boss ~= boss_id) and is_rung(a, rung) then
             out[#out + 1] = { arena = a }
         end
     end
@@ -64,16 +72,21 @@ function M.own(boss_id)
 end
 
 -- No arena choice for the player (user decision): if they already stand at a suitable arena, fight there;
--- otherwise pick one at random. Suitable = this boss's origin, or a scenic spot whose bell is rung; a boss with
--- its own battlefield is fought only there. The Realm of Mirage is the fallback when nothing else is available.
+-- otherwise pick one at random. Suitable = this boss's origin, or a scenic spot, whose bell is rung; a boss with
+-- its own battlefield is fought only there while its bell is rung (see the top of this file). The Realm of
+-- Mirage is the fallback when nothing else is available.
 -- exclude: optional set of arena keys to leave out (an arena found occupied on arrival, run.lua).
--- Returns arena, in_place.
+-- Returns arena, in_place; or nil, own arena when the fight is bound to a battlefield whose bell is not rung.
 function M.pick(boss_id, rung, map, pos, radius, exclude)
     local pool = {}
     local own = boss_id and M.own(boss_id)
-    if own then
+    if own and is_rung(own, rung) then
         pool = { own }
+    elseif own and own.bound then
+        U.log("arena: %s needs its bell %s, not rung in this playthrough", own.key, U.bell_name(own.bell))
+        return nil, own
     else
+        if own then U.log("arena: %s's bell %s is not rung; usual arenas instead", own.key, U.bell_name(own.bell)) end
         for _, e in ipairs(M.for_boss(boss_id, rung)) do
             if e.arena.kind ~= "jhsy" and not (exclude and exclude[e.arena.key]) then pool[#pool + 1] = e.arena end
         end

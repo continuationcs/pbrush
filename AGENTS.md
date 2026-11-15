@@ -31,6 +31,15 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
   space), yet `PBZSaveLoadSubsystem:TeleportTo` with the bell id takes the player there and the run works. A
   boss's original battlefield in such a space is an arena of kind `own` (as 尊主封印地); to work on it, set
   `FOCUS` in `devtools.lua` (F5 goes there).
+- **`TeleportTo`'s bell argument becomes the player's bell**: deaths revive there and the save points at it. Only
+  travel with a bell rung in this playthrough (`U.active_bells()`): a player in a new playthrough (龙柱 not rung)
+  died at 龙柱, was revived inside the arena, the game crashed (GPU device removed) on the next teleport and the
+  save was left at `Bell_DP_001` (Nexus report by mastersoul2 on 0.1.5; crash not reproduced, cause inferred).
+  `arenas.pick` now checks own battlefields' bells too; one marked `bound` (舞狮尊主) is not fought while unrung.
+  Confirmed 2026-11-15: with 龙柱 rung, a death there ends as 饮恨 and the player gets home without a crash; with a
+  二周目 save (both bells unrung) 金面具黑衣人 went to the Realm of Mirage, a death there ended as 饮恨 and the
+  player got home, and 舞狮尊主 was refused with the notice. Bells reset in a new playthrough: an arena or a
+  travel target that worked in the first playthrough may be unrung in the next one.
 - A test round is expensive, so make one round answer the question: log each stage of a new integration (object
   found → page recognised → row added → row on screen → clicked) so the log shows where it stopped, and put a
   read-only description of what was found (names, classes, counts) in the debug log. A missing log line means

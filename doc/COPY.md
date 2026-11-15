@@ -145,6 +145,7 @@
 | 到达场地、首领出现前（加载界面消失后显示 3 秒，然后首领出现） | 强敌将至，准备迎战 | A foe approaches. Steel yourself. |
 | 场地被原生首领占着，换一处 | 此地已有强敌盘踞，另觅战场 | A foe already holds this ground. Seeking another. |
 | 专属战场被首领本尊占着，不打 | 此地强敌本尊尚在，本周目击败后再来 | The foe itself still holds this ground. Defeat it in this playthrough first. |
+| 专属战场的铃铛本周目没敲，不打（%s 为场地名） | %s的铃铛本周目尚未敲响，敲响后再来 | The Bell at %s is not yet rung in this playthrough. Ring it first. |
 | 两战之间（带「第几场 / 共几场」） | 残影将至　2 / 4 | Another echo stirs　2 / 4 |
 | 同一首领进入下一阶段 | 第二阶段（第三阶段……） | Second Phase (Third Phase …) |
 | 开战 | 残影现形 | THE ECHO TAKES FORM |

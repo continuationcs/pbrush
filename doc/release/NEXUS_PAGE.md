@@ -17,6 +17,11 @@
   screen shows the tier after the difficulty. Thanks to a1435033075 for asking for it.
 - Fixed: dying in a fight next to a Bell revived you in the arena and the fight went on; a death now ends the
   run as Undying Grudge. Deaths in the Realm of Mirage, which counted as Sheathe Your Blade, are fixed too.
+- Fixed (New Game+): The Lóng Pillar and The Sealed Lion are used only once their Bell is rung in this
+  playthrough. Dying at The Lóng Pillar before its Bell was rung could crash the game and leave the save at that
+  Bell. Until the Bell is rung, the Gold-Masked One is fought at another arena, and the Lion Dance Grandmaster
+  asks you to ring the Bell at The Sealed Lion first.
+- Thanks to mastersoul2 for the reports and tests behind both fixes.
 ```
 
 中文：
@@ -27,6 +32,9 @@
   单挑、连战都用这一档，重启游戏后保留；最佳用时按档分开记（以前的纪录算一重），结算画面在难度后面显示档位。
   感谢 a1435033075 的建议。
 - 修复：在铃铛旁的场地战死后会原地复活、挑战继续；现在战死即以「饮恨」结束；镜花水月中战死被记成「收刃离去」的问题也一并修好。
+- 修复（多周目）：专属战场「龙柱」「尊主封印地」只在本周目已敲响其铃铛时使用。之前在铃铛未敲的龙柱战死，可能导致游戏崩溃，
+  存档也停在那个铃铛。铃铛未敲时，金面具黑衣人改在其他场地打；舞狮尊主会提示先敲响尊主封印地的铃铛。
+- 感谢 mastersoul2 的反馈和测试，这两项修复都来自这位玩家的排查。
 ```
 
 ## 0.1.5 更新说明（Changelog / 文件说明）

@@ -10,6 +10,7 @@ local arenas = require("arenas")
 local roster = require("roster")
 local gauntlets = require("gauntlets")
 local tier = require("tier")
+local ui = require("ui")
 
 local T = i18n.t
 -- Rows per list page (单挑, 连战). With 下一页 / 上一页 / 返回 a page has 11 rows, three more than the bell menu's own column
@@ -91,7 +92,15 @@ local function begin(queue, opts)
     local pos
     pcall(function() pos = U.pawn():K2_GetActorLocation() end)
     local arena, in_place = arenas.pick(origin_of, U.active_bells(), U.world_path(), pos, config.in_place_radius)
-    if not arena then U.log("no arena available") return end
+    if not arena then
+        -- Bound to its own battlefield, whose bell is not rung (arenas.pick logged it). The menu closes first so
+        -- the notice is seen.
+        local own = in_place
+        U.log("no arena available")
+        menu.close()
+        if own then ui.toast(string.format(i18n.t("own_bell"), i18n.zh() and own.zh or own.en), 5) end
+        return
+    end
     opts.in_place, opts.origin_of = in_place, origin_of
     U.log("arena: %s (%s)", arena.key, in_place and "here" or "travel")
     menu.close()

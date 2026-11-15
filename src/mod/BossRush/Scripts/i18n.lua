@@ -16,6 +16,8 @@ local S = {
     -- A living native boss holds the arena (a new playthrough): fight elsewhere, or not at all on its own ground.
     arena_taken  = { "此地已有强敌盘踞，另觅战场", "A foe already holds this ground. Seeking another." },
     arena_taken_own = { "此地强敌本尊尚在，本周目击败后再来", "The foe itself still holds this ground. Defeat it in this playthrough first." },
+    -- A fight bound to its own battlefield (arenas.lua `bound`) whose bell is not rung in this playthrough; %s: the arena.
+    own_bell     = { "%s的铃铛本周目尚未敲响，敲响后再来", "The Bell at %s is not yet rung in this playthrough. Ring it first." },
     difficulty   = { "难度", "Difficulty" },
     defeated     = { "击败", "Defeated" },
     going_home   = { "按确认键，自里武林醒转，回到铃铛之侧。", "Press confirm to stir from the Discordance and wake beside the Bell." },
