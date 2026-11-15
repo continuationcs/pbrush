@@ -1,13 +1,14 @@
--- Development tools (never shipped: src/tools/build_release.py leaves this file out). Single keys F1-F5, no
+-- Development tools (never shipped: src/tools/build_release.py leaves this file out). Single keys F1-F6, no
 -- combinations (user decision, 2026-11-14). Taken elsewhere: F10 (UE4SS console, ConsoleEnablerMod), F11 (the
 -- game), F12 (Steam screenshot); UE4SS's own keys use Ctrl (Ctrl+R reload, Ctrl+O GUI, Ctrl+J / Ctrl+H dumps).
---   F1  god mode: off -> unkillable + attack x10 -> unkillable + one-hit kills -> off
+--   F1  god mode: off -> unkillable, full Sha-Chi, attack and 破气 x10 -> the same with one-hit kills -> off
 --   F2  mark the spot the player stands on and the direction they face, for a new arena (marks.tsv), and
 --       survey it right there (grades shown on screen)
 --   F3  arena survey: open, level ground around every arena's player and boss points (doc/DESIGN.md 5.0a);
 --       only the FOCUS arena when one is set
 --   F4  raise an error inside the mod, to check the stop path (log, tip strip, entry removed, run ended)
 --   F5  go to the arena in FOCUS (for one whose bell the bell menu cannot reach, e.g. 龙柱)
+--   F6  every run in the Realm of Mirage, on / off (to test deaths and the way back there)
 -- Results: [BossRush] DEV lines in UE4SS.log and dev.tsv / marks.tsv in the mod folder.
 local U = require("util")
 local ui = require("ui")
@@ -15,7 +16,7 @@ local UEHelpers = require("UEHelpers")
 
 local M = {}
 
-local DIR = (debug.getinfo(1, "S").source:match("^@(.*[\\/])Scripts[\\/]") or "")
+local DIR = U.MOD_DIR
 
 local function append(file, line)
     local f = io.open(DIR .. file, "a")
@@ -33,57 +34,74 @@ end
 
 function M.install(run, arenas)
     -- ------------------------------------------------------------ god mode (F1)
-    -- Health_Max x100 and kept full; attack multiplied. Re-applied every 100 ms: a respawn or a level load resets
+    -- Health_Max and Shachi_Max x100 and kept full; attack and 破气 multiplied. Re-applied every 100 ms: a respawn or a level load resets
     -- the attributes. The arena survey turns mode 1 on while it runs.
     -- The player's own values are kept in GOD_PATH while it is on, not only in memory: a hot reload (Ctrl+R) with
     -- god mode on made the new instance take the boosted values as the originals, and turning it off then left the
     -- player boosted; over a few reloads health went 3085 -> 30,855,000 and bosses fell in seconds (2026-11-14).
+    -- Attack and ShachiAttack (破气: how much Sha-Chi the player's hits take off) are multiplied by the mode;
+    -- Health_Max and Shachi_Max (the player's Sha-Chi, spent on skills) by 100, and both kept full (user request
+    -- 2026-11-15: Sha-Chi and 破气 too).
     local MODES = { { mult = 10, label = "无敌 + 10 倍攻击" }, { mult = 1000, label = "无敌 + 一击必杀" } }
+    local BOOST = {                 -- attribute -> multiplier ("mode" = the mode's) and the value kept full
+        { attr = "Health_Max", mult = 100, fill = "Health" },
+        { attr = "Shachi_Max", mult = 100, fill = "Shachi" },
+        { attr = "Attack", mult = "mode" },
+        { attr = "ShachiAttack", mult = "mode" },
+    }
     -- Outside the mod folder: install.ps1 wipes that, and an install is followed by a reload.
     local GOD_PATH = (os.getenv("TEMP") or os.getenv("TMP") or DIR) .. "\\BossRush_god_base.tsv"
-    local god = { mode = 0, gen = 0 }
+    local god = { mode = 0, gen = 0, base = nil }   -- base: attribute -> { base, current }, the player's own
 
     local function attrs() return U.pawn().AttributeSetBase end
 
+    -- The player's own values from GOD_PATH: one line per attribute, name <TAB> base <TAB> current. A file in
+    -- an older format, or missing an attribute, is not used.
     local function read_base()
         local f = io.open(GOD_PATH, "r")
         if not f then return nil end
-        local line = f:read("*l") or ""
-        f:close()
         local v = {}
-        for x in line:gmatch("[^\t]+") do v[#v + 1] = tonumber(x) end
-        if #v < 4 then return nil end
-        return { hp_base = v[1], hp = v[2], atk_base = v[3], atk = v[4] }
+        for line in f:lines() do
+            local name, b, c = line:match("^(%a[%w_]*)\t([-%d%.e]+)\t([-%d%.e]+)$")
+            if name then v[name] = { tonumber(b), tonumber(c) } end
+        end
+        f:close()
+        for _, x in ipairs(BOOST) do
+            if not v[x.attr] then return nil end
+        end
+        return v
     end
 
     local function restore(s, b)
-        s.Health_Max.BaseValue, s.Health_Max.CurrentValue = b.hp_base, b.hp
-        s.Health.BaseValue, s.Health.CurrentValue = b.hp, b.hp
-        s.Attack.BaseValue, s.Attack.CurrentValue = b.atk_base, b.atk
+        for _, x in ipairs(BOOST) do
+            local v = b[x.attr]
+            s[x.attr].BaseValue, s[x.attr].CurrentValue = v[1], v[2]
+            if x.fill then s[x.fill].BaseValue, s[x.fill].CurrentValue = v[2], v[2] end
+        end
         os.remove(GOD_PATH)
     end
 
     local function god_set(mode)
         local s = attrs()
         if god.mode == 0 and mode > 0 then
-            local saved = read_base()
-            if saved then
-                god.hp_base, god.hp, god.atk_base, god.atk = saved.hp_base, saved.hp, saved.atk_base, saved.atk
-            else
-                god.hp_base, god.hp = s.Health_Max.BaseValue, s.Health_Max.CurrentValue
-                god.atk_base, god.atk = s.Attack.BaseValue, s.Attack.CurrentValue
+            god.base = read_base()
+            if not god.base then
+                god.base = {}
                 local f = io.open(GOD_PATH, "w")
-                if f then
-                    f:write(string.format("%.6f\t%.6f\t%.6f\t%.6f\n", god.hp_base, god.hp, god.atk_base, god.atk))
-                    f:close()
+                for _, x in ipairs(BOOST) do
+                    local b, c = s[x.attr].BaseValue, s[x.attr].CurrentValue
+                    god.base[x.attr] = { b, c }
+                    if f then f:write(string.format("%s\t%.6f\t%.6f\n", x.attr, b, c)) end
                 end
+                if f then f:close() end
             end
         end
         god.gen = god.gen + 1
         god.mode = mode
         if mode == 0 then
-            restore(s, god)
-            out(string.format("god off (health %.0f, attack %.0f)", god.hp, god.atk))
+            restore(s, god.base)
+            out(string.format("god off (health %.0f, Sha-Chi %.0f, attack %.0f, 破气 %.0f)", god.base.Health_Max[2],
+                god.base.Shachi_Max[2], god.base.Attack[2], god.base.ShachiAttack[2]))
             ui.toast("调试：关闭", 2)
             return
         end
@@ -94,15 +112,17 @@ function M.install(run, arenas)
             if god.gen ~= gen then return true end
             pcall(function()
                 local a = attrs()
-                local mult = MODES[god.mode].mult
-                if a.Health_Max.CurrentValue < god.hp * 50 then
-                    a.Health_Max.BaseValue, a.Health_Max.CurrentValue = god.hp_base * 100, god.hp * 100
+                for _, x in ipairs(BOOST) do
+                    local m = x.mult == "mode" and MODES[god.mode].mult or x.mult
+                    local b = god.base[x.attr]
+                    if math.abs(a[x.attr].CurrentValue - b[2] * m) > 1 then
+                        a[x.attr].BaseValue, a[x.attr].CurrentValue = b[1] * m, b[2] * m
+                    end
+                    if x.fill then
+                        local full = a[x.attr].CurrentValue
+                        if a[x.fill].CurrentValue < full then a[x.fill].BaseValue, a[x.fill].CurrentValue = full, full end
+                    end
                 end
-                if math.abs(a.Attack.CurrentValue - god.atk * mult) > 1 then
-                    a.Attack.BaseValue, a.Attack.CurrentValue = god.atk_base * mult, god.atk * mult
-                end
-                local hm = a.Health_Max.CurrentValue
-                if a.Health.CurrentValue < hm then a.Health.BaseValue, a.Health.CurrentValue = hm, hm end
             end)
             return false
         end)
@@ -299,9 +319,10 @@ function M.install(run, arenas)
         local saved = read_base()
         if not saved then return true end
         local s = attrs()
-        if s.Health_Max.CurrentValue >= saved.hp * 50 then
+        if s.Health_Max.CurrentValue >= saved.Health_Max[2] * 50 then
             restore(s, saved)
-            out(string.format("god left on by the previous load: health %.0f, attack %.0f restored", saved.hp, saved.atk))
+            out(string.format("god left on by the previous load: health %.0f, Sha-Chi %.0f, attack %.0f, 破气 %.0f restored",
+                saved.Health_Max[2], saved.Shachi_Max[2], saved.Attack[2], saved.ShachiAttack[2]))
             ui.toast("调试：上次未关闭的无敌已还原", 3)
         else
             os.remove(GOD_PATH)
@@ -323,7 +344,25 @@ function M.install(run, arenas)
         ui.toast("调试：前往 " .. a.zh, 2)
         FindFirstOf("PBZSaveLoadSubsystem"):TeleportTo(FName(a.map), U.transform(a.x, a.y, a.z, a.yaw), FName(U.bell_name(a.bell)))
     end)
-    U.log("devtools ready: F1 god mode, F2 mark and survey a spot, F3 arena survey%s, F4 forced error, F5 go to %s",
+    -- F6: runs go to the Realm of Mirage (the fallback arena, otherwise reached only when every arena is
+    -- unavailable), to test what happens there (a player's death, the way back). Wraps arenas.pick, so the
+    -- release code has nothing of it. A boss fought only on its own battlefield still goes there.
+    local mirage = false
+    local pick = arenas.pick
+    arenas.pick = function(boss_id, ...)
+        if mirage and not (boss_id and arenas.own(boss_id)) then
+            for _, a in ipairs(arenas.all()) do
+                if a.kind == "jhsy" then out("arena forced: Realm of Mirage (F6)") return a, false end
+            end
+        end
+        return pick(boss_id, ...)
+    end
+    U.key(Key.F6, function()
+        mirage = not mirage
+        out("Realm of Mirage for every run: " .. tostring(mirage))
+        ui.toast(mirage and "调试：挑战都在镜花水月" or "调试：恢复自动选场地", 2)
+    end)
+    U.log("devtools ready: F1 god mode, F2 mark and survey a spot, F3 arena survey%s, F4 forced error, F5 go to %s, F6 Realm of Mirage",
         FOCUS and (" (" .. FOCUS .. " only)") or "", tostring(FOCUS))
 end
 

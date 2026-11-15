@@ -208,12 +208,12 @@ local function finish(result)
         title = title,
         rows = {
             -- Layout (user, 2026-11-14): mode and boss / group (+ new record) centred; time | best;
-            -- defeated | difficulty. The small line under the title is the entry's name and the mod version.
+            -- defeated | difficulty · 敌方强度 tier. The small line under the title is the entry's name and the mod version.
             { run.mode or "", name },
             { T("time"), run.t0 and records.fmt(secs) or "—" },
             { T("best"), best_line },
             { T("defeated"), string.format("%d / %d", defeated, #run.queue) },
-            { T("difficulty"), i18n.difficulty(run.difficulty) },
+            { T("difficulty"), i18n.difficulty(run.difficulty) .. " · " .. i18n.tier(run.tier) },
         },
         sub = T("entry") .. " " .. require("version"),
         foot = T("going_home"),
@@ -428,7 +428,7 @@ local function check_summons()
             if alive and m and m > 0 then
                 if not run.summon_scaled[name] then
                     run.summon_scaled[name] = true
-                    scale.apply(s, run.difficulty, short)
+                    scale.apply(s, run.difficulty, run.tier, short)
                     hp, m = health(s), max_health(s)
                 end
                 states[#states + 1] = hp <= 0 and "0" or ((m and hp >= m) and "full" or "hurt")
@@ -454,17 +454,21 @@ local function check_summons()
 end
 
 -- From the first boss to the end of the run, every 250 ms: the player's death or leaving, and the fight.
--- The game reviving the player means they died, even when IsDead was never seen true: dying in the Realm of
--- Mirage sends the player back to the bell at once, and the run read it as leaving the arena, 收刃离去 instead
--- of 饮恨 (Nexus report on 0.1.4, mastersoul2). Both are native functions bound to the revive event; whether
--- the game calls them where UE4SS sees it is checked in game (the log says which fired).
-for _, f in ipairs({ "/Script/ProjectPBZ.PBZPlayerReviveSubsystem:PBZOnPlayerRevived",
-                     "/Script/ProjectPBZ.PBZJhsyReturnStreamingSubsystem:HandlePlayerRevived" }) do
-    local ok, e = pcall(U.hook, f, function()
-        U.log("run: player revived (%s)%s", f:match("[^.]+$"), run and (" during the run, phase " .. run.phase) or "")
-        if run and (run.phase == "fighting" or run.phase == "between") then run.revived = true end
-    end)
-    if not ok then U.log("run: no hook on %s (%s)", f, tostring(e)) end
+-- A death is read from the game's own death counter (PBZGameSystem.DiedTimes) first: the game revives a dead
+-- player at once, at the last bell, so IsDead may never be seen true. At an arena next to a bell the player
+-- stood up again inside the arena and the run went on (2026-11-15); in the Realm of Mirage the player is sent
+-- out at once and the run read it as leaving, 收刃离去 instead of 饮恨 (Nexus report on 0.1.4, mastersoul2).
+-- Confirmed both ways (2026-11-15): 饮恨 at a normal arena and in the Realm of Mirage. The Realm of Mirage's
+-- revive handler (PBZJhsyReturnStreamingSubsystem:HandlePlayerRevived) fires too, but 6 s after the counter, so
+-- it was dropped. (PBZPlayerReviveSubsystem:PBZOnPlayerRevived is not a function: the header dump lists the
+-- delegate's signature under its property, and RegisterHook found no such UFunction.)
+
+-- Whether the game counted a death since the run started (run.died_at_start: nil when the counter cannot be
+-- read; then only IsDead is left).
+local function death_counted()
+    if not run.died_at_start then return false end
+    local n = U.game_system("DiedTimes")
+    return n ~= nil and n > run.died_at_start
 end
 
 local function watch()
@@ -472,16 +476,17 @@ local function watch()
     U.every(250, function()
         if not (run == me and (run.phase == "fighting" or run.phase == "between")) then return true end
         local p = U.pawn()
-        if not U.valid(p) or is_dead(p) or run.revived then
-            U.log("run: player died%s", run.revived and " (the game revived them)" or "")
+        local counted = death_counted()
+        if counted or not U.valid(p) or is_dead(p) then
+            U.log("run: player died (%s)", counted and "death counter" or "IsDead")
             finish("lose")
             return true
         end
         -- The player left the arena some other way (a return-to-bell item, a fall): treat it as leaving.
         local okp, pl = pcall(function() return p:K2_GetActorLocation() end)
         if okp and U.dist(pl, run.center) > config.player_leave then
-            U.log("run: player left the arena (health at the previous check %s, now %s)", tostring(run.player_hp),
-                tostring(health(p)))
+            U.log("run: player left the arena (health at the previous check %s, now %s; deaths %s, at the start %s)",
+                tostring(run.player_hp), tostring(health(p)), tostring(U.game_system("DiedTimes")), tostring(run.died_at_start))
             finish("abort")
             return true
         end
@@ -659,7 +664,7 @@ local function spawn_boss(rec, k)
         local lc = a.LootComp
         if U.valid(lc) then lc:K2_DestroyComponent(lc) U.log("run: loot component removed") end
     end)
-    scale.apply(a, run.difficulty)
+    scale.apply(a, run.difficulty, run.tier)
     return a, at
 end
 
@@ -815,16 +820,17 @@ function M.abort()
 end
 
 -- queue: list of fights { rec, steps = { {roster records}, ... } } (see the top of this file); difficulty: game
--- EDifficultMode; arena: arenas.lua record; opts: { record_key, mode, name (first line of the result screen: 单挑 / 连战 and the boss or group),
+-- EDifficultMode; arena: arenas.lua record; opts: { tier (敌方强度 tier, tier.lua), record_key, mode, name (first line of the result screen: 单挑 / 连战 and the boss or group),
 -- in_place = bool }.
 function M.start(queue, difficulty, arena, opts)
     if run then U.log("run: already running") return end
     opts = opts or {}
     run = { queue = queue, fi = 0, si = 0, actors = {}, identity_tags = {}, difficulty = difficulty, arena = arena, origin = save_origin(),
-            record_key = opts.record_key, mode = opts.mode, name = opts.name, in_place = opts.in_place,
+            tier = opts.tier or 1, record_key = opts.record_key, mode = opts.mode, name = opts.name, in_place = opts.in_place,
             origin_of = opts.origin_of, snap = snapshot(),
-            helpers = {} }
-    U.log("run: start %d boss(es), difficulty %d, arena %s, from %s / %s", #queue, difficulty, arena.key, run.origin.map, run.origin.bell)
+            helpers = {}, died_at_start = U.game_system("DiedTimes") }
+    U.log("run: start %d boss(es), difficulty %d, tier %d, arena %s, from %s / %s, deaths so far %s", #queue, difficulty,
+        run.tier, arena.key, run.origin.map, run.origin.bell, tostring(run.died_at_start))
     phase("travelling")
     for _, fn in ipairs(start_listeners) do fn() end
     go_to_arena()

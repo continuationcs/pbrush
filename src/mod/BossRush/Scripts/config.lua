@@ -14,6 +14,20 @@ return {
     -- All 0 (user decision): the game applies its own difficulty elsewhere (native enemies carry no
     -- difficulty bonus in their attributes), so adding levels here would count it twice.
     difficulty_offset = { [0] = 0, [1] = 0, [2] = 0, [3] = 0, [4] = 0 },
+    -- 敌方 · 强度 · 一重 … 五重 (Foe Strength Tier I-V; user decisions 2026-11-14, DESIGN 5.3a): the player's choice on the
+    -- 设置 page (残影试炼 → 设置), multiplied on top of the progress scaling. Geometric steps, as Diablo III's difficulties:
+    -- health x1.5 per tier, so each tier feels as much harder as the last. Attack x1.4 per tier (user decision
+    -- 2026-11-15, after 五重 at x2 was still too easy; first x1.2): a mistake costs more, the fight is no longer.
+    --   health: Health and Sha-Chi (otherwise a tougher boss would still break after a few hits)
+    --   attack: Attack and ShachiAttack (破气)
+    --   break_time: how long a break lasts (a Sha-Chi regeneration factor had no effect and was removed)
+    tiers = {
+        { health = 1,    attack = 1,    break_time = 1 },
+        { health = 1.5,  attack = 1.4,  break_time = 0.9 },
+        { health = 2.25, attack = 2,    break_time = 0.8 },
+        { health = 3.4,  attack = 2.7,  break_time = 0.7 },
+        { health = 5,    attack = 3.8,  break_time = 0.6 },
+    },
 
     -- Share of max HP restored between two fights of a 连战.
     heal_between = 0.3,

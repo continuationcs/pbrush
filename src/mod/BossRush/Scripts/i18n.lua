@@ -4,6 +4,7 @@ local S = {
     entry        = { "残影试炼", "Trial of Echoes" },     -- renamed from 强敌挑战 / Boss Challenge (user, 2026-11-14)
     duel         = { "单挑", "Duel" },
     gauntlet     = { "连战", "Gauntlet" },
+    settings     = { "设置", "Settings" },
     back         = { "返回", "Back" },
     prev         = { "上一页", "Previous" },
     next         = { "下一页", "Next" },
@@ -64,6 +65,18 @@ function M.difficulty(d)
     local e = type(d) == "number" and DIFFICULTY[d] or nil
     if not e then return "—" end
     return M.zh() and e[1] or e[2]
+end
+
+-- 敌方 · 强度 tiers (user decision 2026-11-14): the name alone (result screen: 破局者 · 三重 / Pathbreaker · Tier III)
+-- and the 设置 page's row (敌方 · 强度 · 三重 / Foe · Strength · Tier III; user's wording 2026-11-14). Out of range shows "—".
+local TIER = { { "一重", "I" }, { "二重", "II" }, { "三重", "III" }, { "四重", "IV" }, { "五重", "V" } }
+function M.tier(n)
+    local e = TIER[n]
+    if not e then return "—" end
+    return M.zh() and e[1] or ("Tier " .. e[2])
+end
+function M.tier_row(n)
+    return M.zh() and ("敌方 · 强度 · " .. M.tier(n)) or ("Foe · Strength · " .. M.tier(n))
 end
 
 -- Pick the right half of a { zh = , en = } record.

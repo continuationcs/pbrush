@@ -3,6 +3,7 @@
 -- but writing the attributes directly sticks. So: look up the game's own monster level curves and multiply.
 local U = require("util")
 local config = require("config")
+local tiers = require("tier")
 
 local M = {}
 
@@ -37,11 +38,7 @@ end
 
 -- The playthrough (0 = first) from PBZGameSystem.CycleCount; 0 when it cannot be read.
 function M.cycle()
-    local c = 0
-    for _, gs in ipairs(U.find_all("PBZGameSystem")) do
-        pcall(function() c = math.max(c, tonumber(gs.CycleCount) or 0) end)
-    end
-    return c
+    return U.game_system("CycleCount") or 0
 end
 
 -- The game's monster curves repeat their shape every 25 levels (Health runs to level 500, Attack and Shachi to
@@ -55,28 +52,57 @@ function M.target_level(difficulty)
     return math.min(lv, MAX_LEVEL)
 end
 
--- ch: the boss, or one of its summons (scaled the same way, as the game levels both); what: a name for the log
--- (default: the boss). difficulty: the game's EDifficultMode value (U.game_difficulty()).
-function M.apply(ch, difficulty, what)
-    if not config.scale_enabled then U.log("scale: off (原貌)") return end
+-- Which tier multiplier (config.tiers) each curve's attributes also take; Infliction takes none.
+-- ShachiAttack (破气, the boss's hits on the player's Sha-Chi) goes with attack (user decision 2026-11-14).
+local TIER_FACTOR = { Health = "health", Shachi = "health", Attack = "attack", ShachiAttack = "attack" }
+
+local function scale_attr(s, a, k)
+    s[a].BaseValue = s[a].BaseValue * k
+    s[a].CurrentValue = s[a].CurrentValue * k
+end
+
+-- How long a break lasts, the tier's only attribute without a level curve (user decision 2026-11-14).
+-- BreakDurationAdditionalMultiplier is a term added to 1: most bosses read 0, 舞狮尊主's second phase -0.25 (a
+-- shorter break by design, 2026-11-15), which no plain multiplier would be. The tier scales the resulting
+-- duration: 1 + new = (1 + old) x break_time. (A faster Sha-Chi regeneration was tried and removed: ShachiRegen
+-- read 0 on every boss and summon tested, so the game does not regenerate a boss's Sha-Chi through it.)
+local function apply_break_time(s, f, parts)
+    local a = s.BreakDurationAdditionalMultiplier
+    local old = a.CurrentValue
+    if f.break_time ~= 1 then
+        local new = (1 + old) * f.break_time - 1
+        a.BaseValue = a.BaseValue + (new - old)
+        a.CurrentValue = new
+    end
+    parts[#parts + 1] = string.format("BreakDuration %+.2f -> %+.2f", old, a.CurrentValue)
+end
+
+-- ch: the boss, or one of its summons (scaled the same way, as the game levels both: a summon whose values the
+-- game sizes from the boss's must follow the tier too); what: a name for the log (default: the boss).
+-- difficulty: the game's EDifficultMode value (U.game_difficulty()); tier: 敌方强度 tier (tier.lua), 1 = 一重.
+function M.apply(ch, difficulty, tier, what)
     local lv = M.target_level(difficulty)
+    local f = tiers.factors(tier)
     local s = ch.AttributeSetBase
     local parts = {}
     for cname, attrs in pairs(CURVES) do
-        local cv = curve(cname)
-        if cv then
-            local k = 1 + cv:GetFloatValue(lv) * config.curve_weight
-            for _, a in ipairs(attrs) do
-                pcall(function()
-                    s[a].BaseValue = s[a].BaseValue * k
-                    s[a].CurrentValue = s[a].CurrentValue * k
-                end)
-            end
-            parts[#parts + 1] = string.format("%s x%.2f", cname, k)
+        local k = 1
+        if config.scale_enabled then
+            local cv = curve(cname)
+            if cv then k = 1 + cv:GetFloatValue(lv) * config.curve_weight end
         end
+        k = k * (f[TIER_FACTOR[cname]] or 1)
+        if k ~= 1 then
+            for _, a in ipairs(attrs) do pcall(scale_attr, s, a, k) end
+        end
+        parts[#parts + 1] = string.format("%s x%.2f", cname, k)
     end
-    U.log("scale%s: level %d (progress %d, playthrough %d, difficulty %d): %s", what and (" " .. what) or "", lv,
-        M.progress_level(), M.cycle(), difficulty, table.concat(parts, ", "))
+    -- Read like the curve attributes: logged, not raised, if it cannot be.
+    local ok, err = pcall(apply_break_time, s, f, parts)
+    if not ok then parts[#parts + 1] = "break time failed: " .. tostring(err) end
+    U.log("scale%s: level %d (progress %d, playthrough %d, difficulty %d, tier %d%s): %s", what and (" " .. what) or "",
+        lv, M.progress_level(), M.cycle(), difficulty, tier, config.scale_enabled and "" or ", 原貌: curve off",
+        table.concat(parts, ", "))
     if not what then M.log_game_level_sources(ch) end
 end
 

@@ -4,6 +4,31 @@
 
 上传文件：`out/BossRush-0.1.5.zip`（0.1.4 之前：0.1.3 未发布，直接跳到 0.1.4）；主图：`doc/release/main_image.png`（1920×1080，上传到 Images，设为 primary）
 
+## 下一版（未发布）更新说明
+
+自 0.1.5 以来的改动，发布时填上版本号。
+
+```
+- New: Foe Strength, for a harder fight. Trial of Echoes has a new Settings page; its row
+  "Foe · Strength · Tier I" steps through five tiers on confirm. Tier I is as before; Tiers II-V raise boss
+  health and Sha-Chi (x1.5 / x2.25 / x3.4 / x5) and attack and Sha-Chi damage (x1.4 / x2 / x2.7 / x3.8) on top
+  of the progress and New Game+ scaling, and shorten the boss's breaks. The tier applies to Duel and Gauntlet
+  alike and is kept across restarts; best times are kept per tier (times so far count as Tier I), and the result
+  screen shows the tier after the difficulty. Thanks to a1435033075 for asking for it.
+- Fixed: dying in a fight next to a Bell revived you in the arena and the fight went on; a death now ends the
+  run as Undying Grudge. Deaths in the Realm of Mirage, which counted as Sheathe Your Blade, are fixed too.
+```
+
+中文：
+
+```
+- 新增「敌方 · 强度」：残影试炼新增「设置」页，其中「敌方 · 强度」一行按确认键在一重～五重之间切换。一重与之前相同；
+  二重～五重在进度和周目提升之上，首领生命和杀气 ×1.5 / ×2.25 / ×3.4 / ×5，攻击和破气 ×1.4 / ×2 / ×2.7 / ×3.8，破势硬直更短。
+  单挑、连战都用这一档，重启游戏后保留；最佳用时按档分开记（以前的纪录算一重），结算画面在难度后面显示档位。
+  感谢 a1435033075 的建议。
+- 修复：在铃铛旁的场地战死后会原地复活、挑战继续；现在战死即以「饮恨」结束；镜花水月中战死被记成「收刃离去」的问题也一并修好。
+```
+
 ## 0.1.5 更新说明（Changelog / 文件说明）
 
 自 0.1.4（362d429）以来的改动。
@@ -102,7 +127,7 @@ Fight the game's bosses again, any time, from any Bell. The mode lives in the Be
 [list]
 [*]Ring any Bell and choose [b]Trial of Echoes[/b] below Traverse.
 [*]The arena is chosen for you: stand at one of the arenas and the fight starts right there, otherwise you are taken to a random arena (scenic spots you have reached, or the boss's own battlefield).
-[*]Bosses are scaled to your progress with the game's own monster level curves, so early bosses are still a fight late in the game. Difficulty follows your game setting.
+[*]Bosses are scaled to your progress with the game's own monster level curves, so early bosses are still a fight late in the game. Difficulty follows your game setting; for a harder fight, pick Foe Strength Tier II-V in Settings (more boss health and attack).
 [*]Leave at any time from the game menu: [b]Trial of Echoes · Leave[/b] (System → Exit Game).
 [*]A result screen shows your time and best time. Press confirm and you wake beside the Bell you started from, with health and remedies as they were.
 [*]No side effects: challenge kills give no loot or Remnant Dust and do not touch your codex, quests or story. The mod never writes into your save; best times are kept in the mod folder.
@@ -161,7 +186,7 @@ Edit [code]BossRush\Scripts\config.lua[/code] and restart the game: boss scaling
 [list]
 [*]敲响任意铃铛，在“穿行”下方选择「残影试炼」。
 [*]场地自动决定：站在场地上就原地开打，否则随机传送到一个场地。
-[*]首领数值按你的进度、用游戏自己的等级曲线提升；难度跟随游戏设置。
+[*]首领数值按你的进度、用游戏自己的等级曲线提升；难度跟随游戏设置；嫌不够难，可在「设置」里选「敌方 · 强度 · 二重～五重」，首领生命和攻击更高。
 [*]随时可在游戏菜单选「残影试炼 · 退出挑战」退出（系统 → 退出游戏）。
 [*]结束后显示结算画面和最佳纪录，按确认键回到出发的铃铛，血量和药瓶恢复如初。
 [*]没有副作用：不掉落、不给意识尘埃、不影响图鉴、任务和剧情；不写入存档。

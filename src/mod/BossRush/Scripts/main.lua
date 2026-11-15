@@ -9,6 +9,7 @@ local run = require("run")
 local arenas = require("arenas")
 local roster = require("roster")
 local gauntlets = require("gauntlets")
+local tier = require("tier")
 
 local T = i18n.t
 -- Rows per list page (单挑, 连战). With 下一页 / 上一页 / 返回 a page has 11 rows, three more than the bell menu's own column
@@ -77,11 +78,15 @@ local function gauntlet_queue(g, avail)
     return #q >= 2 and q or nil
 end
 
-local show_root, show_bosses, show_gauntlets
+local show_root, show_bosses, show_gauntlets, show_settings
 
 -- Start a run (queue: fights). The arena is not chosen by the player: where they stand if it is a suitable
--- arena, otherwise a random suitable one (arenas.pick).
+-- arena, otherwise a random suitable one (arenas.pick). opts.record: the record key without difficulty and tier.
+-- Records are kept per game difficulty and 敌方强度 tier; 一重 adds nothing, so times from before tiers stay 一重's.
 local function begin(queue, opts)
+    local t = tier.get()
+    opts.tier = t
+    opts.record_key = opts.record .. "/" .. U.game_difficulty() .. (t > 1 and ("/t" .. t) or "")
     local origin_of = #queue == 1 and (own_boss(queue[1]) or queue[1].rec.id) or nil
     local pos
     pcall(function() pos = U.pawn():K2_GetActorLocation() end)
@@ -121,11 +126,11 @@ show_bosses = function(page, focus)
     local rows = {}
     for _, f in ipairs(available()) do
         local b = f.rec
-        -- Difficulty follows the game's own setting; records are kept per difficulty. A boss fought in several
-        -- phases keeps its time under its own key: times from when its first phase was fought alone do not count.
-        local key = "duel/" .. b.id .. (#f.steps > 1 and "/all-phases" or "") .. "/" .. U.game_difficulty()
+        -- A boss fought in several phases keeps its time under its own key: times from when its first phase
+        -- was fought alone do not count.
+        local key = "duel/" .. b.id .. (#f.steps > 1 and "/all-phases" or "")
         rows[#rows + 1] = { i18n.name(b), function()
-            begin({ f }, { record_key = key, mode = T("duel"), name = i18n.name(b) })
+            begin({ f }, { record = key, mode = T("duel"), name = i18n.name(b) })
         end }
     end
     show_paged(rows, page, focus or "paging", show_bosses)
@@ -139,21 +144,34 @@ show_gauntlets = function(page, focus)
         local q = gauntlet_queue(g, avail)
         if q then
             rows[#rows + 1] = { string.format("%s · %d", i18n.name(g), #q), function()
-                begin(q, { record_key = "gauntlet/" .. g.key .. "/" .. U.game_difficulty(), mode = T("gauntlet"), name = i18n.name(g) })
+                begin(q, { record = "gauntlet/" .. g.key, mode = T("gauntlet"), name = i18n.name(g) })
             end }
         end
     end
     show_paged(rows, page, focus, show_gauntlets)
 end
 
+-- 设置: every player setting, one row each (user decision 2026-11-14: one page to grow into). A row that
+-- cycles a value redraws the page and keeps its focus. Settings are the mod's own (settings.tsv), never the
+-- game's or the save's.
+local SETTINGS_ROW = 3     -- 设置's row on the root page, focused on the way back
+show_settings = function(focus)
+    menu.show({
+        -- 敌方 · 强度 · 一重 … 五重 steps on each confirm (user decision 2026-11-14).
+        { i18n.tier_row(tier.get()), function() tier.next() show_settings(1) end },
+        { T("back"), function() show_root(SETTINGS_ROW) end, back = true },
+    }, focus or 1)
+end
+
 -- Every page's 返回 row is marked back = true: the back key (Esc / gamepad B) clicks it, one level up.
-show_root = function()
+show_root = function(focus)
     menu.show({
         { T("duel"), function() show_bosses(1) end },
         { T("gauntlet"), show_gauntlets },
         -- 万象 (Myriad, the roguelike; formerly 试炼) is hidden until it is built.
+        { T("settings"), function() show_settings() end },
         { T("back"), menu.restore, back = true },
-    }, 1)
+    }, focus or 1)
 end
 
 math.randomseed(os.time())

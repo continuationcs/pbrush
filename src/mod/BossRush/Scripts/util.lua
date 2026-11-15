@@ -3,6 +3,10 @@ local config = require("config")
 
 local U = {}
 
+-- The mod's folder (Mods/BossRush/), where it keeps its own files (records.tsv, settings.tsv ...; never the
+-- game save).
+U.MOD_DIR = debug.getinfo(1, "S").source:match("^@(.*[\\/])Scripts[\\/]") or ""
+
 function U.log(fmt, ...)
     if not config.debug then return end
     local ok, msg = pcall(string.format, fmt, ...)
@@ -172,6 +176,19 @@ function U.find_all(class_short, templates)
         end
     end
     return out
+end
+
+-- A number the game keeps in its PBZGameSystem (CycleCount, DiedTimes ...): the largest over the live instances
+-- (FindFirstOf may return the class default), or nil when none can be read.
+function U.game_system(field)
+    local v = nil
+    for _, gs in ipairs(U.find_all("PBZGameSystem")) do
+        pcall(function()
+            local n = tonumber(gs[field])
+            if n then v = math.max(v or n, n) end
+        end)
+    end
+    return v
 end
 
 -- Load a class by "/Pkg/Path/Asset.Asset_C".

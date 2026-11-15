@@ -39,6 +39,20 @@
 
 命名原则（用户定稿）：用直白的字，同一类文案字数一致。入口 4 字「残影试炼」（2026-11-14 用户改名，原为「强敌挑战 / Boss Challenge」），三个玩法各 2 字「单挑 / 连战 / 万象」，子菜单最后一项「返回」也是 2 字。「万象」原名「试炼」：入口改名「残影试炼」后两者重名，2026-11-14 用户改名为「万象 / MYRIAD」（每局路线、首领、心法都不同）。不用「轮回」，因为原作里「轮回」已经是周目（Cycle）的意思。
 
+### 敌方强度的档位（用户决定，2026-11-14）
+在「设置」页（残影试炼首页：单挑 / 连战 / 设置 / 返回；用户决定 2026-11-14，玩家的自定义设置都放这一页，方便以后再加），按确认键在五档之间循环（五重之后回到一重），选过的档保存在 mod 自己的 `settings.tsv`，单挑、连战都用它。
+
+| 用处 | 中文 | English |
+|---|---|---|
+| 首页「设置」 | 设置 | Settings |
+| 设置页一行 | 敌方 · 强度 · 一重（二重 / 三重 / 四重 / 五重） | Foe · Strength · Tier I (II / III / IV / V) |
+| 结算「难度」一行 | 破局者 · 三重 | Pathbreaker · Tier III |
+| 说明（两段式，界面暂不显示，发布文本用） | 残影愈重，旧敌愈凶。<br>一重为原样；每加一重，首领生命、杀气、攻击和破气更高，破势更短。 | The deeper the echo, the fiercer the foe.<br>Tier I is the plain fight; each tier above raises boss health, Sha-Chi and attack, and shortens its breaks. |
+
+设置页这一行写作「敌方 · 强度 · 一重」（用户定，2026-11-14；原为「残影 · 一重」。用户先提「难度 一重」，因与游戏难度同名、结算「难度」一行已显示游戏难度而改用「强度」）。档名用「重」（功力分重），直白、好排序；不用「凶相 / 煞相」之类要记顺序的名字。
+
+属性的说法（2 字）：生命、攻击、杀气（首领的杀气条）、**破气**（`ShachiAttack`，首领打掉你杀气的力度，用户定名 2026-11-14）。
+
 ### 单挑的难度
 直接复用原作的难度名和标语：入阵者 / 破局者 / 逆天者（WAYFARER / PATHBREAKER / HELLWALKER），运行时读游戏的本地化文本。
 
@@ -140,7 +154,7 @@
 | 放弃结算标题 | 收刃离去 | Sheathe Your Blade |
 | 用时 | 用时　最佳　新纪录！ | Time　Best　NEW RECORD! |
 | 结算标题下的小字行 | 残影试炼 0.1.5（入口名 + mod 版本号，开发版显示 dev） | Trial of Echoes 0.1.5 |
-| 结算第三行 | 击败　难度（入阵者 / 破局者 / 逆天者 / 六十六天） | Defeated　Difficulty (Wayfarer / Pathbreaker / Hellwalker / 66 Days) |
+| 结算第三行 | 击败　难度 · 档位（入阵者 / 破局者 / 逆天者 / 六十六天 · 一重～五重） | Defeated　Difficulty · tier (Wayfarer / Pathbreaker / Hellwalker / 66 Days · Tier I-V) |
 | 出错停用（提示条） | 残影试炼出错，已停用，重启游戏后恢复 | Trial of Echoes hit an error and is off until the game restarts |
 | 返回 | 按确认键，自里武林醒转，回到铃铛之侧。 | Press confirm to stir from the Discordance and wake beside the Bell. |
 | 万象结算 | 前路已尽（打完全部关）。<br>闯过 {0} / {1} 关，心法 {2} 门。 | The Path Ends.<br>Cleared {0} / {1} stages, {2} Insights. |

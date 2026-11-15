@@ -17,7 +17,8 @@ HOW IT PLAYS
     otherwise you are taken to a random arena (scenic spots you have reached, or the boss's own battlefield).
   - Bosses are scaled to your progress with the game's own monster level curves, so early bosses stay
     a real fight late in the game, and they grow with each playthrough (New Game+). Difficulty follows
-    your game setting.
+    your game setting; for a harder fight, pick Foe Strength Tier II-V under Trial of Echoes → Settings
+    (more boss health and attack).
   - In New Game+, an arena where the game's own boss still stands is swapped for another.
   - Leave a run at any time from the game menu: "Trial of Echoes · Leave" (System → Exit Game).
   - When it ends, a result screen shows your time, best time and difficulty; press confirm to return.

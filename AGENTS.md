@@ -9,7 +9,8 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
   user exactly what to try; read `UE4SS.log` afterwards instead of asking them to copy logs.
 - Decisions the user has made are recorded in `doc/DESIGN.md` (marked 用户决定 / 用户确认). Do not revert them:
   e.g. no arena choice (auto pick), no vows in Gauntlet, all open bosses offered (no defeat filter), difficulty
-  follows the game setting with no extra levels, curve weight 1.0, the 万象 / Myriad (roguelike, formerly 试炼) mode hidden, no
+  follows the game setting with no extra levels, curve weight 1.0, harder fights only through the 敌方 · 强度 tiers
+  (一重～五重 multipliers on the 残影试炼 → 设置 page, DESIGN §5.3a), the 万象 / Myriad (roguelike, formerly 试炼) mode hidden, no
   top-of-screen Gauntlet HUD.
 - Copy style (`doc/COPY.md`): plain words; items of one kind keep the same character count (entry 4 chars,
   modes 2 chars); descriptions are two parts, one poetic line then one plain line. zh-Hans and English.
@@ -95,7 +96,7 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
 ## Build, install, release
 
 - `powershell -File src\tools\install.ps1 -Mods BossRush` (one mod per call; a comma list is passed as one string).
-  It **wipes** the target folder: files the mod writes there (`records.tsv`, `dev.tsv`, `marks.tsv`) are lost.
+  It **wipes** the target folder: files the mod writes there (`records.tsv`, `settings.tsv`, `dev.tsv`, `marks.tsv`) are lost.
 - **Hot reload**: UE4SS reloads all Lua mods on **Ctrl+R** (`EnableHotReloadSystem = 1` in `UE4SS-settings.ini`),
   so after `install.ps1` the user can keep the game running. Lua has no unload callback, so whatever the old
   instance put into the game stays: reload only when no challenge is running and no bell or system menu is open
@@ -288,11 +289,23 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
   confirmed with the 0.1.5 release build 2026-11-14). Each boss's `Health_Min` at spawn is in the development log:
   look there when a boss will not die. Not every floor is a bug: a lock that ends in an execution
   (`GE_LockHealthButCanExecuted`, 舞狮尊主's last lion head) is the fight's mechanic.
-- **Player deaths in the Realm of Mirage are not seen yet**: the game sends the player out at once, `IsDead` is
+- **Player deaths in the Realm of Mirage were not seen** (fixed 2026-11-15): the game sends the player out at once, `IsDead` is
   never read true and the run ends as 收刃离去 instead of 饮恨 (Nexus report by mastersoul2). Hooks on the revive
   handlers (`PBZPlayerReviveSubsystem:PBZOnPlayerRevived`, `PBZJhsyReturnStreamingSubsystem:HandlePlayerRevived`)
-  did not fix it in the 0.1.5 release test (2026-11-14): follow up with the development build's log (which hook
-  fired, the player's health before leaving).
+  did not fix it in the 0.1.5 release test (2026-11-14). The first never existed: `PBZOnPlayerRevived` sits under
+  the `OnPlayerRevived` property in the header dump because the dumper prints a delegate's signature there, and
+  RegisterHook found no such UFunction (the log said so at every load). The same blind spot hit a normal arena
+  next to a bell (2026-11-15): the player died, stood up again at the bell inside the arena and fought on. The
+  run now reads the game's death counter `PBZGameSystem.DiedTimes` (`U.game_system`) against its value at the
+  start: confirmed at a normal arena and in the Realm of Mirage (2026-11-15, `player died (death counter)`, 饮恨;
+  devtools F6 sends every run there). The Mirage revive handler fired too, 6 s after the counter, so it was
+  dropped. **A function listed right under a delegate property in the header dump is that delegate's signature,
+  not a hookable function.**
+- **An attribute that reads 0 has no effect to scale**: `ShachiRegen` read 0 on every boss and summon tested (five
+  classes, 2026-11-15), so the tiers' Sha-Chi regeneration factor changed nothing and was removed. Before a new
+  attribute goes into a tier or modifier, log its value at spawn on a few bosses and check it is the one the game
+  actually uses. Its values also tell its meaning: `BreakDurationAdditionalMultiplier` read 0 on most bosses and
+  -0.25 on 舞狮尊主's second phase, so it is a term added to 1, not a multiplier.
 - **Never read a dying actor's attributes**: the game crashed natively while a lion head dissolved, right after the
   run started reading every summon's health before checking `IsDead` (2026-11-13). Check `IsDead` first.
 - Cross-map travel: `PBZSaveLoadSubsystem:TeleportTo(FName("/Game/Maps/..."), transform, FName("Bell_<id>"))`.
@@ -309,10 +322,11 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
 - Development keys (`devtools.lua`, development builds only; user decisions 2026-11-14): **single keys only, no
   combinations**: F1 god mode, F2 mark a spot for a new arena and survey it right there (grades on screen), F3
   arena survey (only the `FOCUS` arena when `devtools.lua` sets one), F4 forced error, F5 go to the `FOCUS` arena
-  (for an arena whose bell the bell menu cannot reach). The discovery probe mod was retired (git history has it;
+  (for an arena whose bell the bell menu cannot reach), F6 every run in the Realm of Mirage on / off (it is
+  otherwise only the fallback when no arena is available). The discovery probe mod was retired (git history has it;
   UE4SS's own keybinds dump the CXX headers). **Never bind F10, F11 or F12**: F10 opens the UE4SS console
   (ConsoleEnablerMod), F11 is the game's (user report), F12 is Steam's screenshot. A new tool takes the next free
-  F key (F6-F9); UE4SS's own keys all use Ctrl.
+  F key (F7-F9); UE4SS's own keys all use Ctrl.
   Anything a dev tool changes in the game must survive a hot reload: god mode keeps the player's own values in a
   file (`%TEMP%\BossRush_god_base.tsv`) and the next load restores them; kept only in memory, each reload took
   the boosted values as the originals (player health 3085 -> 30,855,000, 2026-11-14).
