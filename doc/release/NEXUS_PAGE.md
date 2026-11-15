@@ -18,6 +18,22 @@
 - Bosses make an entrance instead of popping up and attacking at once: a mark rises where the boss will stand,
   the boss appears in it 1.5 s later and holds still for 1.5 s before it moves. Bosses now appear 12 m away
   (was 8 m), closer only where the arena is narrow.
+- 8 more bosses: the four Acolytes (Yanru, Lei Ting, Guhe, Hansui), Dusk, Zuo Shang (the Order's Shadow
+  Sovereign), Zuo Shang, the True Lóng, and The Snowstorm Blade. 74 bosses in all; only Leng Tu is still closed.
+- Jade Dancer and Iron Fiend are one entry and fight you together.
+- Gauntlet: A Thousand Echoes is now nine stages, grouped by the map where you meet the bosses, each a run with its own best time
+  (it was every boss in one run); it heads the Gauntlet list and opens a page of its stages. Groups renamed and
+  reordered: Gentle Jade, Hidden Edge (was The Young Mistress), Under the Shadow Sovereign (was Order's Finest),
+  Iron Steeds, Setting Sun (was Veterans of War), Grudges of the Sword Tomb (was Shadows of the Sects); The
+  Acolytes is back. Best times of renamed groups are kept. The Gauntlet page opens on Next, like Duel.
+- Each Gauntlet group and stage has its own arena, used once its Bell is rung. The Gold-Masked One and the
+  Lion Dance Grandmaster now join Gauntlets: their group goes to their own battlefield.
+- A Duel goes to the boss's arena when there is one (Mu Xiaokui: First Meeting Lakeside, The Snowstorm Blade:
+  Whiteshadow's Fall).
+- Fights no longer start right next to a Bell: arena spots marked again away from their Bells, two arenas added
+  (Whiteshadow's Fall, Ancestral Shrine Square), two removed (The Lady Grounds, Tower Rear Exit), two renamed
+  (First Meeting Lakeside, Meigu Lakeside). Starting at a Bell, you are moved onto the spot behind a fade.
+- Fixed: Grief-Stricken Jin could not be killed.
 - Fixed: dying in a fight next to a Bell revived you in the arena and the fight went on; a death now ends the
   run as Undying Grudge. Deaths in the Realm of Mirage, which counted as Sheathe Your Blade, are fixed too.
 - Fixed (New Game+): The Lóng Pillar and The Sealed Lion are used only once their Bell is rung in this
@@ -36,6 +52,17 @@
   感谢 a1435033075 的建议。
 - 首领出场：不再凭空出现、立刻出手。先在它要出现的位置浮现征兆，1.5 秒后首领在其中现身，原地停 1.5 秒再行动；
   出现距离从 8 米改为 12 米，场地窄时自动近一些。
+- 新开放 8 位首领：灭法之法四人（炎茹、雷婷、蛊鹤、寒岁）、操偶师荡秽、组织冥主：左殇、龙体左殇、风雪刀客。
+  共 74 位首领，只剩梦差冷荼暂未开放。
+- 玉妖和铁鬼合为一行「少主护卫：玉妖铁鬼」，两人同时登场。
+- 连战：千影归来拆成九段，按首领所在的地图分段，每段单独一局、单独计最佳用时（原来是全部首领一局打完）；它排在连战第一位，
+  点进去是九段的列表。改名和调整顺序：温玉藏锋（原少主仪仗）、冥主麾下（原组织高手）、铁马残阳（原沙场宿将）、
+  剑冢遗恨（原名门残影）；加回灭法之法。改名的组保留原有最佳用时。连战页进入时光标在「下一页」，和单挑一样。
+- 每个连战组、每段千影都有自己的场地，敲响其铃铛后就去那里打。金面具黑衣人和舞狮尊主也能进连战了：整组去它们的专属战场打。
+- 单挑有推荐场地的首领会去那里打（沐小葵：初见湖畔；风雪刀客：白影陨落之处）。
+- 不再紧挨着铃铛开打：各场地离开铃铛重新标点，新增「白影陨落之处」「祠堂广场」，去掉「圣母雕像场」「高塔后方出口」，
+  「湖畔」改名「初见湖畔」、「陆家村湖畔」改名「梅谷湖畔」。从铃铛出发时，画面淡出后把你移到场地上。
+- 修复：悲痛欲绝的阿瑾打不死。
 - 修复：在铃铛旁的场地战死后会原地复活、挑战继续；现在战死即以「饮恨」结束；镜花水月中战死被记成「收刃离去」的问题也一并修好。
 - 修复（多周目）：专属战场「龙柱」「尊主封印地」只在本周目已敲响其铃铛时使用。之前在铃铛未敲的龙柱战死，可能导致游戏崩溃，
   存档也停在那个铃铛。铃铛未敲时，金面具黑衣人改在其他场地打；舞狮尊主会提示先敲响尊主封印地的铃铛。
@@ -133,13 +160,13 @@ Fight the game's bosses again, any time, from any Bell. The mode lives in the Be
 [size=4][b]Modes[/b][/size]
 [list]
 [*][b]Duel[/b] - pick any boss and fight it once more.
-[*][b]Gauntlet[/b] - fight a themed group of bosses back to back: Shadow Wardens, Puppet Theatre, The Young Mistress, Three Masks, Order's Finest, Perils of the Wulin, Madmen of the Wulin, Strange Tales, Veterans of War, Shadows of the Sects, A Thousand Echoes. Each builds up to its strongest boss. A little health returns between fights; fall once and the run ends.
+[*][b]Gauntlet[/b] - fight a group of bosses back to back: A Thousand Echoes (every boss, in nine stages by map), Gentle Jade, Hidden Edge, Under the Shadow Sovereign, Shadow Wardens, Puppet Theatre, The Acolytes, Three Masks, Perils of the Wulin, Madmen of the Wulin, Strange Tales, Iron Steeds, Setting Sun, Grudges of the Sword Tomb. Each builds up to its strongest boss, at an arena chosen for it. A little health returns between fights; fall once and the run ends.
 [/list]
 
 [size=4][b]How it plays[/b][/size]
 [list]
 [*]Ring any Bell and choose [b]Trial of Echoes[/b] below Traverse.
-[*]The arena is chosen for you: stand at one of the arenas and the fight starts right there, otherwise you are taken to a random arena (scenic spots you have reached, or the boss's own battlefield).
+[*]The arena is chosen for you: stand at one of the arenas and the fight starts right there; otherwise you go to the arena chosen for that boss or Gauntlet once you have rung its Bell, or to a random scenic spot you have reached.
 [*]Bosses are scaled to your progress with the game's own monster level curves, so early bosses are still a fight late in the game. Difficulty follows your game setting; for a harder fight, pick Foe Strength Tier II-V in Settings (more boss health and attack).
 [*]Leave at any time from the game menu: [b]Trial of Echoes · Leave[/b] (System → Exit Game).
 [*]A result screen shows your time and best time. Press confirm and you wake beside the Bell you started from, with health and remedies as they were.
@@ -169,7 +196,7 @@ Edit [code]BossRush\Scripts\config.lua[/code] and restart the game: boss scaling
 
 [size=4][b]Known limitations[/b][/size]
 [list]
-[*]66 bosses are available. The Lion Dance Grandmaster's second phase is fought only at its own battlefield (The Sealed Lion), in Duel only; so are the Gold-Masked One and Mo Yuan, at The Lóng Pillar. Eight bosses whose skills rely on their own level are not offered yet: the four Acolytes, Dusk, Leng Tu, and Zuo Shang (first form and True Lóng).
+[*]74 bosses are available; only Leng Tu, whose skills rely on its own level, is not offered yet. The Lion Dance Grandmaster is fought only at its own battlefield, The Sealed Lion, once its Bell is rung in this playthrough. The Gold-Masked One and Mo Yuan are fought at The Lóng Pillar once its Bell is rung, at another arena before that.
 [*]The roguelike mode (Myriad) is not included yet.
 [*]Text: Simplified Chinese or English.
 [*]Made and tested on the Steam version, game build CL-302256.
@@ -192,13 +219,13 @@ Edit [code]BossRush\Scripts\config.lua[/code] and restart the game: boss scaling
 [b]模式[/b]
 [list]
 [*][b]单挑[/b]：任选一位首领，再战一场。
-[*][b]连战[/b]：按主题连续挑战一组首领。两战之间少量回血，倒下即失败。
+[*][b]连战[/b]：连续挑战一组首领：千影归来（全部首领，按地图分九段）和十一个主题组。每组越打越强，在为它选定的场地开打。两战之间少量回血，倒下即失败。
 [/list]
 
 [b]玩法[/b]
 [list]
 [*]敲响任意铃铛，在“穿行”下方选择「残影试炼」。
-[*]场地自动决定：站在场地上就原地开打，否则随机传送到一个场地。
+[*]场地自动决定：站在场地上就原地开打；否则去为该首领或该组选定的场地（敲响其铃铛后），或随机一处去过的名胜。
 [*]首领数值按你的进度、用游戏自己的等级曲线提升；难度跟随游戏设置；嫌不够难，可在「设置」里选「敌方 · 强度 · 二重～五重」，首领生命和攻击更高。
 [*]随时可在游戏菜单选「残影试炼 · 退出挑战」退出（系统 → 退出游戏）。
 [*]结束后显示结算画面和最佳纪录，按确认键回到出发的铃铛，血量和药瓶恢复如初。
@@ -211,7 +238,7 @@ Edit [code]BossRush\Scripts\config.lua[/code] and restart the game: boss scaling
 
 [b]兼容性[/b]：只增加内容，不替换游戏文件、不改存档，可与其他 UE4SS Lua mod、.pak mod 共存；只可能与改动铃铛菜单、游戏菜单、对话选项按钮或提示条的 mod 冲突；改怪物数值或难度的 mod 会连带影响挑战首领的强度。
 
-[b]已知限制[/b]：目前开放 66 位首领（舞狮尊主二阶段只在「尊主封印地」打，金面具黑衣人和魔渊只在「龙柱」打，都只进单挑），技能依赖原关卡的 8 位首领（灭法之法四人、荡秽、冷荼、左殇初见与龙体）暂未开放；肉鸽玩法「万象」暂未加入；文字为简体中文或英文。
+[b]已知限制[/b]：目前开放 74 位首领，只有技能依赖原关卡的梦差冷荼暂未开放；舞狮尊主只在它的战场「尊主封印地」打（本周目敲响其铃铛后），金面具黑衣人和魔渊在「龙柱」铃铛敲响后在龙柱打，之前在其他场地；肉鸽玩法「万象」暂未加入；文字为简体中文或英文。
 
 [b]致谢[/b]
 [list]

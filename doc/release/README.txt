@@ -6,15 +6,17 @@ game's own buttons, fonts, transitions and boss health bar, so it plays like par
 
 MODES
   Duel       Pick any boss and fight it once more; a boss with several phases is fought in one go.
-  Gauntlet   Fight a themed group of bosses back to back (11 groups: Shadow Wardens,
-             Puppet Theatre, Three Masks, Order's Finest, Perils of the Wulin, Strange Tales,
-             Veterans of War, A Thousand Echoes...). Each builds up to its strongest boss.
+  Gauntlet   Fight a group of bosses back to back: A Thousand Echoes (every boss, in nine
+             stages by map) and 11 themed groups (Shadow Wardens, Puppet Theatre, The Acolytes,
+             Three Masks, Perils of the Wulin, Strange Tales, Iron Steeds, Setting Sun...).
+             Each builds up to its strongest boss, at an arena chosen for it.
              A little health returns between fights; fall once and the run ends.
 
 HOW IT PLAYS
   - Ring any Bell and choose "Trial of Echoes" below "Traverse". Works with a gamepad.
   - The arena is chosen for you: if you stand at one of the arenas, the fight starts right there;
-    otherwise you are taken to a random arena (scenic spots you have reached, or the boss's own battlefield).
+    otherwise you go to the arena chosen for that boss or Gauntlet once you have rung its Bell, or to a
+    random scenic spot you have reached.
   - Bosses are scaled to your progress with the game's own monster level curves, so early bosses stay
     a real fight late in the game, and they grow with each playthrough (New Game+). Difficulty follows
     your game setting; for a harder fight, pick Foe Strength Tier II-V under Trial of Echoes → Settings
@@ -57,10 +59,10 @@ COMPATIBILITY
   - Mods that bind keyboard keys are unaffected: this mod binds none.
 
 KNOWN LIMITATIONS
-  - 66 bosses are available. The Lion Dance Grandmaster's second phase is fought only at its own
-    battlefield (The Sealed Lion), and the Gold-Masked One and Mo Yuan only at The Lóng Pillar, in Duel
-    only. Eight bosses whose skills rely on their own level are not offered yet: the four Acolytes, Dusk,
-    Leng Tu, and Zuo Shang (first form and True Lóng).
+  - 74 bosses are available; only Leng Tu, whose skills rely on its own level, is not offered yet.
+    The Lion Dance Grandmaster is fought only at its own battlefield, The Sealed Lion, once its Bell is
+    rung in this playthrough. The Gold-Masked One and Mo Yuan are fought at The Lóng Pillar once its Bell
+    is rung, at another arena before that.
   - The roguelike mode (Myriad) is not included yet.
   - Text is Simplified Chinese or English (Traditional Chinese shows Simplified for now).
   - Made and tested on the Steam version, game build CL-302256.

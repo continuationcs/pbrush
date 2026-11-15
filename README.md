@@ -11,10 +11,13 @@ Published on Nexus Mods: <https://www.nexusmods.com/phantombladezero/mods/1099>
 ## Features
 
 - Entry in the Bell menu, below Traverse; gamepad navigation works.
-- **Duel**: any of 66 bosses (50 entries: a boss with several phases is fought in one go). **Gauntlet**: 11 themed groups (Shadow Wardens, Puppet Theatre, The Young Mistress, Three Masks, Order's Finest, Perils of the Wulin, Madmen of the Wulin, Strange Tales, Veterans of War, Shadows of the Sects, A Thousand Echoes), each building up to its
-  strongest boss, a small heal between fights.
-- Arena picked for you: fight in place when standing at an arena, otherwise travel to a random one
-  (rung scenic spots or the boss's own battlefield), then return to the starting Bell.
+- **Duel**: any of 74 bosses (57 entries: a boss with several phases, or bosses that fight together, are one
+  entry). **Gauntlet**: A Thousand Echoes (every boss, in nine stages by map) and 11 themed groups (Gentle Jade,
+  Hidden Edge, Under the Shadow Sovereign, Shadow Wardens, Puppet Theatre, The Acolytes, Three Masks, Perils of
+  the Wulin, Madmen of the Wulin, Strange Tales, Iron Steeds, Setting Sun, Grudges of the Sword Tomb), each
+  building up to its strongest boss, a small heal between fights.
+- Arena picked for you: fight in place when standing at an arena, otherwise travel to the arena chosen for the
+  boss or group (once its Bell is rung) or a random rung scenic spot, then return to the starting Bell.
 - Boss stats follow your progress with the game's own monster level curves (`base × (1 + curve(level))`);
   difficulty follows the game setting.
 - Result screen with time, best time and difficulty; leave a run from the game menu («残影试炼 · 退出挑战»).
@@ -32,7 +35,7 @@ Settings live in `BossRush\Scripts\config.lua` (restart the game after editing).
 
 | Path | What |
 |---|---|
-| `src/mod/BossRush/Scripts/` | The mod. `main.lua` (menu pages), `menu.lua` (Bell menu entry and pages), `widgets.lua` (helpers for the game's menus, the click hook), `run.lua` (a challenge from travel to return), `scale.lua`, `settle.lua` (result screen), `pause.lua` (game-menu entry to leave a run), `ui.lua`, `arenas.lua`, `gauntlets.lua`, `roster.lua` (generated), `records.lua`, `i18n.lua`, `config.lua`, `util.lua`; `devtools.lua` is development only, not shipped (F1 god mode, F2 mark a spot, F3 arena survey, F4 forced error) |
+| `src/mod/BossRush/Scripts/` | The mod. `main.lua` (menu pages), `menu.lua` (Bell menu entry and pages), `widgets.lua` (helpers for the game's menus, the click hook), `run.lua` (a challenge from travel to return), `scale.lua`, `settle.lua` (result screen), `pause.lua` (game-menu entry to leave a run), `ui.lua`, `arenas.lua`, `gauntlets.lua`, `roster.lua` (generated), `records.lua`, `i18n.lua`, `config.lua`, `util.lua`; `devtools.lua` is development only, not shipped (F1 god mode, F2 mark a spot, F3 arena survey, F4 forced error, F5 go to the arena being worked on, F6 every run in the Realm of Mirage) |
 | `src/data/` | Bell table (`bells.tsv`, 187 bells), arena list (`arenas_final.tsv`), earlier probe and test results |
 | `src/tools/` | `install.ps1` (copy mods into the game), `build_release.py` (release zip), `gen_roster.py` (boss roster), `lua_check.py` (Lua sanity check), `crash_dump.py` (read UE4SS crash dumps), `asset_scan.py` (search game assets offline), `make_cover.py` (Nexus image), `pak_locres.py` |
 | `src/ue4ss/` | UE4SS memory layout and signatures for this game build (CL-302256) |
@@ -74,7 +77,8 @@ Made against the Steam build CL-302256 with UE4SS experimental 3.0.1. See `AGENT
 
 - **安装**：先装 [OFFICIAL UE4SS for PBZ](https://www.nexusmods.com/phantombladezero/mods/13)，再把发布包解压到
   `<游戏目录>\platform\steam\ue4ss\Mods\`。
-- **场地**：站在场地上就原地开打，否则随机传送到一个场地，打完回到出发的铃铛。
+- **连战**：千影归来（全部首领，按地图分九段）和 11 个主题组。
+- **场地**：站在场地上就原地开打，否则去为该首领或该组选定的场地（敲响其铃铛后），或随机一处去过的名胜，打完回到出发的铃铛。
 - **数值**：按进度用游戏自己的等级曲线提升，难度跟随游戏设置。
 - **没有副作用**：不掉落、不给意识尘埃、不写图鉴、不改存档；血量和药瓶恢复。
 - 设计和决定记录在 `doc/DESIGN.md`，文案在 `doc/COPY.md`。
