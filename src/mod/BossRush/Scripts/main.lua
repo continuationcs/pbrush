@@ -259,6 +259,10 @@ local pause = require("pause")
 pause.install(run.active, run.abort)
 run.on_start(pause.watch)
 
+-- God mode (F1): development builds, or a release build with the author's switch file (god.lua).
+local god = require("god")
+god.install(config.debug or god.unlocked())
+
 -- Development only: devtools.lua is not shipped (src/tools/build_release.py leaves it out).
 if config.debug then
     local ok, dev = pcall(require, "devtools")

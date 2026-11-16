@@ -190,6 +190,9 @@
 | 六十六天难度进入残影试炼（提示条，用户要求 2026-11-16） | 六十六天难度下，挑战中若意外身陨仍会折损天数，请尽量使用其他难度 | On 66 Days, an unexpected death in a challenge still costs days. Please use another difficulty if you can. |
 | 出错停用（提示条） | 残影试炼出错，已停用，重启游戏后恢复 | Trial of Echoes hit an error and is off until the game restarts |
 | 游戏更新后停用（提示条，启动体检发现缺少核心部件） | 游戏已更新，残影试炼暂停，待 mod 更新后恢复 | The game has been updated. Trial of Echoes is paused until the mod is updated. |
+| F1 无敌打开（提示条，作者内部测试用，不公开，用户决定 2026-11-16） | 调试：无敌 + 10 倍攻击 | Debug: invincible + 10x attack |
+| F1 无敌关闭 | 调试：无敌已关闭 | Debug: invincibility off |
+| 上次载入时没关的无敌已还原 | 调试：上次未关闭的无敌已还原 | Debug: invincibility left on last time has been undone |
 | 返回 | 按确认键，自里武林醒转，回到铃铛之侧。 | Press confirm to stir from the Discordance and wake beside the Bell. |
 | 万象结算 | 前路已尽（打完全部关）。<br>闯过 {0} / {1} 关，心法 {2} 门。 | The Path Ends.<br>Cleared {0} / {1} stages, {2} Insights. |
 | 万象每关开战 | 第 {0} / {1} 关 · 凶煞 · 铁躯 | Stage {0} / {1} · Dread Foe · Ironclad |

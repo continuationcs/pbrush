@@ -78,7 +78,11 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
 - Keep the code healthy for the long term: delete dead code and unused files instead of keeping them "for later"
   (git history has them), one helper per job shared across modules (`widgets.lua`, `util.lua`), no duplicated
   logic, names and comments that say why. Leave the code cleaner than you found it.
-- Debug and development code stays out of the release (`build_release.py` excludes it and checks for it).
+- Debug and development code stays out of the release (`build_release.py` excludes it and checks for it). One
+  exception (user decision 2026-11-16): god mode (`god.lua`, F1, invincible + attack x10, one mode) ships, but a
+  release build binds F1 only when `<game>\ProjectPBZ\Saved\BossRushDebugger.txt` exists at load; without it
+  nothing is bound or logged. It is the author's internal switch: never mention it on Nexus or in release texts.
+  `build_release.py` allows exactly one `U.key(Key.F1, ...)` there and none elsewhere.
 - **Errors stop the mod, never the game.** Every call from the game into the mod goes through `util.lua`:
   `U.after`, `U.every` (loops; return true to stop), `U.on_new`, `U.hook`, `U.key`. They run mod code on the game
   thread and catch every Lua error: it is logged with its traceback, the mod turns itself off (`U.failed()`,
@@ -440,7 +444,7 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
   in a new playthrough, so few scenic arenas are offered early on.
 - Read input with `PlayerController:IsInputKeyDown({KeyName = FName("Gamepad_FaceButton_Bottom")})`.
 - Development keys (`devtools.lua`, development builds only; user decisions 2026-11-14): **single keys only, no
-  combinations**: F1 god mode, F2 mark a spot for a new arena and survey it right there (grades on screen), F3
+  combinations**: F1 god mode (`god.lua`, see Code health), F2 mark a spot for a new arena and survey it right there (grades on screen), F3
   arena survey (only the `FOCUS` arena when `devtools.lua` sets one), F4 forced error, F5 go to the `FOCUS` arena
   (for an arena whose bell the bell menu cannot reach), F6 every run in the Realm of Mirage on / off (it is
   otherwise only the fallback when no arena is available), F7 treat the first open boss as missing from the game, F8 run the start-up

@@ -14,7 +14,9 @@ U.MOD_DIR = debug.getinfo(1, "S").source:match("^@(.*[\\/])Scripts[\\/]") or ""
 -- so the files sit in Saved itself. The mod's folder is <game>/platform/steam/ue4ss/Mods/BossRush/. Versions up to
 -- 0.1.6 kept the file in the mod's folder as `old_name`: the first call moves it over. When Saved cannot be
 -- written, the mod's folder is used.
-local SAVED = U.MOD_DIR .. "../../../../../ProjectPBZ/Saved/"
+-- Also where god.lua looks for its switch file.
+U.SAVED_DIR = U.MOD_DIR .. "../../../../../ProjectPBZ/Saved/"
+local SAVED = U.SAVED_DIR
 function U.data_file(name, old_name)
     local old = U.MOD_DIR .. old_name
     local path = SAVED .. name

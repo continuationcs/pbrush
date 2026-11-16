@@ -1,7 +1,7 @@
--- Development tools (never shipped: src/tools/build_release.py leaves this file out). Single keys F1-F8, no
+-- Development tools (never shipped: src/tools/build_release.py leaves this file out). Single keys F2-F8, no
 -- combinations (user decision, 2026-11-14). Taken elsewhere: F10 (UE4SS console, ConsoleEnablerMod), F11 (the
 -- game), F12 (Steam screenshot); UE4SS's own keys use Ctrl (Ctrl+R reload, Ctrl+O GUI, Ctrl+J / Ctrl+H dumps).
---   F1  god mode: off -> unkillable, full Sha-Chi, attack and 破气 x10 -> the same with one-hit kills -> off
+--   F1  god mode lives in god.lua (shipped: a release build binds it when its switch file exists)
 --   F2  mark the spot the player stands on and the direction they face, for a new arena (marks.tsv), and
 --       survey it right there (grades shown on screen)
 --   F3  arena survey: open, level ground around every arena's player and boss points (doc/DESIGN.md 5.0a);
@@ -14,6 +14,7 @@
 -- Results: [BossRush] DEV lines in UE4SS.log and dev.tsv / marks.tsv in the mod folder.
 local U = require("util")
 local ui = require("ui")
+local god = require("god")
 local UEHelpers = require("UEHelpers")
 
 local M = {}
@@ -35,101 +36,6 @@ local function out(line)
 end
 
 function M.install(run, arenas, health, roster)
-    -- ------------------------------------------------------------ god mode (F1)
-    -- Health_Max and Shachi_Max x100 and kept full; attack and 破气 multiplied. Re-applied every 100 ms: a respawn or a level load resets
-    -- the attributes. The arena survey turns mode 1 on while it runs.
-    -- The player's own values are kept in GOD_PATH while it is on, not only in memory: a hot reload (Ctrl+R) with
-    -- god mode on made the new instance take the boosted values as the originals, and turning it off then left the
-    -- player boosted; over a few reloads health went 3085 -> 30,855,000 and bosses fell in seconds (2026-11-14).
-    -- Attack and ShachiAttack (破气: how much Sha-Chi the player's hits take off) are multiplied by the mode;
-    -- Health_Max and Shachi_Max (the player's Sha-Chi, spent on skills) by 100, and both kept full (user request
-    -- 2026-11-15: Sha-Chi and 破气 too).
-    local MODES = { { mult = 10, label = "无敌 + 10 倍攻击" }, { mult = 1000, label = "无敌 + 一击必杀" } }
-    local BOOST = {                 -- attribute -> multiplier ("mode" = the mode's) and the value kept full
-        { attr = "Health_Max", mult = 100, fill = "Health" },
-        { attr = "Shachi_Max", mult = 100, fill = "Shachi" },
-        { attr = "Attack", mult = "mode" },
-        { attr = "ShachiAttack", mult = "mode" },
-    }
-    -- Outside the mod folder: install.ps1 wipes that, and an install is followed by a reload.
-    local GOD_PATH = (os.getenv("TEMP") or os.getenv("TMP") or DIR) .. "\\BossRush_god_base.tsv"
-    local god = { mode = 0, gen = 0, base = nil }   -- base: attribute -> { base, current }, the player's own
-
-    local function attrs() return U.pawn().AttributeSetBase end
-
-    -- The player's own values from GOD_PATH: one line per attribute, name <TAB> base <TAB> current. A file in
-    -- an older format, or missing an attribute, is not used.
-    local function read_base()
-        local f = io.open(GOD_PATH, "r")
-        if not f then return nil end
-        local v = {}
-        for line in f:lines() do
-            local name, b, c = line:match("^(%a[%w_]*)\t([-%d%.e]+)\t([-%d%.e]+)$")
-            if name then v[name] = { tonumber(b), tonumber(c) } end
-        end
-        f:close()
-        for _, x in ipairs(BOOST) do
-            if not v[x.attr] then return nil end
-        end
-        return v
-    end
-
-    local function restore(s, b)
-        for _, x in ipairs(BOOST) do
-            local v = b[x.attr]
-            s[x.attr].BaseValue, s[x.attr].CurrentValue = v[1], v[2]
-            if x.fill then s[x.fill].BaseValue, s[x.fill].CurrentValue = v[2], v[2] end
-        end
-        os.remove(GOD_PATH)
-    end
-
-    local function god_set(mode)
-        local s = attrs()
-        if god.mode == 0 and mode > 0 then
-            god.base = read_base()
-            if not god.base then
-                god.base = {}
-                local f = io.open(GOD_PATH, "w")
-                for _, x in ipairs(BOOST) do
-                    local b, c = s[x.attr].BaseValue, s[x.attr].CurrentValue
-                    god.base[x.attr] = { b, c }
-                    if f then f:write(string.format("%s\t%.6f\t%.6f\n", x.attr, b, c)) end
-                end
-                if f then f:close() end
-            end
-        end
-        god.gen = god.gen + 1
-        god.mode = mode
-        if mode == 0 then
-            restore(s, god.base)
-            out(string.format("god off (health %.0f, Sha-Chi %.0f, attack %.0f, 破气 %.0f)", god.base.Health_Max[2],
-                god.base.Shachi_Max[2], god.base.Attack[2], god.base.ShachiAttack[2]))
-            ui.toast("调试：关闭", 2)
-            return
-        end
-        out("god " .. MODES[mode].label)
-        ui.toast("调试：" .. MODES[mode].label, 2)
-        local gen = god.gen
-        U.every(100, function()
-            if god.gen ~= gen then return true end
-            pcall(function()
-                local a = attrs()
-                for _, x in ipairs(BOOST) do
-                    local m = x.mult == "mode" and MODES[god.mode].mult or x.mult
-                    local b = god.base[x.attr]
-                    if math.abs(a[x.attr].CurrentValue - b[2] * m) > 1 then
-                        a[x.attr].BaseValue, a[x.attr].CurrentValue = b[1] * m, b[2] * m
-                    end
-                    if x.fill then
-                        local full = a[x.attr].CurrentValue
-                        if a[x.fill].CurrentValue < full then a[x.fill].BaseValue, a[x.fill].CurrentValue = full, full end
-                    end
-                end
-            end)
-            return false
-        end)
-    end
-
     -- ------------------------------------------------------------ mark a spot (F2)
     -- Map, position and facing (the camera's yaw: where the boss should appear) of the player, for arenas.lua.
     local function mark()
@@ -246,8 +152,8 @@ function M.install(run, arenas, health, roster)
         local home = { map = U.world_path(), x = pl.X, y = pl.Y, z = pl.Z, bell = "None" }
         pcall(function() home.bell = FindFirstOf("BellManager").RecentlyInteractedBellID:ToString() end)
         surveying = true
-        local was_god = god.mode
-        if was_god == 0 then god_set(1) end
+        local was_god = god.on()
+        if not was_god then god.set(true) end
         out(string.format("survey: %d arenas", #list))
         -- A scenic arena is offered only once its bell is rung: show whether each bell id is in the rung set.
         local rung = U.active_bells()
@@ -262,7 +168,7 @@ function M.install(run, arenas, health, roster)
             if step == "go" then
                 i = i + 1
                 if i > #list and here then
-                    if was_god == 0 then god_set(0) end
+                    if not was_god then god.set(false) end
                     surveying = false
                     out("survey: done")
                     return true
@@ -317,7 +223,7 @@ function M.install(run, arenas, health, roster)
                 local near = false
                 pcall(function() near = U.dist(U.pawn():K2_GetActorLocation(), { X = home.x, Y = home.y, Z = home.z }) < 2000 end)
                 if (near and not run.loading()) or ticks > 900 then
-                    if was_god == 0 then god_set(0) end
+                    if not was_god then god.set(false) end
                     surveying = false
                     out("survey: done")
                     return true
@@ -327,26 +233,6 @@ function M.install(run, arenas, health, roster)
         end)
     end
 
-    -- A previous load left god mode on (hot reload): once the player exists, put their own values back, if they
-    -- are still boosted (after a game restart the game has already recomputed them).
-    U.every(1000, function()
-        if not U.valid(U.pawn()) then return false end
-        local saved = read_base()
-        if not saved then return true end
-        local s = attrs()
-        if s.Health_Max.CurrentValue >= saved.Health_Max[2] * 50 then
-            restore(s, saved)
-            out(string.format("god left on by the previous load: health %.0f, Sha-Chi %.0f, attack %.0f, 破气 %.0f restored",
-                saved.Health_Max[2], saved.Shachi_Max[2], saved.Attack[2], saved.ShachiAttack[2]))
-            ui.toast("调试：上次未关闭的无敌已还原", 3)
-        else
-            os.remove(GOD_PATH)
-            out("god file from an earlier session dropped (values not boosted)")
-        end
-        return true
-    end)
-
-    U.key(Key.F1, function() god_set((god.mode + 1) % (#MODES + 1)) end)
     U.key(Key.F2, function() survey(mark()) end)
     U.key(Key.F3, function() survey() end)
     U.key(Key.F4, function() error("devtools: forced error (F4)") end)
@@ -392,7 +278,7 @@ function M.install(run, arenas, health, roster)
         out("start-up check with a made-up core part (F8)")
         health.start("/Script/ProjectPBZ.PBZSaveLoadSubsystem:BossRushNoSuchFunction (F8)")
     end)
-    U.log("devtools ready: F1 god mode, F2 mark and survey a spot, F3 arena survey%s, F4 forced error, F5 go to %s, F6 Realm of Mirage, F7 pretend a boss missing, F8 pretend the game changed",
+    U.log("devtools ready: F2 mark and survey a spot, F3 arena survey%s, F4 forced error, F5 go to %s, F6 Realm of Mirage, F7 pretend a boss missing, F8 pretend the game changed",
         FOCUS and (" (" .. FOCUS .. " only)") or "", tostring(FOCUS))
 end
 

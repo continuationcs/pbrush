@@ -68,10 +68,17 @@ def main():
             shutil.copy(src, mod / name)
 
     # Sanity: no leftovers of the retired probe or debug key bindings in the shipped scripts. Key bindings go through U.key
-    # (util.lua defines it on top of RegisterKeyBind; only development code calls it).
+    # (util.lua defines it on top of RegisterKeyBind). The one shipped binding is god.lua's F1, bound only when the
+    # author's switch file exists (user decision 2026-11-16): exactly one U.key call there, for Key.F1.
     for f in (mod / 'Scripts').glob('*.lua'):
         body = f.read_text(encoding='utf-8')
-        bad_words = ['BRProbe', 'GenerateSDK'] + ([] if f.name == 'util.lua' else ['U.key(', 'RegisterKeyBind'])
+        bad_words = ['BRProbe', 'GenerateSDK']
+        if f.name == 'god.lua':
+            bad_words.append('RegisterKeyBind')
+            if body.count('U.key(') != 1 or body.count('U.key(Key.F1,') != 1:
+                sys.exit('god.lua: expected exactly one key binding, U.key(Key.F1, ...)')
+        elif f.name != 'util.lua':
+            bad_words += ['U.key(', 'RegisterKeyBind']
         for bad in bad_words:
             if bad in body:
                 sys.exit(f'{f.name}: contains {bad}')
