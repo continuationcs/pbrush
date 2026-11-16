@@ -14,9 +14,12 @@ MODES
 
 HOW IT PLAYS
   - Ring any Bell and choose "Trial of Echoes" below "Traverse". Works with a gamepad.
-  - The arena is chosen for you: if you stand at one of the arenas, the fight starts right there;
-    otherwise you go to the arena chosen for that boss or Gauntlet once you have rung its Bell, or to a
-    random scenic spot you have reached.
+  - Pick how the arena is chosen under Trial of Echoes → Settings → Battle · Arena:
+      Auto (default)  if you stand at one of the arenas, the fight starts right there; otherwise you go
+                      to the arena chosen for that boss or Gauntlet once you have rung its Bell, or to a
+                      random scenic spot you have reached.
+      Nearby          the nearest arena on your map, reached without a loading screen.
+      Random          a scenic spot you have reached, never one of your last two.
   - Bosses are scaled to your progress with the game's own monster level curves, so early bosses stay
     a real fight late in the game, and they grow with each playthrough (New Game+). Difficulty follows
     your game setting; for a harder fight, pick Foe Strength Tier II-V under Trial of Echoes → Settings
@@ -26,7 +29,8 @@ HOW IT PLAYS
   - When it ends, a result screen shows your time, best time and difficulty; press confirm to return.
     You wake beside the Bell you started from, with your health and remedies as they were.
   - No side effects: challenge kills give no loot or Remnant Dust, and do not touch your codex,
-    quests or story. The mod never writes into your save; best times live in this folder (records.tsv).
+    quests or story. The mod never writes into your save; best times and settings live in
+    <game folder>\ProjectPBZ\Saved (BossRushScorepad.tsv, BossRushSettings.tsv), so a reinstall keeps them.
 
 REQUIREMENTS
   - Phantom Blade Zero (Steam).
@@ -42,7 +46,8 @@ INSTALL
   The included enabled.txt switches the mod on; no mods.txt edit is needed.
 
 UNINSTALL
-  Delete the BossRush folder. Your save is untouched.
+  Delete the BossRush folder. Your save is untouched. To also clear best times and settings, delete
+  BossRushScorepad.tsv and BossRushSettings.tsv in <game folder>\ProjectPBZ\Saved.
 
 SETTINGS (BossRush\Scripts\config.lua, restart the game after editing)
   scale_enabled    false = fight bosses at their base stats.

@@ -2,7 +2,49 @@
 
 **已发布（2026-11-12）**：https://www.nexusmods.com/phantombladezero/mods/1099 ，名称 BOSS RUSH，文件 BOSS RUSH 0.1.0。页面顶部的 mod 版本号仍显示 1，需在 General 页改为 0.1.0。旧草稿 1098 已改名「BOSS RUSH old」，未发布；新版上传页没有删除入口，需要时联系 Nexus 客服删除。
 
-上传文件：`out/BossRush-0.1.6.zip`（0.1.4 之前：0.1.3 未发布，直接跳到 0.1.4）；主图：`doc/release/main_image.png`（1920×1080，上传到 Images，设为 primary）
+上传文件：`out/BossRush-0.1.7.zip`（0.1.4 之前：0.1.3 未发布，直接跳到 0.1.4）；主图：`doc/release/main_image.png`（1920×1080，上传到 Images，设为 primary）
+
+## 0.1.7 更新说明（Changelog / 文件说明）
+
+自 0.1.6（95c5fc0）以来的改动。
+
+```
+- New: choose how the arena is picked. Trial of Echoes → Settings has a second row, "Battle · Arena", that
+  steps through Auto / Nearby / Random on confirm. Auto is the pick so far. Nearby takes the nearest arena on
+  your map and moves you there without a loading screen (if that part of the map is not loaded yet, you travel
+  as usual). Random takes a scenic spot you have reached, ignoring the arena chosen for a boss or Gauntlet.
+  The Lion Dance Grandmaster is still fought only at The Sealed Lion. A random pick (in Auto too) never repeats
+  the arenas of your last two runs.
+- Best times and settings now live in <game folder>\ProjectPBZ\Saved (BossRushScorepad.tsv,
+  BossRushSettings.tsv), so a reinstall or a mod manager keeps them. Your old records.tsv is moved there on
+  first start.
+- Fix: Peng Meng (and other bosses that wait to be executed) could stop at an empty health bar and not die.
+  Now the next hit finishes them.
+- Fix: Corpse-Eating Xue no longer heals herself again and again, and she now calls her thugs (one wave of
+  four, as strong as she is scaled). Summons still standing are cleared when their boss falls or the run ends.
+- The Gold-Masked One and Gu Wanyue shrug off most hits by the game's own design; the mod leaves them as they are.
+- Thanks to 69NexusNeko69 for the report behind these fixes.
+- The game menu row is now "Trial of Echoes: Leave Battle".
+- If the menus show the wrong language, UE4SS.log now records what the mod read: please send that line
+  ("[BossRush] i18n: ...").
+```
+
+中文：
+
+```
+- 新增：场地怎么选可以自己定。残影试炼 →「设置」多了一行「战斗 · 场地」，按确认键在自动 / 就近 / 随机之间切换。
+  自动和以前一样；就近去当前地图上最近的场地，不用加载（那一带地图还没加载时照常传送）；随机去一处去过的名胜，
+  不管首领或连战组选定的场地。舞狮尊主仍只在尊主封印地打。随机挑场地时（自动里的随机一步也是）不重复前两局的场地。
+- 最佳纪录和设置改存在 <游戏目录>\ProjectPBZ\Saved（BossRushScorepad.tsv、BossRushSettings.tsv），重装 mod、
+  用 mod 管理器都不丢。旧的 records.tsv 首次启动时自动搬过去。
+- 修复：斧老大彭猛（以及其他等待处决的首领）血条打空后可能停住不死；现在再补一刀就倒。
+- 修复：吞噬尸体的小雪不再反复回血，并且会召唤女暴徒（一波四只，按小雪的倍数加强）。首领倒下或挑战结束时，
+  还站着的召唤物一并清掉。
+- 金面具黑衣人和女妖骨婉约大部分攻击打不进去，是原作机制，mod 不改。
+- 感谢 69NexusNeko69 的反馈，这几项修复都来自这份报告。
+- 游戏菜单里的退出项改为「残影试炼：退出战斗」。
+- 菜单语言不对时，UE4SS.log 里会记下 mod 读到的语言，请把那一行（「[BossRush] i18n: …」）发给我。
+```
 
 ## 0.1.6 更新说明（Changelog / 文件说明）
 
@@ -146,11 +188,11 @@
 | 字段 | 填写 |
 |---|---|
 | Mod name | BOSS RUSH（名称里不能用中文） |
-| Version | 0.1.6 |
+| Version | 0.1.7 |
 | Category | Gameplay |
 | Language | English（页面描述里同时放了中文） |
 | Requirements → Nexus requirements | UE4SS for Phantom Blade Zero（phantombladezero/mods/13），说明填：Required. Install and test it first. |
-| File name | BOSS RUSH 0.1.6 |
+| File name | BOSS RUSH 0.1.7 |
 | File category | Main files |
 | File description | Extract into <game>\platform\steam\ue4ss\Mods\ |
 | Permissions / credits | 致谢 RE-UE4SS 团队、KintaroModding 与 mastersoul2（见描述末尾）。资产权限按你的意愿选择。 |
@@ -175,11 +217,11 @@ Fight the game's bosses again, any time, from any Bell. The mode lives in the Be
 [size=4][b]How it plays[/b][/size]
 [list]
 [*]Ring any Bell and choose [b]Trial of Echoes[/b] below Traverse.
-[*]The arena is chosen for you: stand at one of the arenas and the fight starts right there; otherwise you go to the arena chosen for that boss or Gauntlet once you have rung its Bell, or to a random scenic spot you have reached.
+[*]Pick how the arena is chosen in Settings → Battle · Arena. Auto (default): stand at one of the arenas and the fight starts right there; otherwise you go to the arena chosen for that boss or Gauntlet once you have rung its Bell, or to a random scenic spot you have reached. Nearby: the nearest arena on your map, reached without a loading screen. Random: a scenic spot you have reached, never one of your last two.
 [*]Bosses are scaled to your progress with the game's own monster level curves, so early bosses are still a fight late in the game. Difficulty follows your game setting; for a harder fight, pick Foe Strength Tier II-V in Settings (more boss health and attack).
 [*]Leave at any time from the game menu: [b]Trial of Echoes: Leave Battle[/b] (System → Exit Game).
 [*]A result screen shows your time and best time. Press confirm and you wake beside the Bell you started from, with health and remedies as they were.
-[*]No side effects: challenge kills give no loot or Remnant Dust and do not touch your codex, quests or story. The mod never writes into your save; best times are kept in the mod folder.
+[*]No side effects: challenge kills give no loot or Remnant Dust and do not touch your codex, quests or story. The mod never writes into your save; best times and settings are kept in [code]<game folder>\ProjectPBZ\Saved[/code] (BossRushScorepad.tsv, BossRushSettings.tsv), so they survive a reinstall.
 [/list]
 
 [size=4][b]Requirements[/b][/size]
@@ -190,7 +232,7 @@ Fight the game's bosses again, any time, from any Bell. The mode lives in the Be
 
 [size=4][b]Installation[/b][/size]
 Extract the archive into [code]<game folder>\platform\steam\ue4ss\Mods\[/code] so that you get [code]...\ue4ss\Mods\BossRush\Scripts\main.lua[/code]. The included enabled.txt turns the mod on.
-To uninstall, delete the BossRush folder.
+To uninstall, delete the BossRush folder; to also clear best times and settings, delete the two BossRush*.tsv files in [code]ProjectPBZ\Saved[/code].
 
 [size=4][b]Settings[/b][/size]
 Edit [code]BossRush\Scripts\config.lua[/code] and restart the game: boss scaling on/off and strength, heal between Gauntlet fights, how long the result screen stays.
@@ -234,16 +276,16 @@ Edit [code]BossRush\Scripts\config.lua[/code] and restart the game: boss scaling
 [b]玩法[/b]
 [list]
 [*]敲响任意铃铛，在“穿行”下方选择「残影试炼」。
-[*]场地自动决定：站在场地上就原地开打；否则去为该首领或该组选定的场地（敲响其铃铛后），或随机一处去过的名胜。
+[*]场地怎么选，在「设置」的「战斗 · 场地」里定。自动（默认）：站在场地上就原地开打，否则去为该首领或该组选定的场地（敲响其铃铛后），或随机一处去过的名胜；就近：当前地图上最近的场地，不用加载；随机：随机一处去过的名胜，不重复前两局。
 [*]首领数值按你的进度、用游戏自己的等级曲线提升；难度跟随游戏设置；嫌不够难，可在「设置」里选「敌方 · 强度 · 二重～五重」，首领生命和攻击更高。
 [*]随时可在游戏菜单选「残影试炼：退出战斗」退出（系统 → 退出游戏）。
 [*]结束后显示结算画面和最佳纪录，按确认键回到出发的铃铛，血量和药瓶恢复如初。
-[*]没有副作用：不掉落、不给意识尘埃、不影响图鉴、任务和剧情；不写入存档。
+[*]没有副作用：不掉落、不给意识尘埃、不影响图鉴、任务和剧情；不写入存档。最佳纪录和设置存在 [code]<游戏目录>\ProjectPBZ\Saved[/code]（BossRushScorepad.tsv、BossRushSettings.tsv），重装 mod 也不丢。
 [/list]
 
 [b]前置[/b]：[url=https://www.nexusmods.com/phantombladezero/mods/13]KintaroModding 的影之刃零版 UE4SS[/url]，请先安装并确认可用。
 
-[b]安装[/b]：解压到 [code]<游戏目录>\platform\steam\ue4ss\Mods\[/code]，得到 [code]...\ue4ss\Mods\BossRush\Scripts\main.lua[/code]。卸载时删除 BossRush 文件夹即可。
+[b]安装[/b]：解压到 [code]<游戏目录>\platform\steam\ue4ss\Mods\[/code]，得到 [code]...\ue4ss\Mods\BossRush\Scripts\main.lua[/code]。卸载时删除 BossRush 文件夹即可；要连最佳纪录和设置一起清掉，再删除 [code]ProjectPBZ\Saved[/code] 里的两个 BossRush*.tsv。
 
 [b]兼容性[/b]：只增加内容，不替换游戏文件、不改存档，可与其他 UE4SS Lua mod、.pak mod 共存；只可能与改动铃铛菜单、游戏菜单、对话选项按钮或提示条的 mod 冲突；改怪物数值或难度的 mod 会连带影响挑战首领的强度。
 
