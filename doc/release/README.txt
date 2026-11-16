@@ -22,7 +22,7 @@ HOW IT PLAYS
     your game setting; for a harder fight, pick Foe Strength Tier II-V under Trial of Echoes → Settings
     (more boss health and attack).
   - In New Game+, an arena where the game's own boss still stands is swapped for another.
-  - Leave a run at any time from the game menu: "Trial of Echoes · Leave" (System → Exit Game).
+  - Leave a run at any time from the game menu: "Trial of Echoes: Leave Battle" (System → Exit Game).
   - When it ends, a result screen shows your time, best time and difficulty; press confirm to return.
     You wake beside the Bell you started from, with your health and remedies as they were.
   - No side effects: challenge kills give no loot or Remnant Dust, and do not touch your codex,

@@ -44,7 +44,7 @@ def main():
     if stage.exists():
         shutil.rmtree(stage)
     mod = stage / 'BossRush'
-    shutil.copytree(SRC, mod, ignore=shutil.ignore_patterns('records.tsv', 'settings.tsv', 'enabled.txt', '*.bak', 'devtools.lua', 'dev.tsv', 'marks.tsv'))
+    shutil.copytree(SRC, mod, ignore=shutil.ignore_patterns('enabled.txt', '*.bak', 'devtools.lua', 'dev.tsv', 'marks.tsv'))
 
     # Release configuration: no debug log.
     cfg = mod / 'Scripts' / 'config.lua'

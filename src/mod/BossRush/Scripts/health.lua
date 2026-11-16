@@ -67,12 +67,15 @@ local NATIVE = {
       funcs = { "K2_ProjectPointToNavigation", "FindPathToLocationSynchronously" } },
     { "/Script/Niagara.NiagaraFunctionLibrary", funcs = { "SpawnSystemAtLocation", "SpawnSystemAttached" },
       optional = true },
-    -- The 退出挑战 row in the system menu (pause.lua).
+    -- The 退出战斗 row in the system menu (pause.lua).
     { "/Script/GameSettings.GameSetting", funcs = { "GetDevName" }, optional = true },
     { "/Script/GameSettings.GameSettingAction", optional = true },
     { "/Script/GameSettings.GameSettingPanel", props = { "CurrentCollection", "ListView_Settings" }, optional = true },
     { "/Script/GameSettings.GameSettingListEntryBase", props = { "Setting" }, optional = true },
     { "/Script/GameSettings.GameSettingListEntrySetting_Action", props = { "Button_Action" }, optional = true },
+    -- Stopping the player's fall when an in-level move found no ground (run.lua put).
+    { "/Script/Engine.Character", props = { "CharacterMovement" }, optional = true },
+    { "/Script/Engine.MovementComponent", funcs = { "StopMovementImmediately" }, optional = true },
     -- Bells, to measure how far a fight is from one (U.nearest_bell).
     { "/Script/ProjectPBZ.PBZCheckPoint", optional = true },
 }
@@ -88,7 +91,7 @@ local BLUEPRINTS = {
       funcs = { "SetWidgetText", "DoSelectedAppearance" } },
     { "/Game/PBZContent/UI/UINew/HUD/wb_settlement.wb_settlement_C" },
     { "/Game/PBZContent/UI/InGame/SwitchUI/WB_TipsText.WB_TipsText_C", funcs = { "SetText" }, props = { "FadeIn", "FadeOut" } },
-    { "/Game/PBZContent/UI/Settings/Editors/W_SettingsListEntry_Action.W_SettingsListEntry_Action_C",     -- 退出挑战 row
+    { "/Game/PBZContent/UI/Settings/Editors/W_SettingsListEntry_Action.W_SettingsListEntry_Action_C",     -- 退出战斗 row
       props = { "SettingName" }, optional = true },
 }
 

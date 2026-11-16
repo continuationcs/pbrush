@@ -3,9 +3,39 @@ local config = require("config")
 
 local U = {}
 
--- The mod's folder (Mods/BossRush/), where it keeps its own files (records.tsv, settings.tsv ...; never the
--- game save).
+-- The mod's folder (Mods/BossRush/): development files (dev.tsv, marks.tsv ...). The player's data is kept
+-- elsewhere (U.data_file).
 U.MOD_DIR = debug.getinfo(1, "S").source:match("^@(.*[\\/])Scripts[\\/]") or ""
+
+-- The player's data (best times, settings) lives next to the game's own Saved files, <game>/ProjectPBZ/Saved, as
+-- `name` (user decision 2026-11-16: BossRushScorepad.tsv, BossRushSettings.tsv): a new version installed by
+-- deleting the mod's folder, or by a mod manager, would otherwise lose it. Not in Saved/SaveGames: that is the game
+-- save, synced by Steam Cloud. Lua cannot make a folder without running a command (a console window would flash),
+-- so the files sit in Saved itself. The mod's folder is <game>/platform/steam/ue4ss/Mods/BossRush/. Versions up to
+-- 0.1.6 kept the file in the mod's folder as `old_name`: the first call moves it over. When Saved cannot be
+-- written, the mod's folder is used.
+local SAVED = U.MOD_DIR .. "../../../../../ProjectPBZ/Saved/"
+function U.data_file(name, old_name)
+    local old = U.MOD_DIR .. old_name
+    local path = SAVED .. name
+    local f = io.open(path, "r")
+    if f then f:close() return path end
+    local src = io.open(old, "r")
+    local text = src and src:read("a") or ""
+    if src then src:close() end
+    local out = io.open(path, "w")
+    if not out then
+        U.log("data: cannot write %s; keeping %s in the mod's folder", path, old_name)
+        return old
+    end
+    out:write(text)
+    out:close()
+    if src then
+        os.remove(old)
+        U.log("data: moved %s from the mod's folder to %s", old_name, path)
+    end
+    return path
+end
 
 function U.log(fmt, ...)
     if not config.debug then return end

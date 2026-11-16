@@ -132,15 +132,36 @@ local function restore(snap)
     log_ledger("home")
 end
 
+-- ---------------------------------------------------------------- navigation
+-- The level's navigation mesh: where the boss can appear (reachable_spot), and whether the level around a spot
+-- is loaded before the player is moved there within it (go_to_arena, go_home).
+local NAV = "/Script/NavigationSystem.Default__NavigationSystemV1"
+local NAV_EXTENT = { X = 200, Y = 200, Z = 500 }
+
+local function on_nav(nav, world, point)
+    local out = {}
+    local ok, found = pcall(function() return nav:K2_ProjectPointToNavigation(world, point, out, nil, nil, NAV_EXTENT) end)
+    if ok and found and out.X then return { X = out.X, Y = out.Y, Z = out.Z } end
+    return nil
+end
+
 -- ---------------------------------------------------------------- placing the player
 -- The fight belongs on the arena's marked spot, away from the bell (user request 2026-11-15). Travel to an arena
 -- lands on it, but two cases start at a bell: a run started at the arena itself (in place: the player stands at
 -- the bell they opened the menu at) and the Realm of Mirage (its entrance is its bell). Once arrived, the player
 -- is moved within the loaded level: fade to black, move, face the arena, fade back. An in-place run takes the
--- player back to their bell the same way.
+-- player back to their bell the same way. 战斗 · 场地 · 就近 (DESIGN §5.0c) uses the same move for an arena anywhere
+-- on the player's map, which may be far from what World Partition has loaded (a player on 0.1.6 fell through the
+-- ground right after a load, cause unknown): such a move first needs the navigation mesh at the spot
+-- (go_to_arena), and then the player must stay on their feet there (place_player `back`), otherwise they are put
+-- back and travel by teleport.
 local FADE_MS = 400
 local BLACK = { R = 0, G = 0, B = 0, A = 1 }
 local ON_SPOT = 300        -- cm: closer than this to the spot needs no move
+-- Ground check after an in-level move: the player more than FALL_CM below the spot has no ground under them.
+-- Free fall covers 3 m in 0.8 s, so GROUND_WATCH_MS (screen still black) is enough to see it.
+local FALL_CM = 300
+local GROUND_WATCH_MS, GROUND_TICK_MS = 1200, 200
 
 local function camera()
     local pc = UEHelpers.GetPlayerController()
@@ -154,25 +175,79 @@ local function fade(from, to, hold)
     if cam then cam:StartCameraFade(from, to, FADE_MS / 1000, BLACK, false, hold) end
 end
 
--- done() runs once the player is placed (the screen is fading back in).
-local function place_player(spot, yaw, done)
+-- Put the player (p, valid) at spot facing yaw, at rest: a fall stopped by putting them back keeps no speed.
+local function put(p, spot, yaw)
+    p:K2_SetActorLocationAndRotation(spot, { Pitch = 0, Yaw = yaw, Roll = 0 }, false, {}, true)
+    pcall(function() p.CharacterMovement:StopMovementImmediately() end)
+    local pc = UEHelpers.GetPlayerController()
+    local pitch = pc:GetControlRotation().Pitch
+    pc:SetControlRotation({ Pitch = pitch, Yaw = yaw, Roll = 0 })
+end
+
+-- The player's location and yaw, or nil.
+local function player_at()
+    local at = nil
+    pcall(function()
+        local p = U.pawn()
+        local l = p:K2_GetActorLocation()
+        at = { pos = { X = l.X, Y = l.Y, Z = l.Z }, yaw = p:K2_GetActorRotation().Yaw }
+    end)
+    return at
+end
+
+-- Move the player to spot within the level. done(ok) runs once they are placed (the screen is fading back in).
+-- back = { pos, yaw } (where they stand now, on loaded ground): the ground at spot is checked while the screen is
+-- still black, and when they fall they are put back there and done(false) runs.
+local function place_player(spot, yaw, done, back)
     fade(0, 1, true)
     U.after(FADE_MS, function()
         local p = U.pawn()
-        if U.valid(p) then
-            p:K2_SetActorLocationAndRotation(spot, { Pitch = 0, Yaw = yaw, Roll = 0 }, false, {}, true)
-            local pc = UEHelpers.GetPlayerController()
-            local pitch = pc:GetControlRotation().Pitch
-            pc:SetControlRotation({ Pitch = pitch, Yaw = yaw, Roll = 0 })
-            local now = p:K2_GetActorLocation()
-            U.log("run: player placed at %.0f %.0f %.0f (%.0f m from the spot), facing %.0f", now.X, now.Y, now.Z,
-                U.dist(now, spot) / 100, yaw)
-        else
+        if not U.valid(p) then
             U.log("run: no player to place")
+            fade(1, 0, false)
+            done(false)
+            return
         end
-        fade(1, 0, false)
-        done()
+        put(p, spot, yaw)
+        local now = p:K2_GetActorLocation()
+        U.log("run: player placed at %.0f %.0f %.0f (%.0f m from the spot), facing %.0f", now.X, now.Y, now.Z,
+            U.dist(now, spot) / 100, yaw)
+        if not back then
+            fade(1, 0, false)
+            done(true)
+            return
+        end
+        local waited = 0
+        U.every(GROUND_TICK_MS, function()
+            waited = waited + GROUND_TICK_MS
+            local pp = U.pawn()
+            local z = nil
+            if U.valid(pp) then z = pp:K2_GetActorLocation().Z end
+            local fell = z ~= nil and z < spot.Z - FALL_CM
+            if not fell and waited < GROUND_WATCH_MS then return false end
+            if fell then
+                U.log("run: ground check: the player fell %.0f m below the spot, no ground loaded there; put back at %.0f %.0f %.0f",
+                    (spot.Z - z) / 100, back.pos.X, back.pos.Y, back.pos.Z)
+                put(pp, back.pos, back.yaw)
+            else
+                U.log("run: ground check: standing at the spot after %d ms (%s)", waited,
+                    z and string.format("%.1f m below the mark", (spot.Z - z) / 100) or "no player")
+            end
+            fade(1, 0, false)
+            done(not fell)
+            return true
+        end)
     end)
+end
+
+-- Whether the navigation mesh is loaded at spot: the first sign that the level is loaded there (an in-level move
+-- far from the player). Logged with why.
+local function nav_at(spot, what)
+    local nav = StaticFindObject(NAV)
+    local p = U.valid(nav) and on_nav(nav, UEHelpers.GetWorld(), spot) or nil
+    U.log("run: %s: navigation mesh %s", what, p and string.format("found (%.0f m off the spot)", U.dist(p, spot) / 100)
+        or "not found (level not loaded there)")
+    return p ~= nil
 end
 
 -- Whether the player is in an animation montage (e.g. getting up from the bell): moving them waits for it.
@@ -193,7 +268,17 @@ local function go_to_arena()
     local a = run.arena
     run.placed = false
     if run.in_place then
-        -- Already at this arena (at its bell): no travel; the player is moved to the spot on arrival.
+        local spot = { X = a.x, Y = a.y, Z = a.z }
+        local from = player_at()
+        local d = from and U.dist(from.pos, spot) or 0
+        U.log("run: in-level move to %s, %.0f m away", a.key, d / 100)
+        if d > config.in_place_radius and not nav_at(spot, "in-level move to " .. a.key) then
+            U.log("run: travelling to %s instead", a.key)
+            run.in_place = false
+        end
+    end
+    if run.in_place then
+        -- At this arena's bell, or on its map (就近): no travel; the player is moved to the spot on arrival.
         local l = U.pawn():K2_GetActorLocation()
         run.land = { X = l.X, Y = l.Y, Z = l.Z }
         run.center = { X = a.x, Y = a.y, Z = a.z }
@@ -220,21 +305,9 @@ local function go_to_arena()
     end
 end
 
-local function go_home()
+-- Travel back to the starting bell (run.origin) and end the run there.
+local function travel_home()
     local o = run.origin
-    phase("returning")
-    clear_floor()
-    log_ledger("leaving the arena")
-    if run.in_place then
-        -- Never left the level: back to the bell they started at (unless already there, e.g. revived at it),
-        -- then put the player's state back.
-        local snap = run.snap
-        local function done() U.after(1000, function() restore(snap) run = nil end) end
-        local home = { X = o.x, Y = o.y, Z = o.z }
-        local okd, d = pcall(function() return U.dist(U.pawn():K2_GetActorLocation(), home) end)
-        if okd and d > ON_SPOT then place_player(home, o.yaw, done) else done() end
-        return
-    end
     local tp = FindFirstOf("PBZTeleportSubsystem")
     local in_jhsy = false
     pcall(function() in_jhsy = tp:IsInJhsy(U.pawn()) end)
@@ -274,6 +347,30 @@ local function go_home()
         end
         return false
     end)
+end
+
+local function go_home()
+    local o = run.origin
+    phase("returning")
+    clear_floor()
+    log_ledger("leaving the arena")
+    if not run.in_place then travel_home() return end
+    -- Never left the level: back to the bell they started at (unless already there, e.g. revived at it), then put
+    -- the player's state back. A bell far away (就近) may no longer be loaded: then, or when the player does not
+    -- stand there, travel instead.
+    local snap = run.snap
+    local function done() U.after(1000, function() restore(snap) run = nil end) end
+    local home = { X = o.x, Y = o.y, Z = o.z }
+    local here = player_at()
+    local d = here and U.dist(here.pos, home) or 0
+    if d <= ON_SPOT then done() return end
+    if d > config.in_place_radius and not nav_at(home, "in-level move back to the starting bell") then
+        travel_home()
+        return
+    end
+    place_player(home, o.yaw, function(ok)
+        if ok then done() else travel_home() end
+    end, here)
 end
 
 -- ---------------------------------------------------------------- helper points
@@ -641,18 +738,9 @@ end
 -- the arena facing (user decision 2026-11-15, was 8 m: more room to react after the entrance; every scenic
 -- arena's boss point had 12 m or more open ground around it in the survey), then closer, and only when nothing
 -- ahead fits, further to the sides and behind. Returns nil when there is no navigation data around the player.
-local NAV = "/Script/NavigationSystem.Default__NavigationSystemV1"
-local NAV_EXTENT = { X = 200, Y = 200, Z = 500 }
 local SPAWN_DIST = { 1200, 1000, 800, 600, 400 }
 local SPAWN_TURNS = { { 0, 30, -30 }, { 60, -60, 90, -90 }, { 135, -135, 180 } }
 M.SPAWN_AHEAD = SPAWN_DIST[1]
-
-local function on_nav(nav, world, point)
-    local out = {}
-    local ok, found = pcall(function() return nav:K2_ProjectPointToNavigation(world, point, out, nil, nil, NAV_EXTENT) end)
-    if ok and found and out.X then return { X = out.X, Y = out.Y, Z = out.Z } end
-    return nil
-end
 
 local function walkable(nav, world, from, to, dist)
     local ok, good = pcall(function()
@@ -1043,7 +1131,15 @@ function wait_arrival()
             U.log("run: moving the player %.0f m to the spot (montage %s; nearest bell %s m, %s)", U.dist(pl, run.center) / 100,
                 montage >= MONTAGE_TICKS and "still playing" or "none", bd and string.format("%.0f", bd / 100) or "?", tostring(bn))
             run.placed, placing = true, true
-            place_player(run.center, run.face, function() placing, stable = false, 0 end)
+            -- In place (or 就近), the ground at the spot is checked; without it the player travels there instead.
+            place_player(run.center, run.face, function(ok)
+                placing, stable = false, 0
+                if not ok and run and run.phase == "travelling" and run.in_place then
+                    U.log("run: travelling to %s instead", run.arena.key)
+                    run.in_place, tries, seen = false, 0, nil
+                    go_to_arena()
+                end
+            end, run.in_place and player_at() or nil)
             return false
         end
         if stable >= 4 then
@@ -1052,6 +1148,7 @@ function wait_arrival()
             local natives = native_bosses_near(run.center)
             if #natives > 0 then arena_taken(natives) return true end
             phase("arrived")
+            arenas.remember(run.arena.key)
             ui.toast(i18n.t("incoming"), GRACE_MS / 1000)
             U.after(GRACE_MS, spawn_next)
             return true
@@ -1094,7 +1191,7 @@ end
 
 -- queue: list of fights { rec, steps = { {roster records}, ... } } (see the top of this file); difficulty: game
 -- EDifficultMode; arena: arenas.lua record; opts: { tier (敌方强度 tier, tier.lua), record_key, mode, name (first line of the result screen: 单挑 / 连战 and the boss or group),
--- in_place = bool, arena_spec (what arenas.pick chose the arena by, used again when it is found occupied) }.
+-- in_place = bool (move within the level, no travel: at the arena's bell or 就近; checked in go_to_arena), arena_spec (what arenas.pick chose the arena by, used again when it is found occupied) }.
 function M.start(queue, difficulty, arena, opts)
     if run then U.log("run: already running") return end
     opts = opts or {}

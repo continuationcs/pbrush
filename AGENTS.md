@@ -8,7 +8,9 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
 - The user tests in game and reports back. After changing the mod, install it (`src\tools\install.ps1`) and tell the
   user exactly what to try; read `UE4SS.log` afterwards instead of asking them to copy logs.
 - Decisions the user has made are recorded in `doc/DESIGN.md` (marked 用户决定 / 用户确认). Do not revert them:
-  e.g. no arena choice (auto pick), no vows in Gauntlet, all open bosses offered (no defeat filter), difficulty
+  e.g. the arena is not picked from a list: the 设置 page's 战斗 · 场地 row only chooses how it is picked (自动 / 就近 /
+  随机, user decision 2026-11-16, DESIGN §5.0c; 就近 / 随机 keep only a `bound` battlefield; a random pick, 自动's
+  included, avoids the arenas of the last two runs), no vows in Gauntlet, all open bosses offered (no defeat filter), difficulty
   follows the game setting with no extra levels, curve weight 1.0, harder fights only through the 敌方 · 强度 tiers
   (一重～五重 multipliers on the 残影试炼 → 设置 page, DESIGN §5.3a), the 万象 / Myriad (roguelike, formerly 试炼) mode hidden, no
   top-of-screen Gauntlet HUD.
@@ -132,7 +134,16 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
 ## Build, install, release
 
 - `powershell -File src\tools\install.ps1 -Mods BossRush` (one mod per call; a comma list is passed as one string).
-  It **wipes** the target folder: files the mod writes there (`records.tsv`, `settings.tsv`, `dev.tsv`, `marks.tsv`) are lost.
+  It **wipes** the target folder: files the mod writes there (`dev.tsv`, `marks.tsv`) are lost. The player's data
+  is not there (user decision 2026-11-16): `<game>\ProjectPBZ\Saved\BossRushScorepad.tsv` (best times, was
+  `records.tsv`) and `BossRushSettings.tsv` (was `settings.tsv`) (`U.data_file`; files directly in `Saved`, since Lua makes no folder without running a
+  command; never `Saved\SaveGames`, the Steam Cloud save). Files left in the mod's folder by 0.1.6 or older are
+  moved there on first load.
+- **Before reading a test log, check that the installed build is the one under test**: sessions working in other
+  worktrees install into the same `Mods\BossRush`, and the last install wins. On 2026-11-16 a build from the main
+  checkout replaced the arena-setting build mid-round; the next test ran the wrong code (its log had another
+  session's `i18n:` lines). Compare `Mods\BossRush\Scripts` with the worktree file by file. `UE4SS.log` is
+  overwritten at each game start, so a session's lines are gone once the game restarts: read the log before that.
 - **Hot reload**: UE4SS reloads all Lua mods on **Ctrl+R** (`EnableHotReloadSystem = 1` in `UE4SS-settings.ini`),
   so after `install.ps1` the user can keep the game running. Lua has no unload callback, so whatever the old
   instance put into the game stays: reload only when no challenge is running and no bell or system menu is open
@@ -377,6 +388,13 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
   run started reading every summon's health before checking `IsDead` (2026-11-13). Check `IsDead` first.
 - Cross-map travel: `PBZSaveLoadSubsystem:TeleportTo(FName("/Game/Maps/..."), transform, FName("Bell_<id>"))`.
   It saves and loads, so no separate autosave handling is needed.
+- **An in-level move may land where World Partition has not loaded the level** (战斗 · 场地 · 就近 moves the player
+  across the map without a load; a 0.1.6 player fell through the ground right after a load, cause unknown). Before
+  such a move `run.lua` asks for the navigation mesh at the spot, and after it keeps the screen black for 1.2 s and
+  puts the player back (movement stopped) if they dropped 3 m: then it travels by `TeleportTo` instead. The
+  navigation mesh streams with the cells (2026-11-16): found at 72 m from the player, not found at 455 m and 924 m,
+  so the pre-check alone sent the far runs by teleport; the ground check never fired. A down trace (`LineTraceSingle`) was not used: it takes
+  a `TArray` argument, and a wrong argument type can crash UE4SS natively.
 - **Leaving the Realm of Mirage** (`TeleportToBellFromJhsy`) lands at the bell it was *entered from*, which is not
   always the run's starting bell: after a run moved there from an occupied arena it landed at that arena's bell,
   the return wait timed out and the player's state was never restored (2026-11-14). `go_home` makes a second trip

@@ -20,7 +20,7 @@ Published on Nexus Mods: <https://www.nexusmods.com/phantombladezero/mods/1099>
   boss or group (once its Bell is rung) or a random rung scenic spot, then return to the starting Bell.
 - Boss stats follow your progress with the game's own monster level curves (`base × (1 + curve(level))`);
   difficulty follows the game setting.
-- Result screen with time, best time and difficulty; leave a run from the game menu («残影试炼 · 退出挑战»).
+- Result screen with time, best time and difficulty; leave a run from the game menu («残影试炼：退出战斗»).
 - No side effects: no loot or Remnant Dust, no codex entries, no save changes; health and remedies restored.
 
 ## Install (players)

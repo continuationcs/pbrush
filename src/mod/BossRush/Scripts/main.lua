@@ -101,8 +101,8 @@ end
 
 local show_root, show_bosses, show_gauntlets, show_stages, show_settings
 
--- Start a run (queue: fights). The arena is not chosen by the player (arenas.pick; spec: what it is chosen by, see
--- there). opts.record: the record key without difficulty and tier.
+-- Start a run (queue: fights). The arena is picked by arenas.pick (spec: what it is chosen by, see there) as the
+-- 战斗 · 场地 setting says (自动 / 就近 / 随机, DESIGN §5.0c). opts.record: the record key without difficulty and tier.
 -- Records are kept per game difficulty and 敌方强度 tier; 一重 adds nothing, so times from before tiers stay 一重's.
 local function begin(queue, opts, spec)
     local t = tier.get()
@@ -110,6 +110,7 @@ local function begin(queue, opts, spec)
     opts.record_key = opts.record .. "/" .. U.game_difficulty() .. (t > 1 and ("/t" .. t) or "")
     local pos
     pcall(function() pos = U.pawn():K2_GetActorLocation() end)
+    spec.mode = arenas.mode()
     local arena, in_place = arenas.pick(spec, U.active_bells(), U.world_path(), pos, config.in_place_radius)
     if not arena then
         -- Bound to its own battlefield, whose bell is not rung (arenas.pick logged it): no run, the menu closes
@@ -121,8 +122,8 @@ local function begin(queue, opts, spec)
         return
     end
     opts.in_place, opts.arena_spec = in_place, spec
-    U.log("arena: %s (%s; boss %s, group arena %s)", arena.key, in_place and "here" or "travel", tostring(spec.boss),
-        tostring(spec.prefer))
+    U.log("arena: %s (%s; setting %s, boss %s, group arena %s)", arena.key, in_place and "in-level move" or "travel",
+        spec.mode, tostring(spec.boss), tostring(spec.prefer))
     menu.close()
     U.after(300, function() run.start(queue, U.game_difficulty(), arena, opts) end)
 end
@@ -216,13 +217,15 @@ show_stages = function(g, row)
 end
 
 -- 设置: every player setting, one row each (user decision 2026-11-14: one page to grow into). A row that
--- cycles a value redraws the page and keeps its focus. Settings are the mod's own (settings.tsv), never the
+-- cycles a value redraws the page and keeps its focus. Settings are the mod's own (settings.lua), never the
 -- game's or the save's.
 local SETTINGS_ROW = 3     -- 设置's row on the root page, focused on the way back
 show_settings = function(focus)
     menu.show({
         -- 敌方 · 强度 · 一重 … 五重 steps on each confirm (user decision 2026-11-14).
         { i18n.tier_row(tier.get()), function() tier.next() show_settings(1) end },
+        -- 战斗 · 场地 · 自动 / 就近 / 随机, the same way (user decision 2026-11-16).
+        { i18n.arena_row(arenas.mode()), function() arenas.next_mode() show_settings(2) end },
         { T("back"), function() show_root(SETTINGS_ROW) end, back = true },
     }, focus or 1)
 end

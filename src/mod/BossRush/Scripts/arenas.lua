@@ -14,6 +14,7 @@
 -- `bound`: the fight needs that level (舞狮尊主's poles) and is not fought at all while the bell is not rung; an
 -- own battlefield without it only restores the setting, and its boss goes to the usual arenas instead.
 local U = require("util")
+local settings = require("settings")
 
 local A = {
     { key = "xigu_axe",   kind = "scenic", map = "/Game/Maps/B02/PBZ_Xigu_WP",                       bell = "NLES_023",     zh = "斧老大斩落处",   en = "The Axemaster's Fall",        x = -50661, y = 260340, z = -24492, yaw = 216, boss = "BP_Monster_PengMeng_Axe" },
@@ -74,39 +75,143 @@ function M.own(boss_id)
     return nil
 end
 
--- No arena choice for the player (user decision). spec = { boss = the boss whose own battlefield or recommended
--- arena counts (单挑: its boss; 连战: the group's boss with an own battlefield, if any), prefer = the group's
--- arena key (连战, DESIGN §5.0b) }.
--- A boss with its own battlefield is fought only there while its bell is rung (see the top of this file).
+-- 战斗 · 场地 (user decision 2026-11-16, DESIGN §5.0c): how the run's arena is chosen, on the 设置 page.
+--   auto:   the order below (before 2026-11-16 the only one);
+--   near:   the nearest arena on the player's map, reached by an in-level move (no load; run.lua checks the ground
+--           there and travels instead when it is not loaded); none on this map: as auto;
+--   random: a random scenic arena whose bell is rung (the Realm of Mirage when none).
+-- near and random ignore recommended arenas, group arenas and own battlefields the fight does not need: only a
+-- `bound` battlefield (舞狮尊主) is kept (user decision: what cannot be fought elsewhere stays, what is only
+-- recommended does not; 连战 too).
+local MODES = { "auto", "near", "random" }
+
+function M.mode()
+    local m = settings.get("arena")
+    for _, k in ipairs(MODES) do
+        if k == m then return m end
+    end
+    return "auto"
+end
+
+-- Step to the next mode (随机 wraps to 自动) and keep it.
+function M.next_mode()
+    local cur, i = M.mode(), 1
+    for n, k in ipairs(MODES) do
+        if k == cur then i = n end
+    end
+    local m = MODES[i % #MODES + 1]
+    settings.set("arena", m)
+    U.log("arena mode: %s", m)
+    return m
+end
+
+-- The arenas of the last runs, most recent first (BossRushSettings.tsv `recent_arenas`, kept across restarts): a random
+-- pick avoids them (user decision 2026-11-16: not the same arena as one of the last two runs; 随机 and 自动's
+-- random step alike).
+local RECENT = 2
+
+function M.recent()
+    local out = {}
+    for k in (settings.get("recent_arenas") or ""):gmatch("[^,]+") do out[#out + 1] = k end
+    return out
+end
+
+-- The run reached this arena (run.lua, on arrival; an arena swapped for an occupied one counts as the one fought).
+function M.remember(key)
+    local out = { key }
+    for _, k in ipairs(M.recent()) do
+        if #out < RECENT and k ~= key then out[#out + 1] = k end
+    end
+    settings.set("recent_arenas", table.concat(out, ","))
+end
+
+-- The arenas of list not used in the last runs: the last RECENT left out, or fewer when that leaves none (only
+-- one or two usable), or all of them.
+local function fresh(list)
+    local recent = M.recent()
+    for keep = #recent, 0, -1 do
+        local out = {}
+        for _, a in ipairs(list) do
+            local used = false
+            for i = 1, keep do
+                if recent[i] == a.key then used = true end
+            end
+            if not used then out[#out + 1] = a end
+        end
+        if #out > 0 then
+            U.log("arena: random among %d of %d (recent %s, %d left out)", #out, #list, table.concat(recent, ","), keep)
+            return out
+        end
+    end
+    return list
+end
+
+-- spec = { boss = the boss whose own battlefield or recommended arena counts (单挑: its boss; 连战: the group's boss
+-- with an own battlefield, if any), prefer = the group's arena key (连战, DESIGN §5.0b), mode = see MODES (auto
+-- when absent) }.
+-- auto: a boss with its own battlefield is fought only there while its bell is rung (see the top of this file).
 -- Otherwise, in this order (user decisions 2026-11-15): where the player stands, if within `radius` of a usable
 -- arena; the group's arena; the boss's recommended arena (`boss`); a random scenic arena whose bell is rung; the
 -- Realm of Mirage.
+-- map, pos: the player's map and location (nil: anywhere; an arena found occupied on arrival is replaced so).
 -- exclude: optional set of arena keys to leave out (an arena found occupied on arrival, run.lua).
--- Returns arena, in_place; or nil, own arena when the fight is bound to a battlefield whose bell is not rung.
+-- Returns arena, in_place (no travel: moved within the level); or nil, own arena when the fight is bound to a
+-- battlefield whose bell is not rung.
 function M.pick(spec, rung, map, pos, radius, exclude)
+    local mode = spec.mode or "auto"
     local function open(a) return M.usable(a, rung) and not (exclude and exclude[a.key]) end
+    local function away(a)
+        if not (pos and a.map and a.map == map) then return nil end
+        return math.sqrt((pos.X - a.x) ^ 2 + (pos.Y - a.y) ^ 2 + (pos.Z - a.z) ^ 2)
+    end
     local pool = {}
     local own = spec.boss and M.own(spec.boss)
-    if own and M.usable(own, rung) then
+    if own and (mode == "auto" or own.bound) and M.usable(own, rung) then
         pool = { own }
     elseif own and own.bound then
         U.log("arena: %s needs its bell %s, not rung in this playthrough", own.key, U.bell_name(own.bell))
         return nil, own
     else
-        if own then U.log("arena: %s's bell %s is not rung; usual arenas instead", own.key, U.bell_name(own.bell)) end
+        if own and mode == "auto" then
+            U.log("arena: %s's bell %s is not rung; usual arenas instead", own.key, U.bell_name(own.bell))
+        elseif own then
+            U.log("arena: %s not needed by the fight; left to the %s setting", own.key, mode)
+        end
         for _, a in ipairs(A) do
             if a.kind == "scenic" and open(a) then pool[#pool + 1] = a end
         end
         -- A group's arena may be another boss's own battlefield (鬼差夜巡 at 尊主封印地) or the Realm of Mirage.
         local pref = spec.prefer and M.get(spec.prefer)
         if spec.prefer and not pref then U.log("arena: unknown group arena %s", spec.prefer) end
-        if pref and pref.kind ~= "scenic" and open(pref) then pool[#pool + 1] = pref end
-        if pref and not open(pref) then U.log("arena: group arena %s not usable (bell not rung or excluded)", pref.key) end
+        if pref and mode == "random" then
+            U.log("arena: group arena %s left to the random setting", pref.key)
+        elseif pref and pref.kind ~= "scenic" and open(pref) then
+            pool[#pool + 1] = pref
+        elseif pref and not open(pref) then
+            U.log("arena: group arena %s not usable (bell not rung or excluded)", pref.key)
+        end
+    end
+    if mode == "near" then
+        local best, bd = nil, nil
+        for _, a in ipairs(pool) do
+            local d = away(a)
+            if d and (not bd or d < bd) then best, bd = a, d end
+        end
+        if best then
+            U.log("arena: nearest on this map: %s, %.0f m", best.key, bd / 100)
+            return best, true
+        end
+        U.log("arena: no arena on this map (%s); picked as auto", tostring(map))
+    elseif mode == "random" and #pool > 0 then
+        local cand = fresh(pool)
+        local a = cand[math.random(#cand)]
+        local d = away(a)
+        U.log("arena: random: %s", a.key)
+        return a, d ~= nil and d < radius
     end
     for _, a in ipairs(pool) do
-        if a.map and a.map == map and pos and math.sqrt((pos.X - a.x) ^ 2 + (pos.Y - a.y) ^ 2 + (pos.Z - a.z) ^ 2) < radius then
-            return a, true
-        end
+        local d = away(a)
+        if d and d < radius then return a, true end
     end
     for _, a in ipairs(pool) do
         if spec.prefer and a.key == spec.prefer then return a, false end
@@ -116,7 +221,10 @@ function M.pick(spec, rung, map, pos, radius, exclude)
     end
     local scenic = {}
     for _, a in ipairs(pool) do if a.kind == "scenic" then scenic[#scenic + 1] = a end end
-    if #scenic > 0 then return scenic[math.random(#scenic)], false end
+    if #scenic > 0 then
+        scenic = fresh(scenic)
+        return scenic[math.random(#scenic)], false
+    end
     for _, a in ipairs(pool) do return a, false end
     for _, a in ipairs(A) do if a.kind == "jhsy" then return a, false end end
 end

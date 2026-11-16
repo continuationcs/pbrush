@@ -25,7 +25,7 @@ local S = {
     defeated     = { "击败", "Defeated" },
     going_home   = { "按确认键，自里武林醒转，回到铃铛之侧。", "Press confirm to stir from the Discordance and wake beside the Bell." },
     abort        = { "收刃离去", "Sheathe Your Blade" },
-    leave        = { "残影试炼 · 退出挑战", "Trial of Echoes · Leave" },
+    leave        = { "残影试炼：退出战斗", "Trial of Echoes: Leave Battle" },
     time         = { "用时", "Time" },
     best         = { "最佳", "Best" },
     new_record   = { "新纪录！", "NEW RECORD!" },
@@ -84,6 +84,14 @@ function M.tier(n)
 end
 function M.tier_row(n)
     return M.zh() and ("敌方 · 强度 · " .. M.tier(n)) or ("Foe · Strength · " .. M.tier(n))
+end
+
+-- 战斗 · 场地 (user decision 2026-11-16, arenas.mode): the 设置 page's row, 战斗 · 场地 · 就近 / Battle · Arena · Nearby.
+local ARENA_MODE = { auto = { "自动", "Auto" }, near = { "就近", "Nearby" }, random = { "随机", "Random" } }
+function M.arena_row(mode)
+    local e = ARENA_MODE[mode]
+    local v = e and (M.zh() and e[1] or e[2]) or "—"
+    return M.zh() and ("战斗 · 场地 · " .. v) or ("Battle · Arena · " .. v)
 end
 
 -- Pick the right half of a { zh = , en = } record.

@@ -177,7 +177,7 @@ Fight the game's bosses again, any time, from any Bell. The mode lives in the Be
 [*]Ring any Bell and choose [b]Trial of Echoes[/b] below Traverse.
 [*]The arena is chosen for you: stand at one of the arenas and the fight starts right there; otherwise you go to the arena chosen for that boss or Gauntlet once you have rung its Bell, or to a random scenic spot you have reached.
 [*]Bosses are scaled to your progress with the game's own monster level curves, so early bosses are still a fight late in the game. Difficulty follows your game setting; for a harder fight, pick Foe Strength Tier II-V in Settings (more boss health and attack).
-[*]Leave at any time from the game menu: [b]Trial of Echoes · Leave[/b] (System → Exit Game).
+[*]Leave at any time from the game menu: [b]Trial of Echoes: Leave Battle[/b] (System → Exit Game).
 [*]A result screen shows your time and best time. Press confirm and you wake beside the Bell you started from, with health and remedies as they were.
 [*]No side effects: challenge kills give no loot or Remnant Dust and do not touch your codex, quests or story. The mod never writes into your save; best times are kept in the mod folder.
 [/list]
@@ -236,7 +236,7 @@ Edit [code]BossRush\Scripts\config.lua[/code] and restart the game: boss scaling
 [*]敲响任意铃铛，在“穿行”下方选择「残影试炼」。
 [*]场地自动决定：站在场地上就原地开打；否则去为该首领或该组选定的场地（敲响其铃铛后），或随机一处去过的名胜。
 [*]首领数值按你的进度、用游戏自己的等级曲线提升；难度跟随游戏设置；嫌不够难，可在「设置」里选「敌方 · 强度 · 二重～五重」，首领生命和攻击更高。
-[*]随时可在游戏菜单选「残影试炼 · 退出挑战」退出（系统 → 退出游戏）。
+[*]随时可在游戏菜单选「残影试炼：退出战斗」退出（系统 → 退出游戏）。
 [*]结束后显示结算画面和最佳纪录，按确认键回到出发的铃铛，血量和药瓶恢复如初。
 [*]没有副作用：不掉落、不给意识尘埃、不影响图鉴、任务和剧情；不写入存档。
 [/list]
@@ -261,7 +261,7 @@ Edit [code]BossRush\Scripts\config.lua[/code] and restart the game: boss scaling
 ## 上传前自检
 
 - [ ] 用发布包（而不是开发版）在游戏里完整跑一遍：先停用探测 mod，删掉开发版 BossRush，解压 `BossRush-0.1.0.zip` 安装，打一局单挑、一局连战。
-- [ ] 用手柄完整走一遍：进菜单、选首领、结算画面按 A 关闭、游戏菜单里的「残影试炼 · 退出挑战」。
+- [ ] 用手柄完整走一遍：进菜单、选首领、结算画面按 A 关闭、游戏菜单里的「残影试炼：退出战斗」。
 - [x] 主图：`doc/release/main_image.png`
 - [x] 实机图（中英各一套，1920×1200）：`doc/release/screenshots/`，1 铃铛菜单 · 2 首领列表 · 3 结算画面 · 4 退出挑战。结算画面底部显示开发版的 "dev" 版本号；还缺战斗中的图。
 - [ ] 确认击杀首领后确实没有掉落和意识尘埃（目前只看到日志里“掉落组件已拆除”，还没在画面上核对）。
