@@ -266,7 +266,7 @@ god.install(config.debug or god.unlocked())
 -- Development only: devtools.lua is not shipped (src/tools/build_release.py leaves it out).
 if config.debug then
     local ok, dev = pcall(require, "devtools")
-    if ok and dev then dev.install(run, arenas, health, roster) end
+    if ok and dev then dev.install(run, arenas) end
     -- Group data check (DESIGN §5.0b): every open boss in some 千影 stage (a newly opened boss is placed by hand),
     -- every listed boss in the roster, every arena key known.
     local staged = {}

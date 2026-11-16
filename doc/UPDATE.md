@@ -26,7 +26,7 @@ mod 自己的数据（`BossRushScorepad.tsv` 战绩、`BossRushSettings.tsv` 设
    - 结果分三种：有、缺、未知。只有确定「缺」才起作用：核心缺失 → mod 停用（`U.stop`，走出错停用同一条路），提示条「游戏已更新，残影试炼暂停，待 mod 更新后恢复」；Boss 类或补点缺失 → 这个 Boss 不提供；地图缺失 → 这个场地不用；系统菜单那一行、加载画面、出场特效缺失 → 只记日志。未知一律当作存在，不凭猜测藏内容；
    - 体检通过前不插铃铛入口。结果摘要每次都写进 `UE4SS.log`（发布版也写，以 `[BossRush] health:` 开头），玩家发来日志即可知道坏在哪；
    - 清单在 `health.lua` 的 `NATIVE` / `BLUEPRINTS` / `OPTIONAL_ASSETS`，加上 `scale.lua` 的成长曲线：**新加一处对游戏类的调用，就把它加进清单**。清单里的类名、模块名、成员名用 `CXXHeaderDump` 核对过（2026-11-15，全部存在）；
-   - 开发版 F7 假装第一个开放 Boss 不在游戏里（它从列表消失），F8 假装缺一个核心部件（mod 停用并提示），不等真的更新就能看停用路径。
+   - 开发版曾用 F7 假装第一个开放 Boss 不在游戏里（它从列表消失）、F8 假装缺一个核心部件（mod 停用并提示），不等真的更新就能看停用路径；2026-11-16 实测通过后两键已删（用户决定 2026-11-17，git 历史里有）。
 2. **记下测试过的版本**：`health.lua` 的 `TESTED_BUILD`（当前 26367565）。启动时读 Steam 的 `appmanifest_4115450.acf`（mod 文件夹往上七层的 `steamapps\`；读不到就跳过，不猜），日志写一行「game build X (tested with Y)」，不一致只多一句提醒，不打扰玩家（体检才决定能不能用）。每次发版更新这个值。
 3. **离线差异工具**（待做，`src/tools/game_diff.py`）：用 pbzero 读新旧两份 `utoc`，对比
    - roster 和 arenas 里每个类路径、地图路径是否还在；
@@ -69,7 +69,7 @@ mod 自己的数据（`BossRushScorepad.tsv` 战绩、`BossRushSettings.tsv` 设
 
 1. **新 Boss**：codex 新行 + `Mobs/` 新目录 → `gen_roster.py`（`bosses.json` 需要 pbzero 先更新）→ `asset_scan.py deps` 判补点 → 以 `testing` 上线，用户实测后改 `open`（既有规矩）。名字以血条为准。
 2. **没买 DLC 的玩家**：DLC 资源可能在 pak 里但不应提供。roster 加 `dlc = "<名字>"` 字段，运行时要有可靠的拥有判断才提供。**待查**：游戏用什么判断拥有（Steam DLC 检查函数、存档标记，还是资源单独打包、未购则不存在）。在查清前，DLC Boss 只在开发版出现。
-3. **新地图 / 新场地**：F2 标点、F3 测量、按 DESIGN §5.0a 打分（既有流程）。新地图的铃铛 id 进 `bells.tsv`。
+3. **新地图 / 新场地**：F3 标点并当场测量、按 DESIGN §5.0a 打分（既有流程；2026-11-17 前是 F2）；评级规则或地形变了要全部重测时，从 git 历史找回逐个场地重测的旧 F3（2026-11-17 删）。新地图的铃铛 id 进 `bells.tsv`。
 4. **等级上限 / 新周目**：若曲线延长或周期变了，重读曲线，改 `scale.lua` 的 `LEVELS_PER_CYCLE` / `MAX_LEVEL`。
 5. **新的场景依赖类型**：本 mod 已知三种查找（`GetActorOfClass`、targeting 子系统、身份点标签）。新 Boss 若在 `testing` 中出现瞬移到原点、带玩家去别的关卡，按第四种来查。
 6. **新语言**：若加了 UI 语言，`i18n` 只有 zh-Hans / English，其余回落英文，不出错即可。

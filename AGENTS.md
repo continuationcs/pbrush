@@ -25,8 +25,11 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
   UI when a game widget exists. Never write into the game save.
 - The user tests in rounds ("做完一轮, 我去统一测试"): batch related changes, then give one test list. New bosses
   land as `state = "testing"` (development builds only) and become `"open"` after the user confirms in game.
-- New or moved arenas: mark the spot with F2 (it surveys the spot at once), then run the arena survey
-  (development build, F3), and grade them by the standard in `doc/DESIGN.md` §5.0a before offering them.
+- New or moved arenas: mark the spot with F3 (development build; it surveys the spot at once and grades it by the
+  standard in `doc/DESIGN.md` §5.0a) before offering them. Every arena was marked and surveyed that way (with F2,
+  the mark key until 2026-11-17); the old F3 survey that travelled to all of them was removed 2026-11-17 (user
+  decision). After a grading rule or the game
+  changes, take it back from git history to grade them all again.
   Never take a bell's teleport point as the standing spot: the 龙柱 bell's point was a cramped nook (3/16 open,
   0 m); have the user mark one in the open ground (2026-11-14). A spot under 12 m from the nearest bell grades 差
   (user decision 2026-11-15: no fight right next to a bell); the survey logs the distance. Runs that start at a
@@ -34,7 +37,7 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
 - **Some bells cannot be travelled to from the bell menu** (龙柱 `Bell_DP_001`, in Xigu's separate Discordance
   space), yet `PBZSaveLoadSubsystem:TeleportTo` with the bell id takes the player there and the run works. A
   boss's original battlefield in such a space is an arena of kind `own` (as 尊主封印地); to work on it, set
-  `FOCUS` in `devtools.lua` (F5 goes there).
+  `FOCUS` in `devtools.lua` (F2 goes there).
 - **`TeleportTo`'s bell argument becomes the player's bell**: deaths revive there and the save points at it. Only
   travel with a bell rung in this playthrough (`U.active_bells()`): a player in a new playthrough (龙柱 not rung)
   died at 龙柱, was revived inside the arena, the game crashed (GPU device removed) on the next teleport and the
@@ -56,7 +59,8 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
   buildid) with each release: `build_release.py` refuses a build when it differs from the installed game's.
   `src/tools/header_baseline.py` keeps those classes' header text per build (`src/data/game_baseline/`); after an
   update, regenerate the dump (Ctrl+H, after opening a bell menu and finishing a fight so the Blueprints are
-  loaded), run it again and `diff`. Development keys F7 / F8 show what a missing boss / core part does.
+  loaded), run it again and `diff`. (Development keys F7 / F8 pretended a boss / core part missing; both paths were
+  confirmed 2026-11-16 and the keys removed 2026-11-17, user decision; git history has them.)
   The asset registry singleton is the class default object `/Script/AssetRegistry.Default__AssetRegistryImpl`
   (`U.find_all` skips defaults and found nothing); `K2_GetAssetByObjectPath` works from Lua and is calibrated with a
   known, a made-up and the current map's path (confirmed 2026-11-16: 117 lookups, nothing loaded). An asset path
@@ -419,7 +423,7 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
   next to a bell (2026-11-15): the player died, stood up again at the bell inside the arena and fought on. The
   run now reads the game's death counter `PBZGameSystem.DiedTimes` (`U.game_system`) against its value at the
   start: confirmed at a normal arena and in the Realm of Mirage (2026-11-15, `player died (death counter)`, 饮恨;
-  devtools F6 sends every run there). The Mirage revive handler fired too, 6 s after the counter, so it was
+  a development key, since removed, sent every run there). The Mirage revive handler fired too, 6 s after the counter, so it was
   dropped. **A function listed right under a delegate property in the header dump is that delegate's signature,
   not a hookable function.**
 - **An attribute that reads 0 has no effect to scale**: `ShachiRegen` read 0 on every boss and summon tested (five
@@ -448,14 +452,14 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
   in a new playthrough, so few scenic arenas are offered early on.
 - Read input with `PlayerController:IsInputKeyDown({KeyName = FName("Gamepad_FaceButton_Bottom")})`.
 - Development keys (`devtools.lua`, development builds only; user decisions 2026-11-14): **single keys only, no
-  combinations**: F1 god mode (`god.lua`, see Code health), F2 mark a spot for a new arena and survey it right there (grades on screen), F3
-  arena survey (only the `FOCUS` arena when `devtools.lua` sets one), F4 forced error, F5 go to the `FOCUS` arena
-  (for an arena whose bell the bell menu cannot reach), F6 every run in the Realm of Mirage on / off (it is
-  otherwise only the fallback when no arena is available), F7 treat the first open boss as missing from the game, F8 run the start-up
-  check again with a made-up core part missing (the mod stops). The discovery probe mod was retired (git history has it;
+  combinations**: F1 god mode (`god.lua`, see Code health), F2 go to the `FOCUS` arena (for an arena whose bell the
+  bell menu cannot reach), F3 mark a spot for a new arena and survey it right there (grades on screen). On
+  2026-11-17 (user decisions) the survey of every arena (old F3), F4 forced error, F6 every run in the Realm of
+  Mirage and F7 / F8 a boss / core part pretended missing were removed (git history has them), and the keys moved:
+  mark F2 → F3, go to `FOCUS` F5 → F2. The discovery probe mod was retired (git history has it;
   UE4SS's own keybinds dump the CXX headers). **Never bind F10, F11 or F12**: F10 opens the UE4SS console
-  (ConsoleEnablerMod), F11 is the game's (user report), F12 is Steam's screenshot. A new tool takes the next free
-  F key (F9; F7-F9 had picked the entrance effects and were removed once chosen, 2026-11-15); UE4SS's own keys all
+  (ConsoleEnablerMod), F11 is the game's (user report), F12 is Steam's screenshot. A new tool takes the lowest free
+  F key (F4; F7-F9 had picked the entrance effects and were removed once chosen, 2026-11-15); UE4SS's own keys all
   use Ctrl.
 - **Loading an asset that is not in memory**: UE4SS's `LoadAsset` left six of eight Niagara effects "not found"
   (2026-11-15; the two that played were already loaded). `U.load` falls back to the engine's

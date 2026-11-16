@@ -25,7 +25,6 @@ local APP_ID = "4115450"
 
 local passed = false       -- the core check ran and nothing was missing
 local missing = {}         -- asset path -> true: definitely not in the game
-local pretend = {}         -- development: asset paths treated as missing (devtools F7)
 
 -- Always in UE4SS.log, release builds included: these lines are what a player's log has to show after an update.
 local function say(fmt, ...)
@@ -222,7 +221,7 @@ local function game_build()
 end
 
 -- ------------------------------------------------------------------ the check
-local function run_check(extra_core)
+local function run_check()
     local build = game_build()
     say("game build %s (tested with %s)%s", tostring(build), TESTED_BUILD,
         (build and build ~= TESTED_BUILD) and ": not tested, see the lines below" or "")
@@ -235,7 +234,6 @@ local function run_check(extra_core)
     for _, e in ipairs(BLUEPRINTS) do
         unknown = unknown + check_class(e, U.load_class(e[1]), e.optional and optional or core)
     end
-    if extra_core then core[#core + 1] = extra_core end
 
     local lookup, maps_ok = calibrated()
     local bosses, arena_count, assets = 0, 0, 0
@@ -274,7 +272,6 @@ local function run_check(extra_core)
             say("maps cannot be looked up: arenas are not checked")
         end
     end
-    for path in pairs(pretend) do missing[path] = true end
 
     for _, m in ipairs(optional) do say("missing (feature only): %s", m) end
     for _, m in ipairs(core) do say("MISSING: %s", m) end
@@ -288,12 +285,10 @@ local function run_check(extra_core)
 end
 
 -- Runs the check once the player is in the game (at game start mods load before there is a world to look in).
--- extra_core: development only, a made-up core part to see the stop path (devtools F8).
-function M.start(extra_core)
-    passed = false
+function M.start()
     U.every(1000, function()
         if not U.valid(U.pawn()) then return false end
-        run_check(extra_core)
+        run_check()
         return true
     end)
 end
@@ -313,13 +308,6 @@ function M.boss_ok(b)
         if not M.has(h.class) then return false end
     end
     return true
-end
-
--- Development (devtools F7): treat the boss's class as missing, to see it left out of the lists.
-function M.pretend_missing(path)
-    pretend[path] = true
-    missing[path] = true
-    say("pretending %s is missing", path)
 end
 
 return M
