@@ -352,6 +352,8 @@ z 坐标在 2,000,000 以上的铃铛（人面榕树、灭法之法、龙柱、�
 ## 6. 多语言
 
 - 跟随游戏当前语言：运行时调用 `KismetInternationalizationLibrary.GetCurrentLanguage()`。
+  每次读取都把 language / culture / locale 和判定结果写进 `UE4SS.log`（release 版也写；用户决定 2026-11-16：
+  每次都打，不只在变化时），用于排查“中文游戏显示英文菜单”（0.1.6 玩家反馈）。
   - `zh-Hans`、`zh-CN` 等 → 简体中文
   - 其他所有语言 → English
   - `zh-Hant` 等 → 繁体中文（已定）。用从游戏简繁对照文本中提取的转换表，在构建时生成，不在运行时转换。
