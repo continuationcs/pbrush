@@ -39,12 +39,40 @@ local M = {}
 -- Whether the game shows Chinese right now. Asked each time, never cached: the game applies its own language
 -- setting (GameUserSettings CultureName) after mods load, so a value read at load time was the system language
 -- (an English game showed 强敌挑战; a Chinese one may have shown English).
+local INTL = "/Script/Engine.Default__KismetInternationalizationLibrary"
+
+-- One of the library's culture getters as a string, or a marker saying why there is none. Log-only reads go
+-- through pcall and stay out of the start-up check (health.lua) on purpose, like the 66 Days ledger in run.lua:
+-- a renamed getter must not stop the mod for a line in the log.
+local function read_culture(lib, fn)
+    local ok, v = pcall(function() return lib[fn](lib):ToString() end)
+    if not ok then return "<error>" end
+    return tostring(v)
+end
+
+-- Always in UE4SS.log, release builds included: a player whose menus came out in the wrong language (Nexus
+-- report, 0.1.6: Simplified Chinese game, English menus) can only show us this line. Written on every read (user
+-- decision 2026-11-16), not only on a change, so each menu row or notice in the log has the values it was made
+-- from. M.zh() runs once per text, only when a menu page, notice or result screen is built (never per tick):
+-- a bell menu page writes one line per row.
+local function report(lang, ok, zh)
+    local lib = StaticFindObject(INTL)
+    local culture, locale = "<no library>", "<no library>"
+    if lib ~= nil and lib.IsValid ~= nil and lib:IsValid() then
+        culture, locale = read_culture(lib, "GetCurrentCulture"), read_culture(lib, "GetCurrentLocale")
+    end
+    print(string.format("[BossRush] i18n: language=%s culture=%s locale=%s read=%s -> %s\n", tostring(lang), culture,
+        locale, ok and "ok" or "failed", zh and "zh" or "en"))
+end
+
 function M.zh()
-    local zh = true
-    pcall(function()
-        local lib = StaticFindObject("/Script/Engine.Default__KismetInternationalizationLibrary")
-        zh = lib:GetCurrentLanguage():ToString():sub(1, 2) == "zh"
+    local zh, lang = true, nil
+    local ok = pcall(function()
+        local lib = StaticFindObject(INTL)
+        lang = lib:GetCurrentLanguage():ToString()
+        zh = lang:sub(1, 2) == "zh"
     end)
+    report(lang, ok, zh)
     return zh
 end
 

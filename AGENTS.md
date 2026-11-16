@@ -217,7 +217,12 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
   walk to; spawn with `ESpawnActorCollisionHandlingMethod` 2 (move out of overlaps, always spawn).
 - **Text language**: read it when the text is shown (`i18n.zh()`), never at load: the game applies its own
   language setting (`GameUserSettings.ini` `CultureName`) after mods load, so a value read at load is the
-  system language (an English game showed 强敌挑战).
+  system language (an English game showed 强敌挑战). Reading at display time did not settle it: a player on
+  0.1.6 (Nexus, smlley9527) with the game in Simplified Chinese still got English menus, and the log could not
+  say why because it never recorded what was read. Every `i18n.zh()` now writes `[BossRush] i18n: language=…
+  culture=… locale=… read=ok|failed -> zh|en` to `UE4SS.log`, release builds included (user decision
+  2026-11-16: every read, not only changes). Culture and locale are log-only, read with `pcall` and kept out of
+  the start-up check. Not yet seen in game: ask a player with this problem for that line before changing the rule.
 - Setting arbitrary Lua fields on UObjects fails; keep per-object state in Lua tables keyed by `GetFullName()`.
 - **Spawning bosses**: `BeginDeferredActorSpawnFromClass` + `FinishSpawningActor`; AI and health bar come by
   themselves, and music for most bosses. Not for all: 金面具黑衣人 / 魔渊 had no music in a random arena (Nexus
