@@ -2,6 +2,8 @@
 -- state: "open" | "testing" (development builds only) | "anchored" (needs its level: closed) | "story" (prologue/tutorial variant)
 -- helpers: helper points placed before the boss spawns: class, offset from the arena centre along the arena facing (cm).
 -- summons: classes of the boss's summons, scaled like the boss; their Kill is forced when they wait at 0 HP for an execution.
+-- summon: a summon passive its level would grant (ability class) and the gameplay event that starts it (event tag).
+-- remove_abilities: class names of abilities the run takes from the boss.
 -- phases: later phases of a boss fought in several (each a list of bosses that appear together); part_of: the first phase of the boss this record is a later phase of (or appears with).
 -- together: all the bosses that appear at the start, this one included, in spawn order; one entry named fight_zh / fight_en.
 -- clear_health_min: the run sets the boss's health floor (Health_Min) to 0, or it could never die.
@@ -46,7 +48,7 @@ return {
     { id = "BP_Monster_ChangHong_P2", zh = "长鸿：雷电枪骑", en = "Chang Hong, the Thunder Lancer", class = "/PBZCombatAsset/ActorData/Mobs/053_ChangHong_P2/BP_Monster_ChangHong_P2.BP_Monster_ChangHong_P2_C", state = "open", part_of = "BP_Monster_ChangHong_Spear" },
     { id = "BP_Monster_LionDancer", zh = "舞狮尊主", en = "Flame, the Mask-Bound Lion Dance Grandmaster", class = "/Game/RenewalContent/Actors/Mobs/Normal/BP_Monster_LionDancer.BP_Monster_LionDancer_C", state = "open", phases = { { "BP_Monster_LionDancer_P2" } } },
     { id = "BP_Monster_LionDancer_P2", zh = "舞狮尊主：烈焰", en = "The Lion Dance Grandmaster's Final Dance", class = "/Game/RenewalContent/Actors/Mobs/Normal/BP_Monster_LionDancer_P2.BP_Monster_LionDancer_P2_C", state = "open", summons = { "BP_Monster_DaTouWaWa_HouHouHou_C" }, part_of = "BP_Monster_LionDancer" },
-    { id = "BP_Monster_XiaoXue", zh = "吞噬尸体的小雪", en = "Corpse-Eating Xue", class = "/PBZCombatAsset/ActorData/Mobs/027_XiaoXue/BP_Monster_XiaoXue.BP_Monster_XiaoXue_C", state = "open" },
+    { id = "BP_Monster_XiaoXue", zh = "吞噬尸体的小雪", en = "Corpse-Eating Xue", class = "/PBZCombatAsset/ActorData/Mobs/027_XiaoXue/BP_Monster_XiaoXue.BP_Monster_XiaoXue_C", state = "open", summons = { "BP_Monster_FemaleThug_Fuhuai_ForXiaoXue_C", "BP_Monster_FemaleThug_BigKnife_ForXiaoXue_C", "BP_Monster_FemaleThug_Dart_ForXiaoXue_C", "BP_Monster_FemaleThug_Hoe_ForXiaoXue_C", "BP_Monster_FemaleThug_Molotov_ForXiaoXue_C", "BP_Monster_FemaleThug_RongZhuang_ForXiaoXue_C", "BP_Monster_FemaleThug_TwinHoe_ForXiaoXue_C" }, summon = { ability = "/PBZCombatAsset/ActorData/Mobs/027_XiaoXue/Ability/GA_SummonPassive_XiaoXue.GA_SummonPassive_XiaoXue_C", event = "GameplayEvent.SelfSummon" }, remove_abilities = { "GA_XiaoXue_RecoverHealth_C" } },
     { id = "BP_Monster_WanJun_JinGua", zh = "巨锤客：万钧", en = "Wan Jun, the Coppermaul", class = "/PBZCombatAsset/ActorData/Mobs/057_WanJun/BP_Monster_WanJun_JinGua.BP_Monster_WanJun_JinGua_C", state = "open" },
     { id = "BP_Monster_HuaShan_Blue", zh = "七星剑阵：大师兄", en = "Chief Disciple of the Seven-Stars Formation", class = "/PBZCombatAsset/ActorData/Mobs/035_HuaShan/BP_Monster_HuaShan_Blue.BP_Monster_HuaShan_Blue_C", state = "open", phases = { { "BP_Monster_HuaShan_JianOu", "BP_Monster_EMei_Sword_Top" } } },
     { id = "BP_Monster_HuaShan_JianOu", zh = "大师兄的绝望剑意", en = "Chief Disciple, Sword of Despair", class = "/PBZCombatAsset/ActorData/Mobs/035_HuaShan/BP_Monster_HuaShan_JianOu.BP_Monster_HuaShan_JianOu_C", state = "open", part_of = "BP_Monster_HuaShan_Blue" },

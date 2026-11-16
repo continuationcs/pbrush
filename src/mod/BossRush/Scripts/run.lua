@@ -11,6 +11,7 @@ local records = require("records")
 local settle = require("settle")
 local i18n = require("i18n")
 local arenas = require("arenas")
+local startup = require("health")    -- the start-up check (health.lua); `health` below reads a character's HP
 local UEHelpers = require("UEHelpers")
 
 local M = {}
@@ -394,6 +395,28 @@ local function clear_helpers()
     run.helpers, run.identity_tags = {}, {}
 end
 
+-- The step's summons still alive when it ends (roster summons): the game leaves them standing, 小雪's thugs fought on
+-- after she died and were still there at the next run (user test 2026-11-16). Dead ones are left to the game: a
+-- dying actor is never touched (see check_summons).
+local function clear_summons()
+    local fight = run.queue[run.fi]
+    local step = fight and fight.steps[run.si]
+    local n = 0
+    for _, rec in ipairs(step or {}) do
+        for _, short in ipairs(rec.summons or {}) do
+            for _, s in ipairs(U.find_all(short)) do
+                local dead = true
+                pcall(function() dead = s:IsDead() end)
+                if not dead then
+                    s:K2_DestroyActor()
+                    n = n + 1
+                end
+            end
+        end
+    end
+    if n > 0 then U.log("run: %d summons removed with the step", n) end
+end
+
 -- ---------------------------------------------------------------- end of run
 local function finish(result)
     if not run or run.phase == "ending" or run.phase == "returning" then return end
@@ -405,6 +428,7 @@ local function finish(result)
             if boss then pcall(function() boss:K2_DestroyActor() end) end
         end
     end
+    clear_summons()
     clear_helpers()
     if result == "error" then U.after(2500, go_home) return end
     local T = i18n.t
@@ -465,6 +489,7 @@ local function step_down()
     local last_step = run.si >= #run.queue[run.fi].steps
     if last_step and run.fi >= #run.queue then finish("win") return end
     phase("between")
+    clear_summons()
     clear_helpers()
     if not last_step then
         -- The same boss's next phase: no heal, a short notice (user decision 2026-11-14).
@@ -514,6 +539,82 @@ end
 local DOWN_AFTER = 2        -- s after the game confirms the boss's death (its death animation plays)
 local FORCE_KILL = 0.8      -- s at 0 HP without dying (waiting for an execution) before the game's Kill is forced
 local DOWN_FALLBACK = 6     -- s at 0 HP after which the boss counts as down whatever the game says
+local remove_abilities      -- defined below (roster remove_abilities); checked on every tick of the fight
+local EXECUTION_LOCK = 0.01 -- share of Health_Max: a health floor this small is an execution lock (check_one)
+
+-- Development log: the characters near the arena (class, distance, hidden; dead ones only counted: a dying
+-- actor is never read).
+local function log_characters_near()
+    local alive, dead = {}, {}
+    for _, npc in ipairs(U.find_all("PBZCharacter_NPC")) do
+        local name = npc:GetClass():GetFName():ToString()
+        local gone = true
+        pcall(function() gone = npc:IsDead() end)
+        if gone then
+            dead[name] = (dead[name] or 0) + 1
+        else
+            local d = U.dist(npc:K2_GetActorLocation(), run.center)
+            if d < 6000 then
+                local hidden = "?"
+                pcall(function() hidden = tostring(npc.bHidden) end)
+                alive[#alive + 1] = string.format("%s %.0f m hidden %s", name, d / 100, hidden)
+            end
+        end
+    end
+    local d = {}
+    for name, n in pairs(dead) do d[#d + 1] = name .. " x" .. n end
+    U.log("run: trace   alive within 60 m: %s", #alive == 0 and "none" or table.concat(alive, ", "))
+    U.log("run: trace   dead (anywhere loaded): %s", #d == 0 and "none" or table.concat(d, ", "))
+end
+
+-- Development log: the boss's abilities that are active now (by class name), with how many it has.
+local function log_active_abilities(actor)
+    local active, count = {}, 0
+    pcall(function()
+        actor.AbilitySystemComponent.ActivatableAbilities.Items:ForEach(function(_, item)
+            local spec = item:get()
+            count = count + 1
+            if spec.ActiveCount > 0 and U.valid(spec.Ability) then
+                active[#active + 1] = spec.Ability:GetClass():GetFName():ToString()
+            end
+        end)
+    end)
+    U.log("run: trace   active abilities (of %d): %s", count, #active == 0 and "none" or table.concat(active, ", "))
+end
+
+-- Development log: a boss's health through the fight, to tell a boss that cannot be hurt, one that heals and one
+-- that stops just above 0 (Nexus report 2026-11-16: 骨婉约 and 金面具黑衣人 took no damage, 小雪 kept healing by
+-- eating corpses the player could not see, 彭猛's bar showed 0 and it did not die). Logged at the start, at each
+-- new tenth of health, at every change below 2% and at every rise; the first rise of a streak lists the
+-- characters near the arena and the boss's active abilities (小雪 still healed with GA_XiaoXue_RecoverHealth
+-- removed, right after her thugs died, 2026-11-16).
+local function trace_health(b, actor, hp)
+    if not config.debug then return end
+    local m, hmin, hbase = nil, "?", "?"
+    pcall(function()
+        local s = actor.AttributeSetBase
+        m = s.Health_Max.CurrentValue
+        hmin, hbase = string.format("%.2f", s.Health_Min.CurrentValue), string.format("%.2f", s.Health_Min.BaseValue)
+    end)
+    if not m or m <= 0 then return end
+    local last = b.trace_hp
+    b.trace_hp = hp
+    if last == nil then
+        U.log("run: trace %s health %.2f / %.0f at the start (min %s, base %s)", b.id, hp, m, hmin, hbase)
+        return
+    end
+    if hp == last then return end
+    local rose = hp > last
+    if rose or hp <= m * 0.02 or math.floor(hp / m * 10) ~= math.floor(last / m * 10) then
+        U.log("run: trace %s health %.2f -> %.2f / %.0f (min %s, base %s)%s", b.id, last, hp, m, hmin, hbase,
+            rose and " ROSE" or "")
+    end
+    if rose and not b.trace_rising then
+        log_characters_near()
+        log_active_abilities(actor)
+    end
+    b.trace_rising = rose
+end
 
 -- One boss of the step (b = { ref, id, spawn_at, zero_at, dead_at, killed, down }); marks it down when it is.
 -- b.ref is a ref (U.ref): the game destroys a dead boss on its own schedule.
@@ -544,6 +645,31 @@ local function check_one(b)
         return
     end
     b.zero_at = nil        -- back above 0 (a phase change refills it)
+    trace_health(b, actor, hp)
+    remove_abilities(b, actor)
+    -- Execution lock: some bosses carry a tiny health floor (彭猛: Health_Min 1, base 0, from spawn) and wait on it
+    -- with the bar at 0 until the player executes them; then the game drops the floor and they fall to 0. A player
+    -- who did not execute could not end the fight (Nexus report 2026-11-16; log 2026-11-16: 彭猛 sat at 1 HP for
+    -- 13 s until executed). Once it sits on the floor the run sets the floor to 0, so the player's next hit kills
+    -- it as damage does. Not forced: with floor and health set to 0 and Kill forced (reason None, then Damaged)
+    -- the game counted 彭猛 dead (IsDead true) but it played no death and kept moving (user tests 2026-11-16).
+    -- Only floors up to EXECUTION_LOCK of the maximum: a story stage lock (左殇 at 80%) is a roster
+    -- clear_health_min boss, whose floor is cleared below instead.
+    if not b.clear_min then
+        local m, floor = nil, 0
+        pcall(function()
+            local s = actor.AttributeSetBase
+            m, floor = s.Health_Max.CurrentValue, s.Health_Min.CurrentValue
+        end)
+        if m and floor > 0 and floor <= m * EXECUTION_LOCK and hp <= floor then
+            U.log("run: boss at its execution lock (health %.2f, floor %.2f of %.0f), floor set to 0: the next hit kills (%s)",
+                hp, floor, m, b.id)
+            pcall(function()
+                local s = actor.AttributeSetBase
+                s.Health_Min.BaseValue, s.Health_Min.CurrentValue = 0, 0
+            end)
+        end
+    end
     -- Roster clear_health_min: the boss's health floor stays above 0 outside its own level, so it can never die.
     -- 魔渊 started with Health_Min 24 (Health_Max 12000) in a player's 二周目 and stopped there, IsDead false;
     -- a forced Kill at 24 left it attacking through the result screen. With the floor set to 0 it falls, dies
@@ -937,12 +1063,114 @@ local function ai_component(actor)
     return ok and U.valid(comp) and comp or nil
 end
 
+-- Roster summon: a summon passive the boss's level would grant, and the event that starts it. A spawned 小雪 lacked
+-- GA_SummonPassive_XiaoXue, so her thugs never came; granted and activated it waits for GameplayEvent.SelfSummon,
+-- and with that sent her thugs appeared (development probe, 2026-11-16; gen_roster.py SUMMON_PASSIVE). Called when
+-- the boss's AI starts. The game calls may be missing after an update (the start-up check lists them as optional):
+-- then the fight goes on without the summons, and the log says why.
+local ABILITY_LIBRARY = "/Script/GameplayAbilities.Default__AbilitySystemBlueprintLibrary"
+local function start_summons(b, actor)
+    if not b.summon then return end
+    if not startup.has(b.summon.ability) then
+        U.log("run: %s summon passive not in the game, no summons", b.id)
+        return
+    end
+    local cls = U.load_class(b.summon.ability)
+    local asc = actor.AbilitySystemComponent
+    local lib = StaticFindObject(ABILITY_LIBRARY)
+    if not (cls and U.valid(asc) and U.valid(lib)) then
+        U.log("run: %s summons not started: class %s, ability component %s, library %s", b.id, tostring(cls ~= nil),
+            tostring(U.valid(asc)), tostring(U.valid(lib)))
+        return
+    end
+    local ok, e = pcall(function()
+        asc:K2_GiveAbility(cls, 0, -1)
+        local active = asc:TryActivateAbilityByClass(cls, true)
+        lib:SendGameplayEventToActor(actor, { TagName = FName(b.summon.event) }, {})
+        return active
+    end)
+    U.log("run: %s summon passive granted, activated %s, %s sent", b.id, ok and tostring(e) or ("failed: " .. tostring(e)),
+        b.summon.event)
+end
+
+-- Roster remove_abilities: takes those abilities from the boss (its ability component's ClearAbility, by the
+-- granted spec's handle), so its AI can no longer pick them.
+-- The handle is passed as the spec's own Handle struct: a Lua table { Handle = n } built from its number was
+-- accepted without an error but removed nothing (小雪 still had 23 abilities and healed with
+-- GA_XiaoXue_RecoverHealth, 2026-11-16). One ability per pass, the list read again each time: a handle read
+-- from the list is only good until the list changes. Afterwards the list is read once more to confirm.
+-- The game grants a removed ability again during the fight (小雪 had GA_XiaoXue_RecoverHealth back and healed
+-- with it 26 s after it was removed, 2026-11-16; what grants it is not known, her AI's ability pool lists it), so
+-- this runs on every tick of the fight (check_one, from the boss's spawn); it logs only what it removes, and
+-- "not found" only on the first call.
+local function find_ability(asc, wanted)
+    local found, count = nil, 0
+    asc.ActivatableAbilities.Items:ForEach(function(_, item)
+        local spec = item:get()
+        count = count + 1
+        local cdo = spec.Ability
+        local name = U.valid(cdo) and cdo:GetClass():GetFName():ToString()
+        if not found and name and wanted[name] then found = { name = name, handle = spec.Handle } end
+    end)
+    return found, count
+end
+
+remove_abilities = function(b, actor)
+    if not b.remove then return end
+    local first = not b.remove_checked
+    b.remove_checked = true
+    local asc = actor.AbilitySystemComponent
+    -- A failure is logged once and the boss keeps its abilities (b.remove cleared: no retry on every tick).
+    if not U.valid(asc) then
+        U.log("run: %s abilities not removed: no ability component", b.id)
+        b.remove = nil
+        return
+    end
+    local wanted = {}
+    for _, name in ipairs(b.remove) do wanted[name] = true end
+    -- Missing after a game update (optional in the start-up check): logged, the boss keeps its abilities.
+    -- The same ability can be granted twice (24 abilities, two of them GA_XiaoXue_RecoverHealth, 2026-11-16): every
+    -- copy goes, one per pass; a pass that leaves the list as long as it was is a real failure.
+    local found = {}
+    local ok, e = pcall(function()
+        for _ = 1, 16 do
+            local f, before = find_ability(asc, wanted)
+            if not f then break end
+            local n = f.handle.Handle
+            asc:ClearAbility(f.handle)
+            found[f.name] = true
+            local _, after = find_ability(asc, {})
+            if after >= before then error("ClearAbility left " .. f.name .. " granted") end
+            -- 小雪's AI got it back twice every few seconds (28 removals in 70 s, no heal, 2026-11-16): the first
+            -- removal and every tenth are logged.
+            b.removed = (b.removed or 0) + 1
+            if b.removed == 1 or b.removed % 10 == 0 then
+                U.log("run: %s ability %s (handle %s) removed, abilities %d -> %d (%d removals)", b.id, f.name,
+                    tostring(n), before, after, b.removed)
+            end
+        end
+    end)
+    for name in pairs(found) do wanted[name] = nil end
+    if not ok then
+        U.log("run: %s abilities not removed: %s", b.id, tostring(e))
+        b.remove = nil
+        return
+    end
+    if first then
+        for name in pairs(wanted) do U.log("run: %s ability %s not found, not removed", b.id, name) end
+    end
+end
+
 -- Holds a boss of run.actors still for HOLD_MS, then starts its AI. The AI may start after the boss is spawned
 -- (when its controller takes it over): while held, an AI found started is stopped again, and counted in the log.
 local function hold(b)
     local actor = U.get(b.ref)
     local ai = actor and ai_component(actor)
-    if not ai then U.log("run: hold %s: no AI component, the boss starts at once", b.id) return end
+    if not ai then
+        U.log("run: hold %s: no AI component, the boss starts at once", b.id)
+        if actor then start_summons(b, actor) end
+        return
+    end
     U.log("run: hold %s: AI started %s at spawn", b.id, tostring(ai.bAIStarted))
     ai:StopAI()
     local me, held, restops = run, 0, 0
@@ -955,6 +1183,7 @@ local function hold(b)
         if held >= HOLD_MS then
             c:StartAI()
             U.log("run: hold %s over: AI started %s (stopped again %d times)", b.id, tostring(c.bAIStarted), restops)
+            start_summons(b, a)
             return true
         end
         if c.bAIStarted then
@@ -982,7 +1211,8 @@ local function appear(recs, spots, omens)
     for k, rec in ipairs(recs) do
         local a = spawn_boss(rec, spots[k].at)
         if not a then finish("error") return end
-        local b = { ref = U.ref(a), id = rec.id, spawn_at = spots[k].at, clear_min = rec.clear_health_min }
+        local b = { ref = U.ref(a), id = rec.id, spawn_at = spots[k].at, clear_min = rec.clear_health_min,
+                    summon = rec.summon, remove = rec.remove_abilities }
         run.actors[#run.actors + 1] = b
         reveal(a)
         local hmin = attr(a, "Health_Min")

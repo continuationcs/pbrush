@@ -78,6 +78,13 @@ local NATIVE = {
     { "/Script/Engine.MovementComponent", funcs = { "StopMovementImmediately" }, optional = true },
     -- Bells, to measure how far a fight is from one (U.nearest_bell).
     { "/Script/ProjectPBZ.PBZCheckPoint", optional = true },
+    -- A boss's summon passive (roster summon, run.lua start_summons) and abilities taken from it (roster
+    -- remove_abilities, run.lua remove_abilities).
+    { "/Script/ProjectPBZ.PBZCharacter", props = { "AbilitySystemComponent" }, optional = true },
+    { "/Script/GameplayAbilities.AbilitySystemComponent",
+      funcs = { "K2_GiveAbility", "TryActivateAbilityByClass", "ClearAbility" }, props = { "ActivatableAbilities" },
+      optional = true },
+    { "/Script/GameplayAbilities.AbilitySystemBlueprintLibrary", funcs = { "SendGameplayEventToActor" }, optional = true },
 }
 
 -- The game's blueprints the mod builds on, loaded here: UI widgets the game loads itself on first use, and the
@@ -251,6 +258,8 @@ local function run_check(extra_core)
                 local ok = check(b.class)
                 for _, h in ipairs(b.helpers or {}) do ok = check(h.class) and ok end
                 if not ok then bosses = bosses + 1 say("boss left out: %s (%s)", b.id, b.zh) end
+                -- Without its summon passive the boss still fights, alone (run.lua start_summons).
+                if b.summon and not check(b.summon.ability) then optional[#optional + 1] = b.summon.ability end
             end
         end
         if maps_ok then

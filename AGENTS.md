@@ -165,6 +165,9 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
 There is no `lua`/`luac` on the machine. After editing Lua, run `python src\tools\lua_check.py` (block and
 bracket balance, calls to undefined locals) and re-read the call sites: one bad edit once deleted helper
 functions and the menu broke with "attempt to call a nil value". Prefer the Edit tool for Lua.
+`lua_check.py` does not see one local hiding another: `local health = require("health")` at the top of `run.lua`
+was hidden by its later `local function health(ch)`, and `health.has` stopped the mod mid-fight ("attempt to index
+a function value", 2026-11-16). Before adding a module-level local, grep the file for the name.
 
 **Do not write Lua through a Bash heredoc + Python one-liner when it contains escapes** (`\t`, `\n`, `\\`): the
 shell turns them into real characters. Use the Edit/Write tools, or a Python script file. The same goes for any
@@ -239,7 +242,7 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
   (the development log lists nearby native monsters' levels). The difficulty configs' Global Mob Level Offset is 0
   except Handicapped (-1).
 - Some bosses wait at 0 HP for an execution; `actor:Kill(0)` ends them (`run.lua` forces it after 0.8 s at 0 HP
-  when the game does not report the boss dead). Remove `LootComp` and set
+  when the game does not report the boss dead; for bosses that wait at 1 HP see "health floor" below). Remove `LootComp` and set
   `bExcludeFromCodex` to stop loot, Remnant Dust and codex entries.
 - Bosses whose skills look up level-placed points (Zuo Shang, Yuzan, Qishu, Du Yan, ...) teleport to (0,0,0) in
   other arenas, or take the player to their own level (Yubi). They are offered with **补点**: roster `helpers`
@@ -272,7 +275,22 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
   (1851) was above the head's maximum (500), so it could not be hurt or executed (2026-11-13). Roster `summons`
   lists such classes: the run scales each one like the boss (`scale.apply`), forces its `Kill` when it waits at
   0 HP for an execution, and logs its state (0 / hurt / full; attributes in the development log). Other bosses'
-  summons are not scaled.
+  summons are not scaled. Living summons are destroyed when their boss goes down or the run ends
+  (`clear_summons`): the game left 小雪's thugs standing into the next run (2026-11-16).
+- **A boss's level may grant it abilities**: a spawned 小雪 had 22 abilities and no `GA_SummonPassive_XiaoXue`, so
+  her thugs never came. Granted (`AbilitySystemComponent:K2_GiveAbility`) and activated
+  (`TryActivateAbilityByClass`), a summon passive waits for its `SummonEventTag`; `AbilitySystemBlueprintLibrary:
+  SendGameplayEventToActor(actor, { TagName = FName(tag) }, {})` starts it (roster `summon`, `run.lua`
+  `start_summons`, 2026-11-16). To see what a monster has, read its `AbilitySystemComponent.ActivatableAbilities.
+  Items` (each spec: `Ability` class default, `Handle`, `ActiveCount`, instance arrays); finding ability objects by
+  a Blueprint base class name (`U.find_all("GA_SummonPassive_MonsterBase_C")`) found nothing.
+- **Removing an ability**: `ClearAbility` needs the spec's own `Handle` struct read from `ActivatableAbilities`; a
+  table `{ Handle = n }` built from the number was accepted silently and removed nothing (a log line said
+  "removed" without checking: read the list again after such a call). One per call, the list read again each time.
+  The AI grants a removed ability back (小雪's `GA_XiaoXue_RecoverHealth`: two copies at a time, 14 times in 70 s),
+  so `run.lua` `remove_abilities` runs on every tick of the fight (roster `remove_abilities`).
+- **A gameplay tag read from Lua**: read `tag.TagName` before trying `GetFullName`: a struct wrapper answers
+  `GetFullName` with its struct type (`ScriptStruct /Script/GameplayTags.GameplayTag`), which hid the tag's name.
 - **Bell menu buttons** (`W_DialogueButton_C`): the visible label is set by `SetWidgetText`, which also plays a
   slide-in animation: call it **once**, after the button is added (calling it twice made labels jitter). Join the
   menu's `CommonButtonGroupBase` for the selected/unselected look, and relink gamepad navigation explicitly with
@@ -357,7 +375,19 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
   `Health_Min` at spawn is in the development log:
   look there when a boss will not die. Not every floor is a bug: a lock that ends in an execution
   (`GE_LockHealthButCanExecuted`, 舞狮尊主's last lion head) is the fight's mechanic. A current `Health_Min` of 1
-  with base 0 near the end (毕峰, 风雪刀客, 2026-11-15) is such an execution lock: the forced `Kill` ends it.
+  with base 0 (毕峰, 风雪刀客, 2026-11-15; 彭猛 has it from spawn) is such an execution lock: the bar shows 0 while
+  the boss sits at 1 HP, so the 0 HP forced `Kill` never fires, and a player who did not execute could not end the
+  fight (Nexus report 2026-11-16, 彭猛). `run.lua` sets a floor of at most 1% of `Health_Max` that the boss sits on
+  to 0, and the next hit kills it (confirmed 2026-11-16).
+- **A death must come from damage**: with 彭猛's health and floor written to 0 and `Kill` forced (reason 0 None, then
+  1 Damaged), the game counted it dead (`IsDead` true) but it played no death and kept moving; with only the floor
+  cleared and the player's hit taking it to 0, the same forced `Kill` let it fall (user tests 2026-11-16). Never
+  write a boss's `Health` to end it.
+- **Damage that does not land is not always the mod**: 金面具黑衣人 and 骨婉约 took almost no damage (a Nexus
+  player called them unhurtable), yet their AI entered combat within 2 s, and hits that landed did full damage:
+  金面具's passive rewrites incoming damage (`GA_MoYuan_Passive_LongZhu_01`: `ModifyHitDamage`), 骨婉约 deflects
+  (`GA_GuWanYue_Stance`). Left as the game made them (user decision 2026-11-16). The suspected
+  `GE_BossInvulnerableBeforeCombat` (`AIScript_PBZMisc`, while the AI is out of combat) was never on them.
 - **A death in a challenge must not be a game death**: in 66 Days (NightMare) mode each death costs days (the only
   loss a death brings: no mode takes Remnant Dust, user correction 2026-11-16), every mode counts the death, and the
   game saves on revive, so the loss stays in the save (player report 2026-11-16: a 66-day save lost days after a
