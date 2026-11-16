@@ -161,6 +161,10 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
   and refuses scripts that contain debug key bindings. The repo keeps `debug = true`. The version lives only in
   `Scripts/version.lua` (`"dev"` in the repo; the build writes `<version>` into the copy, and stops if it cannot);
   the result screen shows it after the entry name.
+- **A release build's log does not show the runs** (`debug = false`): only the start-up check, `i18n:` lines
+  and, with the switch file, `god:` lines. A release test is confirmed by the user's report plus what the log
+  and the files in `Saved` show (no error or mod stop, new crash dumps, scorepad and settings written); test new
+  run logic with a development build first (0.1.7 release test, 2026-11-17).
 - Nexus page: mod 1099 (`doc/release/NEXUS_PAGE.md`). Updates go to the same page as a new file version. Nexus sits
   behind Cloudflare; a human check that appears must be passed by the user, never by an agent.
 
