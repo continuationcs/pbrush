@@ -99,6 +99,8 @@ local BLUEPRINTS = {
     { "/Game/PBZContent/UI/InGame/SwitchUI/WB_TipsText.WB_TipsText_C", funcs = { "SetText" }, props = { "FadeIn", "FadeOut" } },
     { "/Game/PBZContent/UI/Settings/Editors/W_SettingsListEntry_Action.W_SettingsListEntry_Action_C",     -- 退出战斗 row
       props = { "SettingName" }, optional = true },
+    { "/Game/PBZContent/Blueprint/BP_GameplayHelper.BP_GameplayHelper_C",                                   -- 斩 banner
+      funcs = { "Push BossDeadUI" }, optional = true },
 }
 
 -- Assets looked up in the registry, not loaded. Core: the monster level curves (scale.lua): without them a boss

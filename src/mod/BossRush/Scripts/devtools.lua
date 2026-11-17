@@ -5,6 +5,7 @@
 --   F2  go to the arena in FOCUS (for one whose bell the bell menu cannot reach, e.g. 龙柱)
 --   F3  mark the spot the player stands on and the direction they face, for a new arena (marks.tsv), and
 --       survey it right there (grades shown on screen)
+--   F9  play the boss-defeat banner (斩), normal and red in turn
 -- 2026-11-17 (user decisions; git history has the removed ones): the survey of every arena (old F3; all were
 -- marked and surveyed with the mark key), F4 forced error, F6 every run in the Realm of Mirage and F7 / F8 a
 -- boss / core part pretended missing were removed; mark and survey moved from F2 to F3, go to FOCUS from F5 to F2.
@@ -184,7 +185,14 @@ function M.install(run, arenas)
         ui.toast("调试：前往 " .. a.zh, 2)
         FindFirstOf("PBZSaveLoadSubsystem"):TeleportTo(FName(a.map), U.transform(a.x, a.y, a.z, a.yaw), FName(U.bell_name(a.bell)))
     end)
-    U.log("devtools ready: F2 go to %s, F3 mark and survey a spot", tostring(FOCUS))
+    -- F9: the boss-defeat banner (斩), normal and red in turn, to see it before the run plays it for every boss.
+    local red = false
+    U.key(Key.F9, function()
+        out("boss banner " .. (red and "red" or "normal") .. " (F9)")
+        ui.boss_banner(red)
+        red = not red
+    end)
+    U.log("devtools ready: F2 go to %s, F3 mark and survey a spot, F9 boss banner", tostring(FOCUS))
 end
 
 return M
