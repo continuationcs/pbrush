@@ -288,7 +288,7 @@ if config.debug then
     local stamp = os.date("%H:%M:%S")
     U.every(1000, function()
         if not U.valid(U.pawn()) then return false end
-        require("ui").toast("残影试炼 已载入（开发版）" .. stamp, 3)
+        ui.toast("残影试炼 已载入（开发版）" .. stamp, 3)
         return true
     end)
 end

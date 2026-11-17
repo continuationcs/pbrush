@@ -18,7 +18,7 @@ local M = {}
 
 local run = nil   -- active run, or nil
 
--- Defined with the arrival wait below; used by go_home too.
+-- Defined with the arrival wait below; used by travel_home too.
 local loading
 
 local function phase(p)
@@ -1086,7 +1086,7 @@ local function start_summons(b, actor)
     local ok, e = pcall(function()
         asc:K2_GiveAbility(cls, 0, -1)
         local active = asc:TryActivateAbilityByClass(cls, true)
-        lib:SendGameplayEventToActor(actor, { TagName = FName(b.summon.event) }, {})
+        lib:SendGameplayEventToActor(actor, tag_of(b.summon.event), {})
         return active
     end)
     U.log("run: %s summon passive granted, activated %s, %s sent", b.id, ok and tostring(e) or ("failed: " .. tostring(e)),

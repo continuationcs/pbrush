@@ -29,15 +29,18 @@ Published on Nexus Mods: <https://www.nexusmods.com/phantombladezero/mods/1099>
 2. Download the release zip and extract it into `<game>\platform\steam\ue4ss\Mods\`, giving
    `...\ue4ss\Mods\BossRush\Scripts\main.lua`. The bundled `enabled.txt` turns it on.
 
-Settings live in `BossRush\Scripts\config.lua` (restart the game after editing).
+Enemy strength (一重～五重) and how the arena is picked (auto / nearest / random) are chosen on the in-game
+Settings page and kept in `<game>\ProjectPBZ\Saved\BossRushSettings.tsv`; best times are in
+`BossRushScorepad.tsv` next to it. Advanced values live in `BossRush\Scripts\config.lua` (restart the game after
+editing).
 
 ## Repository layout
 
 | Path | What |
 |---|---|
-| `src/mod/BossRush/Scripts/` | The mod. `main.lua` (menu pages), `menu.lua` (Bell menu entry and pages), `widgets.lua` (helpers for the game's menus, the click hook), `run.lua` (a challenge from travel to return), `scale.lua`, `settle.lua` (result screen), `pause.lua` (game-menu entry to leave a run), `ui.lua`, `arenas.lua`, `gauntlets.lua`, `roster.lua` (generated), `records.lua`, `i18n.lua`, `config.lua`, `util.lua`; `devtools.lua` is development only, not shipped (F2 go to the arena being worked on, F3 mark and survey a spot; F1 god mode is in `god.lua`) |
-| `src/data/` | Bell table (`bells.tsv`, 187 bells), arena list (`arenas_final.tsv`), earlier probe and test results |
-| `src/tools/` | `install.ps1` (copy mods into the game), `build_release.py` (release zip), `gen_roster.py` (boss roster), `lua_check.py` (Lua sanity check), `crash_dump.py` (read UE4SS crash dumps), `asset_scan.py` (search game assets offline), `make_cover.py` (Nexus image), `pak_locres.py` |
+| `src/mod/BossRush/Scripts/` | The mod. `main.lua` (menu pages), `menu.lua` (Bell menu entry and pages), `widgets.lua` (helpers for the game's menus, the click hook), `run.lua` (a challenge from travel to return), `scale.lua`, `settle.lua` (result screen), `pause.lua` (game-menu entry to leave a run), `ui.lua`, `arenas.lua`, `gauntlets.lua`, `roster.lua` (generated), `records.lua`, `settings.lua` (Settings page values), `tier.lua` (enemy strength), `health.lua` (start-up check), `god.lua`, `version.lua`, `i18n.lua`, `config.lua`, `util.lua`; `devtools.lua` is development only, not shipped (F2 go to the arena being worked on, F3 mark and survey a spot; F1 god mode is in `god.lua`) |
+| `src/data/` | Bell reference table (`bells.tsv`, 187 bells), game header baselines (`game_baseline/`), earlier probe results |
+| `src/tools/` | `install.ps1` (copy mods into the game), `build_release.py` (release zip), `gen_roster.py` (boss roster), `lua_check.py` (Lua sanity check), `crash_dump.py` (read UE4SS crash dumps), `asset_scan.py` (search game assets offline), `make_cover.py` (Nexus image), `pak_locres.py` (the game's own text), `header_baseline.py` (game header baselines per build) |
 | `src/ue4ss/` | UE4SS memory layout and signatures for this game build (CL-302256) |
 | `src/vendor/kintaro-pbz-config/` | Third-party UE4SS config for an earlier game build |
 | `doc/DESIGN.md` | Design, findings from the game, decisions and implementation status |

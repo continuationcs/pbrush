@@ -1,4 +1,4 @@
--- Arenas (src/data/arenas_final.tsv, DESIGN §5.0). Coordinates are the user's marked standing spots (F2), each
+-- Arenas (DESIGN §5.0). Coordinates are the user's marked standing spots (the mark key, F2 then, F3 now), each
 -- graded by the arena survey (DESIGN §5.0a). Spots are kept away from bells (user decision 2026-11-15): the
 -- earlier ones stood on the bell's teleport point (1 m); xigu_axe, fuji_tree, ddsd_blade and houjie_lion were
 -- marked again, lyz_white and sz_shrine added, camp_lady and camp_tower removed (user decision 2026-11-15).
@@ -56,7 +56,7 @@ function M.usable(a, rung)
     return a.kind == "jhsy" or rung[U.bell_name(a.bell)] == true
 end
 
--- Every arena (the development arena survey walks them all).
+-- Every arena (the start-up check looks up their maps).
 function M.all() return A end
 
 -- The arena with this key, or nil.
@@ -110,7 +110,7 @@ end
 -- random step alike).
 local RECENT = 2
 
-function M.recent()
+local function recent()
     local out = {}
     for k in (settings.get("recent_arenas") or ""):gmatch("[^,]+") do out[#out + 1] = k end
     return out
@@ -119,7 +119,7 @@ end
 -- The run reached this arena (run.lua, on arrival; an arena swapped for an occupied one counts as the one fought).
 function M.remember(key)
     local out = { key }
-    for _, k in ipairs(M.recent()) do
+    for _, k in ipairs(recent()) do
         if #out < RECENT and k ~= key then out[#out + 1] = k end
     end
     settings.set("recent_arenas", table.concat(out, ","))
@@ -128,18 +128,18 @@ end
 -- The arenas of list not used in the last runs: the last RECENT left out, or fewer when that leaves none (only
 -- one or two usable), or all of them.
 local function fresh(list)
-    local recent = M.recent()
-    for keep = #recent, 0, -1 do
+    local last = recent()
+    for keep = #last, 0, -1 do
         local out = {}
         for _, a in ipairs(list) do
             local used = false
             for i = 1, keep do
-                if recent[i] == a.key then used = true end
+                if last[i] == a.key then used = true end
             end
             if not used then out[#out + 1] = a end
         end
         if #out > 0 then
-            U.log("arena: random among %d of %d (recent %s, %d left out)", #out, #list, table.concat(recent, ","), keep)
+            U.log("arena: random among %d of %d (recent %s, %d left out)", #out, #list, table.concat(last, ","), keep)
             return out
         end
     end

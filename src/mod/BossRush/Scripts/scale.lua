@@ -30,26 +30,18 @@ function M.curve_paths()
     return out
 end
 
-local function curve(name)
-    local path = curve_path(name)
-    local cv = StaticFindObject(path)
-    if not U.valid(cv) then
-        pcall(LoadAsset, (path:gsub("%.[^.]+$", "")))
-        cv = StaticFindObject(path)
-    end
-    return U.valid(cv) and cv or nil
-end
+local function curve(name) return U.load(curve_path(name)) end
 
 -- Progress level 1..25 (area levels run from Xigu 1 to Duanhun 25).
 -- v1: share of bells rung. TODO: max area level of rung bells once bells are mapped to DT_AIAreaLevel areas.
-function M.progress_level()
+local function progress_level()
     local _, n = U.active_bells()
     local lv = math.floor(25 * math.min(1, n / 170) + 0.5)
     return math.max(1, lv)
 end
 
 -- The playthrough (0 = first) from PBZGameSystem.CycleCount; 0 when it cannot be read.
-function M.cycle()
+local function cycle()
     return U.game_system("CycleCount") or 0
 end
 
@@ -59,8 +51,8 @@ end
 -- the shortest curve's end.
 local LEVELS_PER_CYCLE, MAX_LEVEL = 25, 200
 
-function M.target_level(difficulty)
-    local lv = M.progress_level() + LEVELS_PER_CYCLE * M.cycle() + (config.difficulty_offset[difficulty] or 0)
+local function target_level(difficulty)
+    local lv = progress_level() + LEVELS_PER_CYCLE * cycle() + (config.difficulty_offset[difficulty] or 0)
     return math.min(lv, MAX_LEVEL)
 end
 
@@ -93,7 +85,7 @@ end
 -- game sizes from the boss's must follow the tier too); what: a name for the log (default: the boss).
 -- difficulty: the game's EDifficultMode value (U.game_difficulty()); tier: 敌方强度 tier (tier.lua), 1 = 一重.
 function M.apply(ch, difficulty, tier, what)
-    local lv = M.target_level(difficulty)
+    local lv = target_level(difficulty)
     local f = tiers.factors(tier)
     local s = ch.AttributeSetBase
     local parts = {}
@@ -113,7 +105,7 @@ function M.apply(ch, difficulty, tier, what)
     local ok, err = pcall(apply_break_time, s, f, parts)
     if not ok then parts[#parts + 1] = "break time failed: " .. tostring(err) end
     U.log("scale%s: level %d (progress %d, playthrough %d, difficulty %d, tier %d%s): %s", what and (" " .. what) or "",
-        lv, M.progress_level(), M.cycle(), difficulty, tier, config.scale_enabled and "" or ", 原貌: curve off",
+        lv, progress_level(), cycle(), difficulty, tier, config.scale_enabled and "" or ", 原貌: curve off",
         table.concat(parts, ", "))
     if not what then M.log_game_level_sources(ch) end
 end

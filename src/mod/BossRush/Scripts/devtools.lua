@@ -177,8 +177,7 @@ function M.install(run, arenas)
 
     U.key(Key.F3, function() survey(mark()) end)
     U.key(Key.F2, function()
-        local a
-        for _, x in ipairs(arenas.all()) do if x.key == FOCUS then a = x end end
+        local a = FOCUS and arenas.get(FOCUS)
         if not a then out("go: no FOCUS arena") ui.toast("调试：未设置 FOCUS 场地", 2) return end
         if run.active() then out("go: a challenge is running") return end
         out("go to " .. a.key)

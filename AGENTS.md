@@ -103,7 +103,7 @@ Notes for coding agents working on this repository (BOSS RUSH, a UE4SS Lua mod f
 ## Repository layout
 
 - `src/`: everything the build uses. `src/mod/BossRush` (the mod, incl. the dev-only `devtools.lua`), `src/tools` (install, release build, generators, `lua_check.py`,
-  `crash_dump.py`, `asset_scan.py`, `header_baseline.py`),
+  `crash_dump.py`, `asset_scan.py`, `header_baseline.py`, `pak_locres.py`, `make_cover.py`),
   `src/data` (bell and arena tables, test results, game header baselines), `src/ue4ss` (UE4SS layout and signatures for this game
   build), `src/vendor` (third-party files).
 - `doc/`: design (`DESIGN.md`), text (`COPY.md`), release texts and images (`doc/release`).
@@ -354,8 +354,9 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
   bar says so); one codex entry can hold several parts (`BossName_013_0/1/2`) and the row does not name each part's
   class. When a boss looks wrong, ask what its **health bar** says. `gen_roster.py` fixes records with `CLASS_FIX`
   and adds codex bosses missing from `bosses.json` with `EXTRA`; a guessed class lands as `testing` until the user
-  confirms it (2026-11-14). The game's display texts (names in English, difficulty names) are in the encrypted
-  pak's locres: not readable offline; ask the user for the in-game text.
+  confirms it (2026-11-14). The game's display texts are in the pak's `Game.locres`:
+  `src/tools/pak_locres.py` decrypts and dumps it (zh-Hans / en-US, used for `doc/COPY.md`). Which entry a
+  screen actually shows (e.g. difficulty names) is not in it: ask the user for the in-game text.
 - **A layout read from a screenshot must be checked slot by slot**: the probe's `wb_settlement` preview labelled
   only the blocks that are properties; the big title block (`CommonTextBlock_64`) is not one, so the screenshot
   showed its default text 敬请期待 and it was taken for the title slot without its name ever appearing. The result

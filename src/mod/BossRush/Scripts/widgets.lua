@@ -16,7 +16,7 @@ function W.children(box)
 end
 
 -- Whether o's class is, or derives from, the class with this short name.
-function W.is_a(o, class_name)
+local function is_a(o, class_name)
     local ok, r = pcall(function()
         local c = o:GetClass()
         while U.valid(c) do
@@ -28,14 +28,12 @@ function W.is_a(o, class_name)
     return ok and r
 end
 
-function W.is_button(o) return W.is_a(o, "CommonButtonBase") end
-
 -- Close the screen a widget is on: the outermost CommonActivatableWidget among its owners (a widget's outer is
 -- its WidgetTree, whose outer is the user widget holding it), deactivated as CommonUI's own back action does.
 function W.close_screen(widget)
     local top, o, guard = nil, widget, 0
     while o ~= nil and guard < 24 do
-        if W.is_a(o, "CommonActivatableWidget") then top = o end
+        if is_a(o, "CommonActivatableWidget") then top = o end
         local ok, outer = pcall(function() return o:GetOuter() end)
         o = (ok and U.valid(outer)) and outer or nil
         guard = guard + 1
@@ -49,7 +47,7 @@ end
 function W.focus_target(w, depth)
     depth = depth or 0
     if not U.valid(w) or depth > 4 then return nil end
-    if W.is_button(w) then return w end
+    if is_a(w, "CommonButtonBase") then return w end
     local found = nil
     pcall(function()
         for i = 0, w:GetChildrenCount() - 1 do
@@ -138,7 +136,7 @@ function W.set_label(b, label)
 end
 
 -- Explicit gamepad links: a -> b going down, b -> a going up.
-function W.link(a, b)
+local function link(a, b)
     if not (U.valid(a) and U.valid(b)) then return end
     pcall(function() a:SetNavigationRuleExplicit(DOWN, b) end)
     pcall(function() b:SetNavigationRuleExplicit(UP, a) end)
@@ -146,7 +144,7 @@ end
 
 -- Link a list of buttons top to bottom, wrapping around.
 function W.chain(list)
-    for i = 1, #list do W.link(list[i], list[i % #list + 1]) end
+    for i = 1, #list do link(list[i], list[i % #list + 1]) end
 end
 
 -- The visible buttons of a column, top to bottom.

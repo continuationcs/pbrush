@@ -30,11 +30,11 @@ local S = {
     best         = { "最佳", "Best" },
     new_record   = { "新纪录！", "NEW RECORD!" },
     failed       = { "残影试炼出错，已停用，重启游戏后恢复", "Trial of Echoes hit an error and is off until the game restarts" },
-    -- The start-up check (health.lua) found a part of the game the mod needs missing: a game update or DLC.
     -- God mode (god.lua, F1): the author's test switch, not announced to players.
     god_on       = { "调试：无敌 + 10 倍攻击", "Debug: invincible + 10x attack" },
     god_off      = { "调试：无敌已关闭", "Debug: invincibility off" },
     god_restored = { "调试：上次未关闭的无敌已还原", "Debug: invincibility left on last time has been undone" },
+    -- The start-up check (health.lua) found a part of the game the mod needs missing: a game update or DLC.
     outdated     = { "游戏已更新，残影试炼暂停，待 mod 更新后恢复", "The game has been updated. Trial of Echoes is paused until the mod is updated." },
 }
 

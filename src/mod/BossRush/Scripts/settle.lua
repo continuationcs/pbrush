@@ -1,5 +1,5 @@
 -- Result screen: the game's own wb_settlement layout (no logic of its own), filled with our numbers.
--- Layout (from an in-game screenshot of the probe's F3 preview):
+-- Layout (from an in-game screenshot of the retired probe mod's preview, 2026-11-13):
 --   title (CommonTextBlock_64, big, centre)
 --   row 1 centre:  [icon] _6 label   _7 value
 --   row 2:         [icon] _2 / _3              [icon] _4 / _5

@@ -193,7 +193,7 @@ function U.hook(func_path, fn)
     end)
 end
 
--- fn() on the game thread when the key is pressed (development tools). Single keys only, no modifier
+-- fn() on the game thread when the key is pressed (development tools and god mode). Single keys only, no modifier
 -- combinations (user decision 2026-11-14); never F10 (UE4SS console), F11 (the game) or F12 (Steam).
 function U.key(key, fn)
     RegisterKeyBind(key, function() U.after(0, fn) end)
@@ -346,7 +346,7 @@ function U.game_difficulty()
     local d
     pcall(function()
         local lib = StaticFindObject("/Script/ProjectPBZ.Default__PBZBlueprintFunctionLibrary")
-        d = lib:GetDifficulty(require("UEHelpers").GetWorld())
+        d = lib:GetDifficulty(UEHelpers.GetWorld())
     end)
     local n = tonumber(d)
     if not n then U.log("difficulty: could not be read (%s)", tostring(d)) return -1 end

@@ -25,7 +25,7 @@ function M.next()
     return n
 end
 
--- Multipliers { health, attack } of tier n.
+-- Multipliers { health, attack, break_time } of tier n.
 function M.factors(n)
     return config.tiers[clamp(n)]
 end

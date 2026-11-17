@@ -50,6 +50,14 @@ local function relink(box)
     W.chain(W.visible_buttons(box))
 end
 
+-- Shows the menu's own options again that our pages hid.
+local function show_hidden()
+    for _, h in ipairs(cur.hidden) do
+        local w = U.get(h.ref)
+        if w then pcall(function() w:SetVisibility(h.vis) end) end
+    end
+end
+
 local function clear_added(L)
     for _, b in ipairs(gets(cur.added)) do
         pcall(function() if L.group then L.group:RemoveWidget(b) end end)
@@ -167,10 +175,7 @@ function M.restore()
     local L = live()
     if not L then return end
     clear_added(L)
-    for _, h in ipairs(cur.hidden) do
-        local w = U.get(h.ref)
-        if w then pcall(function() w:SetVisibility(h.vis) end) end
-    end
+    show_hidden()
     cur.hidden = {}
     give_back(L)
     relink(L.box)
@@ -336,10 +341,7 @@ local function remove_all()
     local L = live()
     if L then
         clear_added(L)
-        for _, h in ipairs(cur.hidden) do
-            local w = U.get(h.ref)
-            if w then pcall(function() w:SetVisibility(h.vis) end) end
-        end
+        show_hidden()
         if L.entry then
             pcall(function() if L.group then L.group:RemoveWidget(L.entry) end end)
             pcall(function() L.box:RemoveChild(L.entry) end)

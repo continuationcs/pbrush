@@ -1,4 +1,4 @@
--- Best times, kept in the mod's own file (U.data_file; never in the game save, DESIGN §8 #13).
+-- Best times, kept in BossRushScorepad.tsv in the game's Saved folder (U.data_file; never in the game save, DESIGN §8 #13).
 -- One line per record: key <TAB> best seconds. Keys: "duel/<boss>/<difficulty>", "gauntlet/<group>/<difficulty>",
 -- with "/t<n>" appended for 敌方强度 tier n above 一重 (so times from before tiers stay 一重 times).
 local U = require("util")
