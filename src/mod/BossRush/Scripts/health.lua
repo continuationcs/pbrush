@@ -109,6 +109,7 @@ local CORE_ASSETS = require("scale").curve_paths()
 local OPTIONAL_ASSETS = {
     "/Game/PBZContent/UI/GameSystem/Settings/W_PBZSettingPanel.W_PBZSettingPanel_C",           -- pause-menu row
     "/Game/PBZContent/UI/Hud/WB_AdditionalLoading.WB_AdditionalLoading_C",                    -- end of loading
+    "/Game/PBZContent/UI/InGame/Dead/W_BossDead.W_BossDead_C",                                -- 斩 banner on screen
     "/PBZCombatAsset/Prototypes/Actions/GAA_AssignIdentityTransformToBlackboard.GAA_AssignIdentityTransformToBlackboard_C",
     "/SGameAI/Tools/Teleport/BP_SGameAITargetPoint.BP_SGameAITargetPoint_C",                 -- identity points
     "/PBZVFXPack/VFX/BattleFX/LengTu/NS_SummonBossField1_602.NS_SummonBossField1_602",        -- entrance effects

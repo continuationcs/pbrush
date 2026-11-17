@@ -250,6 +250,17 @@ function U.find_all(class_short, templates)
     return out
 end
 
+-- Whether a game screen of the class (an activatable widget: the loading screen, the defeat banner) is up: such a
+-- widget is activated while it shows, and lingers deactivated until it is collected.
+function U.screen_up(class_short)
+    for _, w in ipairs(U.find_all(class_short)) do
+        local up = false
+        pcall(function() up = w:IsActivated() == true end)
+        if up then return true end
+    end
+    return false
+end
+
 -- A number the game keeps in its PBZGameSystem (CycleCount, DiedTimes ...): the largest over the live instances
 -- (FindFirstOf may return the class default), or nil when none can be read.
 function U.game_system(field)

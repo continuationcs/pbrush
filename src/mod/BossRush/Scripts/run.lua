@@ -471,14 +471,38 @@ end
 
 local spawn_next
 
+-- fn(shown) once no defeat banner is on screen: our notices and the result screen wait for it instead of covering
+-- it. shown: whether one was up. BANNER_MAX bounds the wait should the banner never close; the log tells how long
+-- it stayed, from the first look (the step ends DOWN_AFTER after the death that pushed it).
+local BANNER_MAX = 10000
+local function after_banner(fn)
+    local t0, shown = os.clock(), false
+    U.every(100, function()
+        local up = ui.banner_up()
+        shown = shown or up
+        local waited = (os.clock() - t0) * 1000
+        if up and waited < BANNER_MAX then return false end
+        U.log("run: banner %s", not shown and "not seen" or
+            (up and string.format("still up after %.1f s, going on", waited / 1000)
+                or string.format("closed %.1f s after the step ended", waited / 1000)))
+        fn(shown)
+        return true
+    end)
+end
+
 -- The bosses of a step have fallen: the same boss's next phase, the next boss, or the end of the run.
 local function step_down()
     if not run or run.phase ~= "fighting" then return end
     local last_step = run.si >= #run.queue[run.fi].steps
-    if last_step and run.fi >= #run.queue then finish("win") return end
     phase("between")
     clear_summons()
     clear_helpers()
+    if last_step and run.fi >= #run.queue then
+        after_banner(function()
+            if run and run.phase == "between" then finish("win") end
+        end)
+        return
+    end
     if not last_step then
         -- The same boss's next phase: no heal, a short notice (user decision 2026-11-14).
         U.after(1500, function()
@@ -496,10 +520,13 @@ local function step_down()
         a.Health.BaseValue = h
         a.Health.CurrentValue = h
     end)
-    U.after(2500, function()
-        if not run or run.phase ~= "between" then return end
-        ui.toast(string.format("%s  %d / %d", i18n.t("next_echo"), run.fi + 1, #run.queue), 2.5)
-        U.after(2500, spawn_next)
+    -- The next boss's notice after the banner, or after the pause the fallen boss's death took before.
+    after_banner(function(shown)
+        U.after(shown and 500 or 2500, function()
+            if not run or run.phase ~= "between" then return end
+            ui.toast(string.format("%s  %d / %d", i18n.t("next_echo"), run.fi + 1, #run.queue), 2.5)
+            U.after(2500, spawn_next)
+        end)
     end)
 end
 
@@ -624,6 +651,22 @@ local function check_one(b)
     end
 end
 
+-- The defeat banner (斩) when a boss's last phase has fallen, at the moment the game reports it dead (the step
+-- itself ends DOWN_AFTER later): once per fight, not between phases (user decision 2026-11-17). A boss whose own AI
+-- pushes it (roster native_banner) is left to do so; the others would get it only from their level's story.
+local function banner_due()
+    local fight = run.queue[run.fi]
+    if run.si < #fight.steps or run.banner_fi == run.fi then return end
+    for _, b in ipairs(run.actors) do
+        if not (b.dead_at or b.down) then return end
+    end
+    run.banner_fi = run.fi
+    for _, rec in ipairs(fight.steps[run.si]) do
+        if rec.native_banner then U.log("run: banner comes from the boss's own AI (%s)", rec.id) return end
+    end
+    ui.boss_banner()
+end
+
 -- The step's checks: it is over when every boss in it is down.
 local function check_bosses()
     local all_down = true
@@ -631,6 +674,7 @@ local function check_bosses()
         if not b.down then check_one(b) end
         if not b.down then all_down = false end
     end
+    banner_due()
     if all_down then step_down() end
 end
 
@@ -1174,15 +1218,7 @@ end
 -- 2026-11-13). A bell teleport first blocks the game thread (no tick runs, ~11 s), then shows WB_AdditionalLoading
 -- (~4 s, activated while it is up). Read in game 2026-11-14 with every candidate logged; IsLoadingLevel,
 -- PBZDestinationLoadingSubsystem:IsDestinationLoadingActive and WB_TempLoadingScreen never changed.
-local LOADING_SCREEN = "WB_AdditionalLoading_C"
-function loading()
-    for _, w in ipairs(U.find_all(LOADING_SCREEN)) do
-        local active = false
-        pcall(function() active = w:IsActivated() == true end)
-        if active then return true end
-    end
-    return false
-end
+function loading() return U.screen_up("WB_AdditionalLoading_C") end
 
 -- Time the player gets between the loading screen lifting (or arriving without one) and the boss appearing:
 -- the 「强敌将至」 notice stays up that long.

@@ -257,6 +257,14 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
 - Some bosses wait at 0 HP for an execution; `actor:Kill(0)` ends them (`run.lua` forces it after 0.8 s at 0 HP
   when the game does not report the boss dead; for bosses that wait at 1 HP see "health floor" below). Remove `LootComp` and set
   `bExcludeFromCodex` to stop loot, Remnant Dust and codex entries.
+- **The defeat banner (斩, `W_BossDead`) has two sources**: an AI script on the boss's AI config
+  (`AIScript_ShowUIAfterCombat`, comes with a spawned boss: roster `native_banner`, 18 bosses) or the level's story
+  flow graph (`BPF_*Death`, never triggered by a spawned boss). Traced offline as `BP_Monster_X` (or its parent
+  blueprint) → `ActorC_*` → `AIConfig_*` → the script (`asset_scan.py names`). The run pushes it for the others with
+  the game's `BP_GameplayHelper` `Push BossDeadUI` on the class default (`cdo["Push BossDeadUI"](cdo, false, world)`:
+  a name with a space works by index). Confirmed 2026-11-17: one widget per death (development log `DEV banner
+  widget created`), none between phases; the AI's banner came when 毕峰's health hit 0, 1.6 s before `IsDead`.
+  The banner is up about 2.5 s; `run.lua` `after_banner` waits for it before notices and the result screen.
 - Bosses whose skills look up level-placed points (Zuo Shang, Yuzan, Qishu, Du Yan, ...) teleport to (0,0,0) in
   other arenas, or take the player to their own level (Yubi). They are offered with **补点**: roster `helpers`
   (`src/tools/gen_roster.py`): the run spawns the same marker classes in the arena before the boss and destroys

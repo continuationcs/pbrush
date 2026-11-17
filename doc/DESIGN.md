@@ -30,7 +30,7 @@
 | 所有多选一：选玩法、选关卡、选难度、Rogue 三选一之门、心法三选一 | 对话框 `WBP_FlowDialog` + 选项按钮 `W_DialogueButton` |
 | 确认和警告（开始挑战、放弃挑战） | `UI/Foundation/Dialogs/W_ConfirmationDialog` |
 | 轻提示（第 3/6 战、获得心法、禁制生效） | `WBP_FlowTips` |
-| 首领击败 | 游戏原生的 `W_BossDead` 横幅照常出现 |
+| 首领击败 | 每个首领倒下都播游戏的「斩」横幅 `W_BossDead`（普通版，不用红色版 `W_BossDead_Red`；用户决定 2026-11-17，F9 看过两版后选定）。18 个首领的 AI 配置自带 `AIScript_ShowUIAfterCombat`，倒下时自己播（名单 `native_banner`）；其余的在原作里由关卡剧情流程图 `BPF_*Death` 播，生成的首领触发不到，由 mod 通过游戏的 `BP_GameplayHelper` `Push BossDeadUI` 补播。多阶段首领只在最后一段倒下时播；「残影将至」和结算页等横幅收起后再出（`run.lua` `banner_due` / `after_banner`） |
 
 对话框可以显示一行“说话人”和一段正文，比如由“擂主”介绍规则，选项就是按钮。这是武侠里很自然的呈现方式，手柄上下移动、确认选择即可。
 
