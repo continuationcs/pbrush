@@ -107,53 +107,6 @@ function M.apply(ch, difficulty, tier, what)
     U.log("scale%s: level %d (progress %d, playthrough %d, difficulty %d, tier %d%s): %s", what and (" " .. what) or "",
         lv, progress_level(), cycle(), difficulty, tier, config.scale_enabled and "" or ", 原貌: curve off",
         table.concat(parts, ", "))
-    if not what then M.log_game_level_sources(ch) end
-end
-
--- Development log, read only: what the game feeds into a native monster's level, to check the mod against it
--- (the playthrough is used since 2026-11-14; the difficulty offsets read 0 except Handicapped -1). A player reported bosses in a second playthrough (二周目) at 25W health where the mod's had 15W
--- (0.1.4): the playthrough count (PBZGameSystem.CycleCount), each difficulty config's Global Mob Level Offset
--- (PDA_GlobalCombatConfig, one per difficulty: GlobalConfig_Combined_<difficulty>), and the boss's own view:
--- BP_RenewalNPC reads the game cycle (GetGameCycle) and has a Level property, Init Level and GetCombatLevel.
-function M.log_game_level_sources(boss)
-    if not config.debug then return end
-    local lv, combat = "?", "?"
-    pcall(function() lv = string.format("%.2f", boss.Level) end)
-    pcall(function() combat = tostring(boss:GetCombatLevel()) end)
-    U.log("scale: boss Level property %s, GetCombatLevel %s", lv, combat)
-    local cycles = {}
-    for _, gs in ipairs(U.find_all("PBZGameSystem")) do
-        pcall(function() cycles[#cycles + 1] = tostring(gs.CycleCount) end)
-    end
-    local offsets = {}
-    for _, c in ipairs(U.find_all("PDA_GlobalConfig_Combined_C")) do
-        local name, off = c:GetFName():ToString(), "?"
-        pcall(function() off = string.format("%.2f", c["Combat Config"]["Global Mob Level Offset"]) end)
-        offsets[#offsets + 1] = name .. " " .. off
-    end
-    U.log("scale: playthrough %s; global mob level offset: %s", table.concat(cycles, "/"),
-        #offsets > 0 and table.concat(offsets, ", ") or "no config loaded")
-    -- Native monsters in the loaded level carry the level the game gave them (area level plus whatever the
-    -- playthrough and difficulty add): the nearest few, alive, with their level and health.
-    local p = U.pawn()
-    local at = p and p:K2_GetActorLocation()
-    local found = {}
-    for _, npc in ipairs(U.find_all("PBZCharacter_NPC")) do
-        pcall(function()
-            if npc:IsDead() then return end
-            local s = npc.AttributeSetBase
-            local lv = s.Level.CurrentValue
-            if lv <= 0 then return end          -- spawned by the mod (our bosses have level 0)
-            local l = npc:K2_GetActorLocation()
-            found[#found + 1] = { d = at and U.dist(l, at) or 0, line = string.format("%s level %.0f health %.0f attack %.0f",
-                npc:GetClass():GetFName():ToString(), lv, s.Health_Max.CurrentValue, s.Attack.CurrentValue) }
-        end)
-    end
-    table.sort(found, function(a, b) return a.d < b.d end)
-    for i = 1, math.min(8, #found) do
-        U.log("scale:   native %s, %.0f m away", found[i].line, found[i].d / 100)
-    end
-    if #found == 0 then U.log("scale:   no native monster loaded") end
 end
 
 return M

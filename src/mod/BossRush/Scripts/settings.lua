@@ -8,16 +8,7 @@ local FILE = U.data_file("BossRushSettings.tsv", "settings.tsv")
 local values = nil
 
 local function load()
-    if values then return values end
-    values = {}
-    local f = io.open(FILE, "r")
-    if f then
-        for line in f:lines() do
-            local k, v = line:match("^([%w_]+)\t(.*)$")
-            if k then values[k] = v end
-        end
-        f:close()
-    end
+    values = values or U.read_tsv(FILE)
     return values
 end
 
@@ -29,13 +20,7 @@ end
 function M.set(key, value)
     local v = load()
     v[key] = tostring(value)
-    local keys = {}
-    for k in pairs(v) do keys[#keys + 1] = k end
-    table.sort(keys)
-    local f = io.open(FILE, "w")
-    if not f then U.log("settings: cannot write %s", FILE) return end
-    for _, k in ipairs(keys) do f:write(k, "\t", v[k], "\n") end
-    f:close()
+    U.write_tsv(FILE, v)
 end
 
 return M

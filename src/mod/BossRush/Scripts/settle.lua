@@ -7,7 +7,6 @@
 --   _8  small grey line,  _70 bottom strip
 -- The icons have no texture set (white squares), so they are hidden.
 local U = require("util")
-local UEHelpers = require("UEHelpers")
 
 local M = {}
 local CLASS = "/Game/PBZContent/UI/UINew/HUD/wb_settlement.wb_settlement_C"
@@ -61,8 +60,7 @@ function M.show(d, seconds, on_close)
         local old = U.get(current)
         if old then pcall(function() old:RemoveFromParent() end) end
         local cls = U.load_class(CLASS)
-        local wbl = StaticFindObject("/Script/UMG.Default__WidgetBlueprintLibrary")
-        local w = wbl:Create(UEHelpers.GetWorld(), cls, UEHelpers.GetPlayerController())
+        local w = U.create_widget(cls)
         w:AddToViewport(60)
         local r = U.ref(w)
         current = r

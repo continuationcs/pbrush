@@ -38,6 +38,9 @@ local S = {
     outdated     = { "游戏已更新，残影试炼暂停，待 mod 更新后恢复", "The game has been updated. Trial of Echoes is paused until the mod is updated." },
 }
 
+local U = require("util")
+local say = U.release_log("i18n")
+
 local M = {}
 
 -- Whether the game shows Chinese right now. Asked each time, never cached: the game applies its own language
@@ -65,8 +68,8 @@ local function report(lang, ok, zh)
     if lib ~= nil and lib.IsValid ~= nil and lib:IsValid() then
         culture, locale = read_culture(lib, "GetCurrentCulture"), read_culture(lib, "GetCurrentLocale")
     end
-    print(string.format("[BossRush] i18n: language=%s culture=%s locale=%s read=%s -> %s\n", tostring(lang), culture,
-        locale, ok and "ok" or "failed", zh and "zh" or "en"))
+    say("language=%s culture=%s locale=%s read=%s -> %s", tostring(lang), culture, locale, ok and "ok" or "failed",
+        zh and "zh" or "en")
 end
 
 function M.zh()

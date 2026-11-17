@@ -228,8 +228,8 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
   nil, extent)` then `out.X`; `GetJhsyBellTeleportTransform(out, cam)` then `out.Translation`).
 - **Navigation works from Lua**: `/Script/NavigationSystem.Default__NavigationSystemV1` →
   `K2_ProjectPointToNavigation`, `FindPathToLocationSynchronously(world, from, to, nil, nil)` →
-  `path:IsValid()`, `IsPartial()`, `GetPathLength()`. `run.lua` uses them to spawn bosses where the player can
-  walk to; spawn with `ESpawnActorCollisionHandlingMethod` 2 (move out of overlaps, always spawn).
+  `path:IsValid()`, `IsPartial()`, `GetPathLength()`, wrapped as `U.on_nav` / `U.path_length`. `run.lua` uses them
+  to spawn bosses where the player can walk to; spawn with `ESpawnActorCollisionHandlingMethod` 2 (move out of overlaps, always spawn).
 - **Text language**: read it when the text is shown (`i18n.zh()`), never at load: the game applies its own
   language setting (`GameUserSettings.ini` `CultureName`) after mods load, so a value read at load is the
   system language (an English game showed 强敌挑战). Reading at display time did not settle it: a player on
@@ -251,7 +251,8 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
   (Health to 500, Attack and Shachi to 200) and repeat their shape every 25 levels, so each playthrough adds 25
   levels; `scale.lua` uses progress + 25 × `PBZGameSystem.CycleCount`, capped at 200 (2026-11-14, after a player
   saw 二周目 bosses at 25W health where the mod's had 15W). Inferred from the curves: confirm with a 二周目 save
-  (the development log lists nearby native monsters' levels). The difficulty configs' Global Mob Level Offset is 0
+  (the log of nearby native monsters' levels, `scale.lua` `log_game_level_sources`, was removed 2026-11-17: take it
+  back from git history for that check). The difficulty configs' Global Mob Level Offset is 0
   except Handicapped (-1).
 - Some bosses wait at 0 HP for an execution; `actor:Kill(0)` ends them (`run.lua` forces it after 0.8 s at 0 HP
   when the game does not report the boss dead; for bosses that wait at 1 HP see "health floor" below). Remove `LootComp` and set
@@ -434,7 +435,7 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
   -0.25 on 舞狮尊主's second phase, so it is a term added to 1, not a multiplier.
 - **Never read a dying actor's attributes**: the game crashed natively while a lion head dissolved, right after the
   run started reading every summon's health before checking `IsDead` (2026-11-13). Check `IsDead` first.
-- Cross-map travel: `PBZSaveLoadSubsystem:TeleportTo(FName("/Game/Maps/..."), transform, FName("Bell_<id>"))`.
+- Cross-map travel: `PBZSaveLoadSubsystem:TeleportTo(FName("/Game/Maps/..."), transform, FName("Bell_<id>"))` (`U.teleport`).
   It saves and loads, so no separate autosave handling is needed.
 - **An in-level move may land where World Partition has not loaded the level** (战斗 · 场地 · 就近 moves the player
   across the map without a load; a 0.1.6 player fell through the ground right after a load, cause unknown). Before

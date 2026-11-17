@@ -2,7 +2,6 @@
 -- insert a button into it without disturbing the other options' layout, label a game button, and wire
 -- gamepad navigation. One click hook for every button we add.
 local U = require("util")
-local UEHelpers = require("UEHelpers")
 
 local W = {}
 
@@ -108,8 +107,7 @@ end
 
 -- A new button of the same class as `template`, owned by `outer`.
 function W.new_button(outer, template)
-    local wbl = StaticFindObject("/Script/UMG.Default__WidgetBlueprintLibrary")
-    return wbl:Create(outer, template:GetClass(), UEHelpers.GetPlayerController())
+    return U.create_widget(template:GetClass(), outer)
 end
 
 -- Label a game button, after it has been added (it writes its default text when it joins the widget tree).

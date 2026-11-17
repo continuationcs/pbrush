@@ -27,9 +27,7 @@ local passed = false       -- the core check ran and nothing was missing
 local missing = {}         -- asset path -> true: definitely not in the game
 
 -- Always in UE4SS.log, release builds included: these lines are what a player's log has to show after an update.
-local function say(fmt, ...)
-    print("[BossRush] health: " .. string.format(fmt, ...) .. "\n")
-end
+local say = U.release_log("health")
 
 -- ------------------------------------------------------------------ game parts by name
 -- Native classes (/Script/<Module>.<Class>) with the functions and properties the mod calls or reads. Taken from

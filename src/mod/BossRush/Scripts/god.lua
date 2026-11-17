@@ -29,9 +29,7 @@ local PATH = (os.getenv("TEMP") or os.getenv("TMP") or U.MOD_DIR) .. "\\BossRush
 local state = { on = false, gen = 0, base = nil }   -- base: attribute -> { base, current }, the player's own
 
 -- Always in UE4SS.log, release builds included: the switch is only used there by the author.
-local function say(fmt, ...)
-    print("[BossRush] god: " .. string.format(fmt, ...) .. "\n")
-end
+local say = U.release_log("god")
 
 local function attrs() return U.pawn().AttributeSetBase end
 

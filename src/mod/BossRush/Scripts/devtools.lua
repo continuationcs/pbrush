@@ -62,34 +62,17 @@ function M.install(run, arenas)
     local BELL_MIN = 1200
     local EDGE_EXTENT = { X = 50, Y = 50, Z = 250 }   -- small: a sample off the mesh must fail, not snap back
     local CENTER_EXTENT = { X = 200, Y = 200, Z = 500 }
-    local nav_path = "/Script/NavigationSystem.Default__NavigationSystemV1"
-
-    local function project(nav, world, p, extent)
-        local o = {}
-        local ok, found = pcall(function() return nav:K2_ProjectPointToNavigation(world, p, o, nil, nil, extent) end)
-        if ok and found and o.X then return { X = o.X, Y = o.Y, Z = o.Z } end
-        return nil
-    end
-
-    local function path_len(nav, world, a, b)
-        local len = nil
-        pcall(function()
-            local path = nav:FindPathToLocationSynchronously(world, a, b, nil, nil)
-            if U.valid(path) and path:IsValid() and not path:IsPartial() then len = path:GetPathLength() end
-        end)
-        return len
-    end
 
     -- From p along yaw: how far it stays open (cm), why it stopped, the largest height difference to p (cm).
-    local function measure_dir(nav, world, p, yaw)
+    local function measure_dir(p, yaw)
         local r = math.rad(yaw)
         local last, open, why, maxdz = p, 0, "30m+", 0
         for d = STEP, REACH, STEP do
             local want = { X = p.X + math.cos(r) * d, Y = p.Y + math.sin(r) * d, Z = last.Z }
-            local q = project(nav, world, want, EDGE_EXTENT)
+            local q = U.on_nav(want, EDGE_EXTENT)
             if not q or math.sqrt((q.X - want.X) ^ 2 + (q.Y - want.Y) ^ 2) > 100 then why = "edge" break end
             if math.abs(q.Z - last.Z) > MAX_STEP_DZ then why = "step" break end
-            local len = path_len(nav, world, p, q)
+            local len = U.path_length(p, q)
             if not len or len > d * DETOUR then why = "obstacle" break end
             maxdz = math.max(maxdz, math.abs(q.Z - p.Z))
             open, last = d, q
@@ -137,15 +120,14 @@ function M.install(run, arenas)
     local function survey(a)
         if surveying then return end
         if run.active() then out("survey: a challenge is running") return end
-        local nav, world = StaticFindObject(nav_path), UEHelpers.GetWorld()
-        local p = U.valid(nav) and project(nav, world, { X = a.x, Y = a.y, Z = a.z }, CENTER_EXTENT)
+        local p = U.on_nav({ X = a.x, Y = a.y, Z = a.z }, CENTER_EXTENT)
         if not p then
             out("survey\t" .. a.key .. "\tno navigation mesh at the standing point")
             ui.toast("调试：站位不在寻路网格上", 3)
             return
         end
         local f = math.rad(a.yaw)
-        local b = project(nav, world, { X = p.X + math.cos(f) * BOSS_AHEAD, Y = p.Y + math.sin(f) * BOSS_AHEAD, Z = p.Z }, CENTER_EXTENT)
+        local b = U.on_nav({ X = p.X + math.cos(f) * BOSS_AHEAD, Y = p.Y + math.sin(f) * BOSS_AHEAD, Z = p.Z }, CENTER_EXTENT)
         local jobs, res = {}, { player = {}, boss = {} }
         local bd, bn = U.nearest_bell(p)
         local bell = { dist = bd, name = bn }
@@ -161,8 +143,7 @@ function M.install(run, arenas)
         U.every(100, function()
             local job = table.remove(jobs, 1)
             if job then
-                local nav2, world2 = StaticFindObject(nav_path), UEHelpers.GetWorld()
-                local open, why, dz = measure_dir(nav2, world2, job[2], job[3])
+                local open, why, dz = measure_dir(job[2], job[3])
                 table.insert(res[job[1]], { open = open, why = why, dz = dz })
                 return false
             end
@@ -183,7 +164,7 @@ function M.install(run, arenas)
         if run.active() then out("go: a challenge is running") return end
         out("go to " .. a.key)
         ui.toast("调试：前往 " .. a.zh, 2)
-        FindFirstOf("PBZSaveLoadSubsystem"):TeleportTo(FName(a.map), U.transform(a.x, a.y, a.z, a.yaw), FName(U.bell_name(a.bell)))
+        U.teleport(a.map, a.x, a.y, a.z, a.yaw, a.bell)
     end)
     -- F9: the boss-defeat banner (斩), normal and red in turn, to see it before the run plays it for every boss.
     local red = false

@@ -45,6 +45,39 @@ function U.log(fmt, ...)
     print("[BossRush] " .. (ok and msg or fmt) .. "\n")
 end
 
+-- A logger for the few lines a release build's log must show too (debug = false): "[BossRush] <tag>: ...".
+function U.release_log(tag)
+    return function(fmt, ...)
+        local ok, msg = pcall(string.format, fmt, ...)
+        print("[BossRush] " .. tag .. ": " .. (ok and msg or fmt) .. "\n")
+    end
+end
+
+-- A file of "key<TAB>value" lines (the player's files in Saved): key -> value string; empty if missing.
+function U.read_tsv(path)
+    local t = {}
+    local f = io.open(path, "r")
+    if not f then return t end
+    for line in f:lines() do
+        local k, v = line:match("^([^\t]+)\t(.*)$")
+        if k then t[k] = v end
+    end
+    f:close()
+    return t
+end
+
+-- Write t (key -> value) whole, keys sorted; fmt formats a value (default tostring). False if it cannot.
+function U.write_tsv(path, t, fmt)
+    local f = io.open(path, "w")
+    if not f then U.log("data: cannot write %s", path) return false end
+    local keys = {}
+    for k in pairs(t) do keys[#keys + 1] = k end
+    table.sort(keys)
+    for _, k in ipairs(keys) do f:write(k, "\t", (fmt or tostring)(t[k]), "\n") end
+    f:close()
+    return true
+end
+
 -- Only for an object obtained in this same game-thread call (from a find, a property, a function result).
 -- Never call it, or anything else, on an object kept from an earlier call: see U.ref.
 function U.valid(o)
@@ -356,6 +389,46 @@ end
 function U.bell_name(id)
     if id:find("^Bell") or id:find("^BrokenBell") then return id end
     return "Bell_" .. id
+end
+
+-- Travel with the game's own teleport (saves and loads). bell becomes the player's bell: deaths revive there and
+-- the save points at it, so only a bell rung in this playthrough (AGENTS.md).
+function U.teleport(map, x, y, z, yaw, bell)
+    FindFirstOf("PBZSaveLoadSubsystem"):TeleportTo(FName(map), U.transform(x, y, z, yaw), FName(U.bell_name(bell)))
+end
+
+-- A new widget of class cls (a class object) for the player, owned by outer (default: the world).
+function U.create_widget(cls, outer)
+    local wbl = StaticFindObject("/Script/UMG.Default__WidgetBlueprintLibrary")
+    return wbl:Create(outer or UEHelpers.GetWorld(), cls, UEHelpers.GetPlayerController())
+end
+
+-- ---------------------------------------------------------------- navigation
+local NAV = "/Script/NavigationSystem.Default__NavigationSystemV1"
+
+-- The point on the navigation mesh within extent of p ({ X, Y, Z } box half-size, cm), or nil (no mesh there,
+-- or none loaded).
+function U.on_nav(p, extent)
+    local nav = StaticFindObject(NAV)
+    if not U.valid(nav) then return nil end
+    local o = {}
+    local ok, found = pcall(function()
+        return nav:K2_ProjectPointToNavigation(UEHelpers.GetWorld(), p, o, nil, nil, extent)
+    end)
+    if ok and found and o.X then return { X = o.X, Y = o.Y, Z = o.Z } end
+    return nil
+end
+
+-- The length (cm) of a complete walking path from a to b, or nil (no path, or only a partial one).
+function U.path_length(a, b)
+    local nav = StaticFindObject(NAV)
+    if not U.valid(nav) then return nil end
+    local len = nil
+    pcall(function()
+        local path = nav:FindPathToLocationSynchronously(UEHelpers.GetWorld(), a, b, nil, nil)
+        if U.valid(path) and path:IsValid() and not path:IsPartial() then len = path:GetPathLength() end
+    end)
+    return len
 end
 
 return U

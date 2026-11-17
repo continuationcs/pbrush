@@ -27,11 +27,6 @@ local function phase(p)
 end
 
 -- ---------------------------------------------------------------- travel
-local function teleport_to(map, x, y, z, yaw, bell)
-    local ss = FindFirstOf("PBZSaveLoadSubsystem")
-    ss:TeleportTo(FName(map), U.transform(x, y, z, yaw), FName(U.bell_name(bell)))
-end
-
 local function save_origin()
     local p = U.pawn()
     local l, r = p:K2_GetActorLocation(), p:K2_GetActorRotation()
@@ -136,15 +131,9 @@ end
 -- ---------------------------------------------------------------- navigation
 -- The level's navigation mesh: where the boss can appear (reachable_spot), and whether the level around a spot
 -- is loaded before the player is moved there within it (go_to_arena, go_home).
-local NAV = "/Script/NavigationSystem.Default__NavigationSystemV1"
 local NAV_EXTENT = { X = 200, Y = 200, Z = 500 }
 
-local function on_nav(nav, world, point)
-    local out = {}
-    local ok, found = pcall(function() return nav:K2_ProjectPointToNavigation(world, point, out, nil, nil, NAV_EXTENT) end)
-    if ok and found and out.X then return { X = out.X, Y = out.Y, Z = out.Z } end
-    return nil
-end
+local function on_nav(point) return U.on_nav(point, NAV_EXTENT) end
 
 -- ---------------------------------------------------------------- placing the player
 -- The fight belongs on the arena's marked spot, away from the bell (user request 2026-11-15). Travel to an arena
@@ -244,8 +233,7 @@ end
 -- Whether the navigation mesh is loaded at spot: the first sign that the level is loaded there (an in-level move
 -- far from the player). Logged with why.
 local function nav_at(spot, what)
-    local nav = StaticFindObject(NAV)
-    local p = U.valid(nav) and on_nav(nav, UEHelpers.GetWorld(), spot) or nil
+    local p = on_nav(spot)
     U.log("run: %s: navigation mesh %s", what, p and string.format("found (%.0f m off the spot)", U.dist(p, spot) / 100)
         or "not found (level not loaded there)")
     return p ~= nil
@@ -302,7 +290,7 @@ local function go_to_arena()
         run.center = { X = a.x, Y = a.y, Z = a.z }
         run.land = run.center
         run.face = a.yaw
-        teleport_to(a.map, a.x, a.y, a.z, a.yaw, a.bell)
+        U.teleport(a.map, a.x, a.y, a.z, a.yaw, a.bell)
     end
 end
 
@@ -319,7 +307,7 @@ local function travel_home()
     if in_jhsy then
         tp:TeleportToBellFromJhsy({})
     else
-        teleport_to(o.map, o.x, o.y, o.z, o.yaw, o.bell)
+        U.teleport(o.map, o.x, o.y, o.z, o.yaw, o.bell)
     end
     -- Once the player stands at the starting bell again, put their state back and end the run.
     local snap, tries, settled = run.snap, 0, 0
@@ -343,7 +331,7 @@ local function travel_home()
             if settled >= 4 then
                 leg2 = true
                 U.log("run: out of the Realm of Mirage away from the starting bell; going home")
-                teleport_to(o.map, o.x, o.y, o.z, o.yaw, o.bell)
+                U.teleport(o.map, o.x, o.y, o.z, o.yaw, o.bell)
             end
         end
         return false
@@ -542,80 +530,6 @@ local DOWN_FALLBACK = 6     -- s at 0 HP after which the boss counts as down wha
 local remove_abilities      -- defined below (roster remove_abilities); checked on every tick of the fight
 local EXECUTION_LOCK = 0.01 -- share of Health_Max: a health floor this small is an execution lock (check_one)
 
--- Development log: the characters near the arena (class, distance, hidden; dead ones only counted: a dying
--- actor is never read).
-local function log_characters_near()
-    local alive, dead = {}, {}
-    for _, npc in ipairs(U.find_all("PBZCharacter_NPC")) do
-        local name = npc:GetClass():GetFName():ToString()
-        local gone = true
-        pcall(function() gone = npc:IsDead() end)
-        if gone then
-            dead[name] = (dead[name] or 0) + 1
-        else
-            local d = U.dist(npc:K2_GetActorLocation(), run.center)
-            if d < 6000 then
-                local hidden = "?"
-                pcall(function() hidden = tostring(npc.bHidden) end)
-                alive[#alive + 1] = string.format("%s %.0f m hidden %s", name, d / 100, hidden)
-            end
-        end
-    end
-    local d = {}
-    for name, n in pairs(dead) do d[#d + 1] = name .. " x" .. n end
-    U.log("run: trace   alive within 60 m: %s", #alive == 0 and "none" or table.concat(alive, ", "))
-    U.log("run: trace   dead (anywhere loaded): %s", #d == 0 and "none" or table.concat(d, ", "))
-end
-
--- Development log: the boss's abilities that are active now (by class name), with how many it has.
-local function log_active_abilities(actor)
-    local active, count = {}, 0
-    pcall(function()
-        actor.AbilitySystemComponent.ActivatableAbilities.Items:ForEach(function(_, item)
-            local spec = item:get()
-            count = count + 1
-            if spec.ActiveCount > 0 and U.valid(spec.Ability) then
-                active[#active + 1] = spec.Ability:GetClass():GetFName():ToString()
-            end
-        end)
-    end)
-    U.log("run: trace   active abilities (of %d): %s", count, #active == 0 and "none" or table.concat(active, ", "))
-end
-
--- Development log: a boss's health through the fight, to tell a boss that cannot be hurt, one that heals and one
--- that stops just above 0 (Nexus report 2026-11-16: 骨婉约 and 金面具黑衣人 took no damage, 小雪 kept healing by
--- eating corpses the player could not see, 彭猛's bar showed 0 and it did not die). Logged at the start, at each
--- new tenth of health, at every change below 2% and at every rise; the first rise of a streak lists the
--- characters near the arena and the boss's active abilities (小雪 still healed with GA_XiaoXue_RecoverHealth
--- removed, right after her thugs died, 2026-11-16).
-local function trace_health(b, actor, hp)
-    if not config.debug then return end
-    local m, hmin, hbase = nil, "?", "?"
-    pcall(function()
-        local s = actor.AttributeSetBase
-        m = s.Health_Max.CurrentValue
-        hmin, hbase = string.format("%.2f", s.Health_Min.CurrentValue), string.format("%.2f", s.Health_Min.BaseValue)
-    end)
-    if not m or m <= 0 then return end
-    local last = b.trace_hp
-    b.trace_hp = hp
-    if last == nil then
-        U.log("run: trace %s health %.2f / %.0f at the start (min %s, base %s)", b.id, hp, m, hmin, hbase)
-        return
-    end
-    if hp == last then return end
-    local rose = hp > last
-    if rose or hp <= m * 0.02 or math.floor(hp / m * 10) ~= math.floor(last / m * 10) then
-        U.log("run: trace %s health %.2f -> %.2f / %.0f (min %s, base %s)%s", b.id, last, hp, m, hmin, hbase,
-            rose and " ROSE" or "")
-    end
-    if rose and not b.trace_rising then
-        log_characters_near()
-        log_active_abilities(actor)
-    end
-    b.trace_rising = rose
-end
-
 -- One boss of the step (b = { ref, id, spawn_at, zero_at, dead_at, killed, down }); marks it down when it is.
 -- b.ref is a ref (U.ref): the game destroys a dead boss on its own schedule.
 local function check_one(b)
@@ -645,7 +559,6 @@ local function check_one(b)
         return
     end
     b.zero_at = nil        -- back above 0 (a phase change refills it)
-    trace_health(b, actor, hp)
     remove_abilities(b, actor)
     -- Execution lock: some bosses carry a tiny health floor (彭猛: Health_Min 1, base 0, from spawn) and wait on it
     -- with the bar at 0 until the player executes them; then the game drops the floor and they fall to 0. A player
@@ -868,26 +781,20 @@ local SPAWN_DIST = { 1200, 1000, 800, 600, 400 }
 local SPAWN_TURNS = { { 0, 30, -30 }, { 60, -60, 90, -90 }, { 135, -135, 180 } }
 M.SPAWN_AHEAD = SPAWN_DIST[1]
 
-local function walkable(nav, world, from, to, dist)
-    local ok, good = pcall(function()
-        local path = nav:FindPathToLocationSynchronously(world, from, to, nil, nil)
-        return U.valid(path) and path:IsValid() and not path:IsPartial() and path:GetPathLength() <= dist * 2
-    end)
-    return ok and good
+local function walkable(from, to, dist)
+    local len = U.path_length(from, to)
+    return len ~= nil and len <= dist * 2
 end
 
 local function reachable_spot(player, face)
-    local nav = StaticFindObject(NAV)
-    if not U.valid(nav) then return nil end
-    local world = UEHelpers.GetWorld()
-    local from = on_nav(nav, world, player)
+    local from = on_nav(player)
     if not from then return nil end
     for _, turns in ipairs(SPAWN_TURNS) do
         for _, dist in ipairs(SPAWN_DIST) do
             for _, turn in ipairs(turns) do
                 local r = math.rad(face + turn)
-                local spot = on_nav(nav, world, { X = from.X + math.cos(r) * dist, Y = from.Y + math.sin(r) * dist, Z = from.Z })
-                if spot and walkable(nav, world, from, spot, dist) then return spot, dist, turn end
+                local spot = on_nav({ X = from.X + math.cos(r) * dist, Y = from.Y + math.sin(r) * dist, Z = from.Z })
+                if spot and walkable(from, spot, dist) then return spot, dist, turn end
             end
         end
     end
@@ -917,13 +824,11 @@ local function place_helpers(recs)
         for _, hp in ipairs(rec.helpers or {}) do helpers[#helpers + 1] = hp end
     end
     if #helpers == 0 then return true end
-    local nav = StaticFindObject(NAV)
-    local world = UEHelpers.GetWorld()
     local c, f, r = run.center, math.rad(run.face), math.rad(run.face + 90)
     for _, hp in ipairs(helpers) do
         local want = { X = c.X + math.cos(f) * hp.fwd + math.cos(r) * hp.right,
                        Y = c.Y + math.sin(f) * hp.fwd + math.sin(r) * hp.right, Z = c.Z }
-        local at = (U.valid(nav) and on_nav(nav, world, want)) or want
+        local at = on_nav(want) or want
         local short = hp.class:match("%.([^.]+)$")
         local cls = U.load_class(hp.class)
         local h = nil
@@ -971,8 +876,7 @@ local function place_identity_points()
                 if not U.valid(cls) then U.log("run: identity %s: point class not found %s", tag, IDENTITY_POINT) return end
                 local f, ahead = math.rad(run.face), IDENTITY_AHEAD[tag] or IDENTITY_AHEAD_DEFAULT
                 local want = { X = run.center.X + math.cos(f) * ahead, Y = run.center.Y + math.sin(f) * ahead, Z = run.center.Z }
-                local nav = StaticFindObject(NAV)
-                local at = (U.valid(nav) and on_nav(nav, UEHelpers.GetWorld(), want)) or want
+                local at = on_nav(want) or want
                 local h = spawn_actor(cls, at, run.face + 180, ALWAYS_SPAWN)     -- facing the player
                 if not U.valid(h) then U.log("run: identity %s: point could not be placed", tag) return end
                 run.helpers[#run.helpers + 1] = U.ref(h)

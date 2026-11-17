@@ -10,25 +10,12 @@ local data = nil
 local function load()
     if data then return data end
     data = {}
-    local f = io.open(FILE, "r")
-    if f then
-        for line in f:lines() do
-            local k, v = line:match("^([^\t]+)\t([%d%.]+)")
-            if k then data[k] = tonumber(v) end
-        end
-        f:close()
-    end
+    for k, v in pairs(U.read_tsv(FILE)) do data[k] = tonumber(v) end
     return data
 end
 
 local function save()
-    local f = io.open(FILE, "w")
-    if not f then return end
-    local keys = {}
-    for k in pairs(data) do keys[#keys + 1] = k end
-    table.sort(keys)
-    for _, k in ipairs(keys) do f:write(string.format("%s\t%.1f\n", k, data[k])) end
-    f:close()
+    U.write_tsv(FILE, data, function(v) return string.format("%.1f", v) end)
 end
 
 function M.best(key)
