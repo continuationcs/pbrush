@@ -3,14 +3,10 @@ from pathlib import Path
 
 SCRIPTS = Path(__file__).resolve().parents[1] / 'mod' / 'BossRush' / 'Scripts'
 b = json.load(open(r'F:\C\pbzero\src\pbzero\data\bosses.json', encoding='utf-8'))['bosses']
-# Bosses whose skills need level-placed points (DESIGN 5.2) or confirmed vanishing: closed for now.
-# LionDancer_P2: its summons are placed around the level's lion-dance poles; without them the last lion head
-# (tagged HouHouHou.LastOne) cannot be killed (player report on Nexus, 0.1.1).
-# YuBi, MengHua: level-placed snap points (BP_YuBi_SnapPoint, BP_MengHua_XuKong_SnapPoint) register with the
-# targeting world subsystem instead of being found with GetActorOfClass, which the first scan missed. YuBi's
-# CA_02 snaps to the nearest one, i.e. her own level, and took the player there (bug report on Nexus, 0.1.2).
-anchored = ['ZuoShang', 'LengTu', 'YuZan', 'GuiChai_Red', 'QiShu', 'DuYan', 'ChiLian_P2', 'MoYuan', 'MoTian',
-            'YanQianSui', 'CanQu', 'DangHui', 'LionDancer_P2', 'MengHua']
+# Bosses that cannot be fought outside their own level and stay closed (state "anchored", exact ids): none since
+# 2026-11-18, when 冷荼 opened. Level-dependent bosses are fought with helper points (HELPERS) and the run's
+# identity points; a new one found by asset_scan.py deps (DESIGN 5.2, UPDATE.md) goes here until it has them.
+anchored = []
 story = ['Tutorial', 'HorseCart', 'Prologue']
 
 # Codex entry 013 has three parts: 红衣女剑客 (BossName_013_0), 七星剑阵：大师兄 (_1), 大师兄的绝望剑意 (_2). bosses.json
@@ -198,44 +194,8 @@ TOGETHER = {
 }
 PART_OF = {later: first for first, steps in PHASES.items() for step in steps for later in step}
 PART_OF.update({other: first for first, (order, _, _) in TOGETHER.items() for other in order if other != first})
-# Level-dependent bosses confirmed in game (2026-11-13), open although their names match `anchored`: with helper
-# points (HELPERS), or with no level lookup at all.
-# BP_Monster_GuiChai_Red_P2 needs no helper (its CA_02 spawns its own safe zone).
-# BP_Monster_MoTian, BP_Monster_MoTian_LongZhu_01: no level lookup (Skill_08 spawns its own pillars); they were
-# closed only because their spawner sits in a level-only space.
-opened = ['BP_Monster_MengHua', 'BP_Monster_FemaleVessel_YuZan', 'BP_Monster_DuYanBoss', 'BP_Monster_YanQianSui',
-          'BP_Monster_CanQu_BiHai', 'BP_Monster_GuiChai_Red', 'BP_Monster_GuiChai_Red_P2', 'BP_Monster_ChiLian_P2',
-          'BP_Monster_MoTian', 'BP_Monster_MoTian_LongZhu_01', 'BP_Monster_ZuoShang_Ending', 'BP_Monster_LionDancer_P2',
-          # Opened 2026-11-15 (user test in the Realm of Mirage: each fought to the end, killed, result screen).
-          'BP_Monster_QiShu_Huo', 'BP_Monster_QiShu_Lei', 'BP_Monster_QiShu_Du', 'BP_Monster_QiShu_Bing',
-          'BP_Monster_Danghui', 'BP_Monster_ZuoShang_P2',
-          'BP_Monster_ZuoShang',   # with CLEAR_HEALTH_MIN, second test 2026-11-15
-          # Opened 2026-11-15 (user test: duel at 白影陨落之处 and as 铁马残阳's last fight, killed, result screen).
-          'BP_Monster_FengXueDaoKe',
-          # Opened 2026-11-18 (user decision, as it is): fought to the end in several runs. Starts in phase 4 with a
-          # save whose story fight got that far (WATCH_TAGS); the cause could not be reached from the mod.
-          'BP_Monster_LengTu']
-# Bosses still being tried: offered in development builds only (config.debug); moved to `opened` once tested.
-# BP_Monster_ZuoShang_Ending (opened 2026-11-13) was fought at its original arena until the player was put inside
-#   a building there (its CA_03 snap point lies in an interior space); with its points in the arena it passed.
-# BP_Monster_LionDancer_P2 (opened 2026-11-14) is fought only at its own battlefield (arenas.lua kind "own").
-# Round of 2026-11-15 (all opened, see `opened`):
-# - 炎茹, 雷婷, 蛊鹤 (QiShu_Huo / _Lei / _Du): no level lookup found offline and none at run time (no identity
-#   action loaded). 炎茹's flight to 0,0,0 in round 11 did not happen again.
-# - 寒岁, 荡秽: helper points (HELPERS), 荡秽 with its fighting class (CLASS_FIX).
-# - 龙体左殇 (ZuoShang_P2): its dragon pillars are the boss's own (the boss blueprint prepares, throws and cancels
-#   them; no map cell holds one: offline scan of all 80974 map packages). Its spawner sits in 断魂崖's persistent
-#   level next to the silver-haired 左殇's (PBZ_Duanhun_WP), so in the game it is that fight's second phase. Its
-#   original battlefield cannot be walked to (user, 2026-11-15): fought in the usual arenas, as its own entry
-#   (user decision 2026-11-15: not a second phase of the silver-haired 左殇).
-# - 组织冥主：左殇 (black-haired): could not be killed (Health_Min 6400); opened with CLEAR_HEALTH_MIN.
-# - 风雪刀客 (FengXueDaoKe, added 2026-11-15): no level lookup found offline (deps names one GetActorOfClass, in its
-#   _NPC variant only). Its Health_Min turns 1 near the end (base 0): an execution lock, ended by the forced Kill.
-# Round of 2026-11-17 (opened 2026-11-18, see `opened`):
-# - 冷荼 (LengTu): helper points (HELPERS) and its summons (SUMMONS). Its final phase looks up
-#   BP_Monster_LionDancer_P2_NPC, which its P4 passive summons (no map holds one: DESIGN 5.2 had taken it for a level
-#   NPC). A spawned 冷荼 carries all its summon passives (44 abilities) and goes P1 -> P5 -> Final, invulnerable
-#   until Final, then dies by the forced Kill at 0 HP.
+# Bosses still being tried: offered in development builds only (config.debug), open once the user confirms them in
+# game. Each round's findings (helper points, health floors, 冷荼's phase taken from the save) are in DESIGN 5.2.
 testing = []
 
 def q(s):
@@ -261,9 +221,7 @@ for x in b:
         st = 'story'
     elif x['id'] in testing:
         st = 'testing'
-    elif x['id'] in opened:
-        st = 'open'
-    elif any(k.lower() in x['id'].lower() for k in anchored):
+    elif x['id'] in anchored:
         st = 'anchored'
     counts[st] = counts.get(st, 0) + 1
     helpers = ''

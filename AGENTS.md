@@ -270,7 +270,8 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
   (`src/tools/gen_roster.py`): the run spawns the same marker classes in the arena before the boss and destroys
   them after (`run.lua` `place_helpers`). Works when the markers are root-only actors (eleven bosses confirmed
   2026-11-13). The log counts original markers still loaded nearby: a skill taking the nearest or the first one
-  may pick those. The rest are `state = "anchored"` and not offered. (Fighting them at their original arena,
+  may pick those. A boss that cannot be helped that way is `state = "anchored"` and not offered (none since 冷荼
+  opened, 2026-11-18). (Fighting them at their original arena,
   "原址", was removed: the points can sit in interior spaces, and one put the player inside a building.)
   Lookups come in two kinds: `GetActorOfClass` and the **targeting subsystem** (markers call `RegisterTarget` on
   BeginPlay, skills call `GetTargets` / `FindNearestActor`). The first scan only knew the first kind and marked
