@@ -305,6 +305,16 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
   `start_summons`, 2026-11-16). To see what a monster has, read its `AbilitySystemComponent.ActivatableAbilities.
   Items` (each spec: `Ability` class default, `Handle`, `ActiveCount`, instance arrays); finding ability objects by
   a Blueprint base class name (`U.find_all("GA_SummonPassive_MonsterBase_C")`) found nothing.
+- **A spawned boss can start where the player's story left it**: 冷荼 spawned in phase 4 (`Phase.P4` before any
+  scaling) with a save whose story fight had got that far, and in phase 1 with an early 二周目 save (2026-11-18).
+  Not the cause: scaling, its flow component's saved record (`BP_PBZFlowComponent.OwnerActorSaveData`, empty), its
+  `StateId` (None), tags on the player. Only the phase-4 save held the level actor record `LengTu_Combat`
+  (`UPBZLevelActorManager.ActorSaveData`), an id named in `BP_Monster_LengTu`; how it is read is not visible
+  offline (Blueprint name maps are partly compressed), and the mod does not touch the save, so 冷荼 was opened as it
+  is (user decision). Log a multi-phase boss's phase tags at spawn (roster `watch_tags`) and test with more than
+  one save. The story's global tags (`UEventPipelineManager.CacheTags`, 1256 in a late save) are named in Chinese
+  (`dhs.击杀.冷荼`): search them by the Chinese name, not the class name. Log totals with any filtered list: an empty
+  match list cannot be told from a failed read otherwise (one round lost, 2026-11-18).
 - **Removing an ability**: `ClearAbility` needs the spec's own `Handle` struct read from `ActivatableAbilities`; a
   table `{ Handle = n }` built from the number was accepted silently and removed nothing (a log line said
   "removed" without checking: read the list again after such a call). One per call, the list read again each time.

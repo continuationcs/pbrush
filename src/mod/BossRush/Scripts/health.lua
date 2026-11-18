@@ -76,10 +76,12 @@ local NATIVE = {
     -- Bells, to measure how far a fight is from one (U.nearest_bell).
     { "/Script/ProjectPBZ.PBZCheckPoint", optional = true },
     -- A boss's summon passive (roster summon, run.lua start_summons) and abilities taken from it (roster
-    -- remove_abilities, run.lua remove_abilities).
+    -- remove_abilities, run.lua remove_abilities); the gameplay tags a boss carries (roster watch_tags, development
+    -- log).
     { "/Script/ProjectPBZ.PBZCharacter", props = { "AbilitySystemComponent" }, optional = true },
     { "/Script/GameplayAbilities.AbilitySystemComponent",
-      funcs = { "K2_GiveAbility", "TryActivateAbilityByClass", "ClearAbility" }, props = { "ActivatableAbilities" },
+      funcs = { "K2_GiveAbility", "TryActivateAbilityByClass", "ClearAbility", "GetGameplayTagCount" },
+      props = { "ActivatableAbilities" },
       optional = true },
     { "/Script/GameplayAbilities.AbilitySystemBlueprintLibrary", funcs = { "SendGameplayEventToActor" }, optional = true },
 }

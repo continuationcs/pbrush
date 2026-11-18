@@ -93,6 +93,14 @@ HELPERS = {
     # 荡秽: its summon attack (GA_DangHui_SummonAttack) looks up the centre point.
     'BP_Monster_Danghui': [(M + 'DangHui/Ability/Passive/BP_Monster_DangHui_ToCenter.BP_Monster_DangHui_ToCenter_C',
                             0, 0)],
+    # 冷荼: GA_LengTu_ToBattle_Teleport and GA_LengTu_SwitchPhase_Teleport snap it to their points (entrance, each
+    # phase change); its summon passives put their bosses on the summon slots (P1 slot 01, P2-P4 slots 02 and 03).
+    # All sit in 断魂崖's persistent level (PBZ_Duanhun_WP, asset_scan.py maps 2026-11-17). The original layout is
+    # not known: both snap points where the boss stands (12 m ahead), slot 01 4 m behind it, 02 / 03 8 m aside.
+    'BP_Monster_LengTu': [(M + '077_LengTu/' + n + '.' + n + '_C', f, r) for n, f, r in (
+        ('BP_LengTu_ToBattle_SnapPoint', 1200, 0), ('BP_LengTu_SwitchPhase_SnapPoint', 1200, 0),
+        ('BP_LengTu_SummonSlot_01', 1600, 0), ('BP_LengTu_SummonSlot_02', 1200, -800),
+        ('BP_LengTu_SummonSlot_03', 1200, 800))],
 }
 
 # Summons scaled like their boss (the game sizes some of their values from the boss's, see run.lua check_summons);
@@ -104,6 +112,12 @@ SUMMONS = {
     'BP_Monster_LionDancer_P2': ['BP_Monster_DaTouWaWa_HouHouHou_C'],
     'BP_Monster_XiaoXue': ['BP_Monster_FemaleThug_%s_ForXiaoXue_C' % k
                            for k in ('Fuhuai', 'BigKnife', 'Dart', 'Hoe', 'Molotov', 'RongZhuang', 'TwinHoe')],
+    # 冷荼 summons a boss or two in each of its five phases (its GA_LengTu_SummonPassive_P1..P5, offline 2026-11-17);
+    # none is placed in any map, so its passives spawn them. Scaled like it, as its level's fight would size them.
+    'BP_Monster_LengTu': ['BP_Monster_%s_C' % k for k in (
+        'Scavenger_LengTu', 'PengMeng_Axe_NPC', 'GuiChai_Cyan_ShuangYue_LengTu', 'GuiChai_Yellow_MoDao_LengTu',
+        'HuaShan_Blue_NPC', 'EMei_Sword_NPC', 'FengXueDaoKe_NPC', 'FemaleVessel_YuDing_LengTu', 'YuBi_LengTu',
+        'FemaleDoll_Golden_LengTu', 'FemaleDoll_TieChiSan_LengTu', 'LionDancer_P2_NPC', 'LeiDang_NPC')],
 }
 
 # A summon passive the boss's level grants it, and the gameplay event that makes it summon. A spawned 小雪 had 22
@@ -114,6 +128,17 @@ SUMMONS = {
 SUMMON_PASSIVE = {
     'BP_Monster_XiaoXue': ('/PBZCombatAsset/ActorData/Mobs/027_XiaoXue/Ability/GA_SummonPassive_XiaoXue.'
                            'GA_SummonPassive_XiaoXue_C', 'GameplayEvent.SelfSummon'),
+}
+
+# Gameplay tags the development log follows on a boss: their counts at spawn and each change during the fight. 冷荼 starts in phase 4 with a save whose story fight got that far and in phase 1
+# with an early 二周目 save (Phase.P4 / P1 before scaling: not the scaling, 2026-11-18). Its spawn passive
+# (GA_LengTu_GeneralSpawn_Passive) knows the Save.P2-P4 tags, and BP_Monster_LengTu names the record id
+# LengTu_Combat, which only the phase-4 save holds (UPBZLevelActorManager.ActorSaveData). Not on 冷荼 or the player,
+# not in its flow component's record, not its StateId (None). Tags read offline from its assets' name maps.
+WATCH_TAGS = {
+    'BP_Monster_LengTu': ['CharacterState.AbilityState.LengTu.' + t for t in (
+        'Save.P2', 'Save.P3', 'Save.P4', 'Phase.P1', 'Phase.P2', 'Phase.P3', 'Phase.P4', 'Phase.P5', 'Phase.Final',
+        'FirstTimeSummon', 'IsInvulnerable', 'OffCombat', 'EnableMetaAI', 'HasBindingWire')],
 }
 
 # Abilities the run takes from the boss (class names). 小雪's GA_XiaoXue_RecoverHealth, picked by her AI from her
@@ -186,7 +211,10 @@ opened = ['BP_Monster_MengHua', 'BP_Monster_FemaleVessel_YuZan', 'BP_Monster_DuY
           'BP_Monster_Danghui', 'BP_Monster_ZuoShang_P2',
           'BP_Monster_ZuoShang',   # with CLEAR_HEALTH_MIN, second test 2026-11-15
           # Opened 2026-11-15 (user test: duel at 白影陨落之处 and as 铁马残阳's last fight, killed, result screen).
-          'BP_Monster_FengXueDaoKe']
+          'BP_Monster_FengXueDaoKe',
+          # Opened 2026-11-18 (user decision, as it is): fought to the end in several runs. Starts in phase 4 with a
+          # save whose story fight got that far (WATCH_TAGS); the cause could not be reached from the mod.
+          'BP_Monster_LengTu']
 # Bosses still being tried: offered in development builds only (config.debug); moved to `opened` once tested.
 # BP_Monster_ZuoShang_Ending (opened 2026-11-13) was fought at its original arena until the player was put inside
 #   a building there (its CA_03 snap point lies in an interior space); with its points in the arena it passed.
@@ -203,6 +231,11 @@ opened = ['BP_Monster_MengHua', 'BP_Monster_FemaleVessel_YuZan', 'BP_Monster_DuY
 # - 组织冥主：左殇 (black-haired): could not be killed (Health_Min 6400); opened with CLEAR_HEALTH_MIN.
 # - 风雪刀客 (FengXueDaoKe, added 2026-11-15): no level lookup found offline (deps names one GetActorOfClass, in its
 #   _NPC variant only). Its Health_Min turns 1 near the end (base 0): an execution lock, ended by the forced Kill.
+# Round of 2026-11-17 (opened 2026-11-18, see `opened`):
+# - 冷荼 (LengTu): helper points (HELPERS) and its summons (SUMMONS). Its final phase looks up
+#   BP_Monster_LionDancer_P2_NPC, which its P4 passive summons (no map holds one: DESIGN 5.2 had taken it for a level
+#   NPC). A spawned 冷荼 carries all its summon passives (44 abilities) and goes P1 -> P5 -> Final, invulnerable
+#   until Final, then dies by the forced Kill at 0 HP.
 testing = []
 
 def q(s):
@@ -215,6 +248,7 @@ lines = ['-- Generated by src/tools/gen_roster.py from pbzero bosses.json.',
          '-- summons: classes of the boss\'s summons, scaled like the boss; their Kill is forced when they wait at 0 HP for an execution.',
          '-- summon: a summon passive its level would grant (ability class) and the gameplay event that starts it (event tag).',
          '-- remove_abilities: class names of abilities the run takes from the boss.',
+         '-- watch_tags: gameplay tags the development log follows on the boss (at spawn and each change).',
          '-- phases: later phases of a boss fought in several (each a list of bosses that appear together); part_of: the first phase of the boss this record is a later phase of (or appears with).',
          '-- together: all the bosses that appear at the start, this one included, in spawn order; one entry named fight_zh / fight_en.',
          '-- clear_health_min: the run sets the boss\'s health floor (Health_Min) to 0, or it could never die.',
@@ -241,6 +275,8 @@ for x in b:
     if x['id'] in SUMMON_PASSIVE:
         ability, event = SUMMON_PASSIVE[x['id']]
         helpers += ', summon = { ability = %s, event = %s }' % (q(ability), q(event))
+    if x['id'] in WATCH_TAGS:
+        helpers += ', watch_tags = { %s }' % ', '.join(q(t) for t in WATCH_TAGS[x['id']])
     if x['id'] in REMOVE_ABILITIES:
         helpers += ', remove_abilities = { %s }' % ', '.join(q(c) for c in REMOVE_ABILITIES[x['id']])
     if x['id'] in PHASES:

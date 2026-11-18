@@ -557,6 +557,7 @@ local DOWN_AFTER = 2        -- s after the game confirms the boss's death (its d
 local FORCE_KILL = 0.8      -- s at 0 HP without dying (waiting for an execution) before the game's Kill is forced
 local DOWN_FALLBACK = 6     -- s at 0 HP after which the boss counts as down whatever the game says
 local remove_abilities      -- defined below (roster remove_abilities); checked on every tick of the fight
+local tags_line             -- defined below (roster watch_tags, development log)
 local EXECUTION_LOCK = 0.01 -- share of Health_Max: a health floor this small is an execution lock (check_one)
 
 -- One boss of the step (b = { ref, id, spawn_at, zero_at, dead_at, killed, down }); marks it down when it is.
@@ -589,6 +590,15 @@ local function check_one(b)
     end
     b.zero_at = nil        -- back above 0 (a phase change refills it)
     remove_abilities(b, actor)
+    if b.watch then
+        -- Development log: the watched tags whenever the set changes (the health in the line is not compared).
+        local line = tags_line(actor, b.watch)
+        local set = line and line:match("^(.-) |")
+        if set ~= b.tags_seen then
+            b.tags_seen = set
+            U.log("run: %s tags now: %s", b.id, tostring(line))
+        end
+    end
     -- Execution lock: some bosses carry a tiny health floor (彭猛: Health_Min 1, base 0, from spawn) and wait on it
     -- with the bar at 0 until the player executes them; then the game drops the floor and they fall to 0. A player
     -- who did not execute could not end the fight (Nexus report 2026-11-16; log 2026-11-16: 彭猛 sat at 1 HP for
@@ -690,6 +700,22 @@ local function attr(ch, name)
     local v = nil
     pcall(function() v = ch.AttributeSetBase[name].CurrentValue end)
     return v and string.format("%.0f", v) or "?"
+end
+
+-- Development log, roster watch_tags: which of those gameplay tags the boss carries (its ability component's
+-- tag counts), with its health, as one line: "Save.P4=1 Phase.P1=1 | health 4500/4500". Only tags it carries are
+-- listed, each by the last two parts of its name. nil when the tags cannot be read.
+tags_line = function(ch, tags)
+    local asc = ch.AbilitySystemComponent
+    if not U.valid(asc) then return nil end
+    local on = {}
+    for _, t in ipairs(tags) do
+        local ok, n = pcall(function() return asc:GetGameplayTagCount(tag_of(t)) end)
+        if not ok then return nil end
+        if n and n > 0 then on[#on + 1] = string.format("%s=%d", t:match("[^.]+%.[^.]+$") or t, n) end
+    end
+    return string.format("%s | health %s/%s", #on > 0 and table.concat(on, " ") or "none", attr(ch, "Health"),
+        attr(ch, "Health_Max"))
 end
 
 -- Development log: the attributes that decide whether a summon can be hurt and executed (see check_summons).
@@ -982,6 +1008,10 @@ local function spawn_boss(rec, at)
         local lc = a.LootComp
         if U.valid(lc) then lc:K2_DestroyComponent(lc) U.log("run: loot component removed") end
     end)
+    -- The phase a boss spawns in (冷荼: phase 4 or 1, by the player's save) is set before it is scaled.
+    if config.debug and rec.watch_tags then
+        U.log("run: %s tags at spawn: %s", rec.id, tostring(tags_line(a, rec.watch_tags)))
+    end
     scale.apply(a, run.difficulty, run.tier)
     return a
 end
@@ -1111,6 +1141,23 @@ remove_abilities = function(b, actor)
     end
 end
 
+-- Development log, for a boss still being tried (roster state "testing"): the abilities it carries when its AI
+-- starts. A spawned boss may lack what its level grants (小雪 had no summon passive, 2026-11-16): one test round
+-- then shows which are there.
+local function log_abilities(b, actor)
+    if not (config.debug and b.testing) then return end
+    local names = {}
+    local ok, e = pcall(function()
+        actor.AbilitySystemComponent.ActivatableAbilities.Items:ForEach(function(_, item)
+            local cdo = item:get().Ability
+            names[#names + 1] = U.valid(cdo) and cdo:GetClass():GetFName():ToString() or "?"
+        end)
+    end)
+    if not ok then U.log("run: %s abilities not read: %s", b.id, tostring(e)) return end
+    table.sort(names)
+    U.log("run: %s has %d abilities: %s", b.id, #names, table.concat(names, " "))
+end
+
 -- Holds a boss of run.actors still for HOLD_MS, then starts its AI. The AI may start after the boss is spawned
 -- (when its controller takes it over): while held, an AI found started is stopped again, and counted in the log.
 local function hold(b)
@@ -1118,7 +1165,10 @@ local function hold(b)
     local ai = actor and ai_component(actor)
     if not ai then
         U.log("run: hold %s: no AI component, the boss starts at once", b.id)
-        if actor then start_summons(b, actor) end
+        if actor then
+            log_abilities(b, actor)
+            start_summons(b, actor)
+        end
         return
     end
     U.log("run: hold %s: AI started %s at spawn", b.id, tostring(ai.bAIStarted))
@@ -1133,6 +1183,7 @@ local function hold(b)
         if held >= HOLD_MS then
             c:StartAI()
             U.log("run: hold %s over: AI started %s (stopped again %d times)", b.id, tostring(c.bAIStarted), restops)
+            log_abilities(b, a)
             start_summons(b, a)
             return true
         end
@@ -1162,7 +1213,8 @@ local function appear(recs, spots, omens)
         local a = spawn_boss(rec, spots[k].at)
         if not a then finish("error") return end
         local b = { ref = U.ref(a), id = rec.id, spawn_at = spots[k].at, clear_min = rec.clear_health_min,
-                    summon = rec.summon, remove = rec.remove_abilities }
+                    summon = rec.summon, remove = rec.remove_abilities, testing = rec.state == "testing",
+                    watch = config.debug and rec.watch_tags or nil }
         run.actors[#run.actors + 1] = b
         reveal(a)
         local hmin = attr(a, "Health_Min")
