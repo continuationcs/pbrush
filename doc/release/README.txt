@@ -1,7 +1,9 @@
 Trial of Echoes (残影试炼, BOSS RUSH) for Phantom Blade Zero
 =============================================================
 
-Fight the game's bosses again, any time, from any Bell. The mode is built into the Bell menu and uses the
+Fight the game's bosses again, any time, from any Bell. Gamepad friendly.
+
+The mode is built into the Bell menu and uses the
 game's own buttons, fonts, transitions and boss health bar, so it plays like part of the game.
 
 MODES
@@ -64,7 +66,8 @@ COMPATIBILITY
   - Mods that bind keyboard keys are unaffected: this mod binds none.
 
 KNOWN LIMITATIONS
-  - 74 bosses are available; only Leng Tu, whose skills rely on its own level, is not offered yet.
+  - All 75 bosses are available. Leng Tu starts from its fourth phase on a save whose story fight with it
+    got that far: the game keeps that in your save, and the mod does not touch it.
     The Lion Dance Grandmaster is fought only at its own battlefield, The Sealed Lion, once its Bell is
     rung in this playthrough. The Gold-Masked One and Mo Yuan are fought at The Lóng Pillar once its Bell
     is rung, at another arena before that.

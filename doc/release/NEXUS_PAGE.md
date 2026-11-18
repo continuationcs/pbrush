@@ -1,8 +1,34 @@
 # Nexus Mods 发布页内容（复制粘贴用）
 
-**已发布（2026-11-12）**：https://www.nexusmods.com/phantombladezero/mods/1099 ，名称 BOSS RUSH，文件 BOSS RUSH 0.1.0。页面顶部的 mod 版本号仍显示 1，需在 General 页改为 0.1.0。旧草稿 1098 已改名「BOSS RUSH old」，未发布；新版上传页没有删除入口，需要时联系 Nexus 客服删除。
+**已发布（2026-11-11）**：https://www.nexusmods.com/phantombladezero/mods/1099 ，名称 BOSS RUSH，文件 BOSS RUSH。
 
-上传文件：`out/BossRush-0.1.7.zip`（0.1.4 之前：0.1.3 未发布，直接跳到 0.1.4）；主图：`doc/release/main_image.png`（1920×1080，上传到 Images，设为 primary）
+上传文件：`out/BossRush-0.1.8.zip`；主图：`doc/release/main_image.png`（1920×1080，上传到 Images，设为 primary）
+
+## 0.1.8 更新说明（Changelog / 文件说明）
+
+自 0.1.7（35e1f61）以来的改动。
+
+```
+- New boss: Leng Tu, Herald of the Veil. All five phases in one go, calling up the bosses of each phase, in any
+  arena. All 75 bosses are open now. On a save whose story fight with Leng Tu reached its fourth phase, the game
+  starts it there in the challenge too; the mod leaves your save alone, so it stays that way.
+- Every boss now falls with the game's boss-defeat banner (斩), once per fight; before, only some bosses showed it.
+- Fix: in the Realm of Mirage you were moved to a fixed spot to fight. Entered from some Bells (Xigu, for one)
+  that spot was far from where you arrive and not yet loaded, so you fell into the void, and it counted as a game
+  death. The fight now starts right where you arrive. Thanks to sara1ovo for the report.
+- Fix: a death before the first boss appears now ends the run as Undying Grudge instead of leaving it waiting.
+```
+
+中文：
+
+```
+- 新开放首领：梦差：冷荼。五个阶段连着打，各阶段照常召来手下的首领，任意场地都能打。至此 75 位首领全部开放。
+  剧情里和冷荼打到过第四阶段的存档，挑战里它也从第四阶段打起；mod 不改存档，所以这一点保持原样。
+- 每位首领倒下时都会出现游戏的「斩」字，一场只出现一次；以前只有部分首领有。
+- 修复：镜花水月里原先会把你挪到一个固定的点开打。从某些铃铛（比如溪谷）进去时，那个点离入口很远、地面还没加载，
+  人会掉进虚空，算作一次游戏死亡。现在就在进入的地方开打。感谢 sara1ovo 的反馈。
+- 修复：首领出现之前战死，挑战现在会以「饮恨」结束，不再一直等着。
+```
 
 ## 0.1.7 更新说明（Changelog / 文件说明）
 
@@ -188,11 +214,11 @@
 | 字段 | 填写 |
 |---|---|
 | Mod name | BOSS RUSH（名称里不能用中文） |
-| Version | 0.1.7 |
+| Version | 0.1.8 |
 | Category | Gameplay |
 | Language | English（页面描述里同时放了中文） |
 | Requirements → Nexus requirements | UE4SS for Phantom Blade Zero（phantombladezero/mods/13），说明填：Required. Install and test it first. |
-| File name | BOSS RUSH 0.1.7 |
+| File name | BOSS RUSH 0.1.8 |
 | File category | Main files |
 | File description | Extract into <game>\platform\steam\ue4ss\Mods\ |
 | Permissions / credits | 致谢 RE-UE4SS 团队、KintaroModding 与 mastersoul2（见描述末尾）。资产权限按你的意愿选择。 |
@@ -206,7 +232,9 @@ Fight the bosses again from any Bell. Duel any boss or run themed boss gauntlets
 ```
 [size=5][b]Trial of Echoes (残影试炼)[/b][/size]
 
-Fight the game's bosses again, any time, from any Bell. The mode lives in the Bell menu and uses the game's own buttons, fonts, transitions and boss health bar, so it feels like part of the game. Gamepad friendly.
+Fight the game's bosses again, any time, from any Bell. Gamepad friendly.
+
+The mode lives in the Bell menu and uses the game's own buttons, fonts, transitions and boss health bar, so it feels like part of the game. 
 
 [size=4][b]Modes[/b][/size]
 [list]
@@ -247,7 +275,7 @@ Edit [code]BossRush\Scripts\config.lua[/code] and restart the game: boss scaling
 
 [size=4][b]Known limitations[/b][/size]
 [list]
-[*]74 bosses are available; only Leng Tu, whose skills rely on its own level, is not offered yet. The Lion Dance Grandmaster is fought only at its own battlefield, The Sealed Lion, once its Bell is rung in this playthrough. The Gold-Masked One and Mo Yuan are fought at The Lóng Pillar once its Bell is rung, at another arena before that.
+[*]All 75 bosses are available. Leng Tu starts from its fourth phase on a save whose story fight with it got that far: the game keeps that in your save, and the mod does not touch it. The Lion Dance Grandmaster is fought only at its own battlefield, The Sealed Lion, once its Bell is rung in this playthrough. The Gold-Masked One and Mo Yuan are fought at The Lóng Pillar once its Bell is rung, at another arena before that.
 [*]The roguelike mode (Myriad) is not included yet.
 [*]Text: Simplified Chinese or English.
 [*]Made and tested on the Steam version, game build CL-302256.
@@ -265,7 +293,9 @@ Edit [code]BossRush\Scripts\config.lua[/code] and restart the game: boss scaling
 
 [size=5][b]残影试炼[/b][/size]
 
-随时随地，在任意铃铛处再战昔日强敌。入口在铃铛菜单里，用游戏自己的按钮、字体、转场和首领血条，玩起来就像游戏自带的模式。支持手柄。
+随时随地，在任意铃铛处，再战昔日强敌。完美支持手柄。
+
+入口在铃铛菜单里，用游戏自己的按钮、字体、转场和首领血条，玩起来就像游戏自带的模式。
 
 [b]模式[/b]
 [list]
@@ -280,7 +310,7 @@ Edit [code]BossRush\Scripts\config.lua[/code] and restart the game: boss scaling
 [*]首领数值按你的进度、用游戏自己的等级曲线提升；难度跟随游戏设置；嫌不够难，可在「设置」里选「敌方 · 强度 · 二重～五重」，首领生命和攻击更高。
 [*]随时可在游戏菜单选「残影试炼：退出战斗」退出（系统 → 退出游戏）。
 [*]结束后显示结算画面和最佳纪录，按确认键回到出发的铃铛，血量和药瓶恢复如初。
-[*]没有副作用：不掉落、不给意识尘埃、不影响图鉴、任务和剧情；不写入存档。最佳纪录和设置存在 [code]<游戏目录>\ProjectPBZ\Saved[/code]（BossRushScorepad.tsv、BossRushSettings.tsv），重装 mod 也不丢。
+[*]无副作用：不掉落、不给意识尘埃、不影响图鉴、任务和剧情；不写入存档。最佳纪录和设置存在 [code]<游戏目录>\ProjectPBZ\Saved[/code]（BossRushScorepad.tsv、BossRushSettings.tsv），重装 mod 也不丢。
 [/list]
 
 [b]前置[/b]：[url=https://www.nexusmods.com/phantombladezero/mods/13]KintaroModding 的影之刃零版 UE4SS[/url]，请先安装并确认可用。
@@ -289,7 +319,7 @@ Edit [code]BossRush\Scripts\config.lua[/code] and restart the game: boss scaling
 
 [b]兼容性[/b]：只增加内容，不替换游戏文件、不改存档，可与其他 UE4SS Lua mod、.pak mod 共存；只可能与改动铃铛菜单、游戏菜单、对话选项按钮或提示条的 mod 冲突；改怪物数值或难度的 mod 会连带影响挑战首领的强度。
 
-[b]已知限制[/b]：目前开放 74 位首领，只有技能依赖原关卡的梦差冷荼暂未开放；舞狮尊主只在它的战场「尊主封印地」打（本周目敲响其铃铛后），金面具黑衣人和魔渊在「龙柱」铃铛敲响后在龙柱打，之前在其他场地；肉鸽玩法「万象」暂未加入；文字为简体中文或英文。
+[b]已知限制[/b]：75 位首领全部开放；剧情里和梦差冷荼打到过第四阶段的存档，挑战里它也从第四阶段打起（进度记在存档里，mod 不改存档）；舞狮尊主只在它的战场「尊主封印地」打（本周目敲响其铃铛后），金面具黑衣人和魔渊在「龙柱」铃铛敲响后在龙柱打，之前在其他场地；肉鸽玩法「万象」暂未加入；文字为简体中文或英文。
 
 [b]致谢[/b]
 [list]

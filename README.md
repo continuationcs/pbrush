@@ -11,7 +11,7 @@ Published on Nexus Mods: <https://www.nexusmods.com/phantombladezero/mods/1099>
 ## Features
 
 - Entry in the Bell menu, below Traverse; gamepad navigation works.
-- **Duel**: any of 74 bosses (57 entries: a boss with several phases, or bosses that fight together, are one
+- **Duel**: any of 75 bosses (58 entries: a boss with several phases, or bosses that fight together, are one
   entry). **Gauntlet**: A Thousand Echoes (every boss, in nine stages by map) and 11 themed groups (Gentle Jade,
   Hidden Edge, Under the Shadow Sovereign, Shadow Wardens, Puppet Theatre, The Acolytes, Three Masks, Perils of
   the Wulin, Madmen of the Wulin, Strange Tales, Iron Steeds, Setting Sun, Grudges of the Sword Tomb), each
@@ -55,7 +55,7 @@ editing).
 powershell -File src\tools\install.ps1 -Mods BossRush
 
 # build the release zip into out\ (debug log switched off in the copy)
-python src\tools\build_release.py 0.1.7
+python src\tools\build_release.py 0.1.8
 ```
 
 Logs go to `<game>\platform\steam\ue4ss\UE4SS.log` with the prefix `[BossRush]`.
@@ -75,7 +75,7 @@ Made against the Steam build CL-302256 with UE4SS experimental 3.0.1. See `AGENT
 
 ## 中文
 
-给《影之刃零》加一个「残影试炼」模式的 UE4SS Lua mod：在任意铃铛处单挑任一首领，或按主题连战一组首领。
+《影之刃零》「残影试炼」模式 UE4SS Lua mod：在任意铃铛处单挑任一首领，或按主题连战一组首领。
 入口在铃铛菜单“穿行”下方，用的是游戏自己的按钮、字体、提示条、结算版式和首领血条，支持手柄。
 
 - **安装**：先装 [OFFICIAL UE4SS for PBZ](https://www.nexusmods.com/phantombladezero/mods/13)，再把发布包解压到
@@ -83,7 +83,7 @@ Made against the Steam build CL-302256 with UE4SS experimental 3.0.1. See `AGENT
 - **连战**：千影归来（全部首领，按地图分九段）和 11 个主题组。
 - **场地**：站在场地上就原地开打，否则去为该首领或该组选定的场地（敲响其铃铛后），或随机一处去过的名胜，打完回到出发的铃铛。
 - **数值**：按进度用游戏自己的等级曲线提升，难度跟随游戏设置。
-- **没有副作用**：不掉落、不给意识尘埃、不写图鉴、不改存档；血量和药瓶恢复。
+- **无副作用**：不掉落、不给意识尘埃、不写图鉴、不改存档；血量和药瓶恢复。
 - 设计和决定记录在 `doc/DESIGN.md`，文案在 `doc/COPY.md`。
 
 ### 致谢
