@@ -459,12 +459,14 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
 - **The Realm of Mirage has more than one entrance**: where `TeleportToJhsy` lands depends on where it is entered
   from. The arena spot was marked 8 m from the entrance used on 2026-11-15; entered from Xigu (`Bell_NLES_001`) the
   entrance was 4185 m away, the ground at the spot was not loaded and the player fell into the void and died, a
-  game death (Nexus report by sara1ovo, 二周目, reproduced 2026-11-18). The run now uses the spot only within
-  `config.in_place_radius` of this entrance (else fights at the entrance), checks the ground after the move, and
-  ends a run on a death before the first boss (the player's health floor starts with the fight; a fall out of the
+  game death (Nexus report by sara1ovo, 二周目, reproduced 2026-11-18). The fight is now at the entrance the game
+  puts the player at, with no move and no marked spot (user decision 2026-11-18), and the run ends on a death
+  before the first boss (the player's health floor starts with the fight; a fall out of the
   world would ignore it anyway). The entrance transform is logged (`Realm of Mirage entrance transform`). A first
   theory ("the run took the player as arrived before the travel began") was wrong: that entrance transform is
-  right and the player was already at it; check distances in the log before blaming timing.
+  right and the player was already at it; check distances in the log before blaming timing. Two entrances seen so
+  far (8114 -27835 from Bell_DDSD_008, -26338 388732 from Bell_NLES_001, two saves): whether the map or the save
+  decides is not known. The Xigu one has no navigation mesh around it: the boss is placed 12 m ahead blind.
 - **In a new playthrough (二周目) a boss not yet beaten there stands at its own battlefield**: 彭猛 at 斧老大斩落处
   made a second 彭猛 in the fight (2026-11-14). On arrival `run.lua` looks for living roster bosses within 60 m;
   a scenic arena is swapped (then the Realm of Mirage), an own arena ends the run with a notice. Bells also reset

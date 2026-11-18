@@ -41,12 +41,9 @@ local A = {
     -- nothing from the level (Skill_08 spawns its own pillars): this is about the setting, not a fix.
     -- 魔渊 may have a second original spot (Pangzhen's 龙柱, Bell_DP_004): phases cannot change maps, so Xigu.
     { key = "xigu_pillar", kind = "own",  map = "/Game/Maps/B02/PBZ_Xigu_WP",                       bell = "DP_001",       zh = "龙柱",           en = "The Lóng Pillar",             x = -38650,  y = 234117, z = 10009000, yaw = 103, boss = "BP_Monster_MoTian_LongZhu_01" },
-    -- The Realm of Mirage is entered at its bell; the run moves the player to this spot on arrival (run.lua
-    -- place_player) when it is near the entrance. Marked by the user with F2 (2026-11-15): 8 m from the entrance
-    -- used then, survey 良 (16/16, 28 m); no bell actor is loaded near it (the nearest PBZCheckPoint was 298 m
-    -- away). The entrance depends on where the Realm is entered from: from Xigu it is 4185 m away (run.lua
-    -- go_to_arena fights at the entrance then).
-    { key = "jhsy",       kind = "jhsy",   zh = "镜花水月", en = "Realm of Mirage", x = 8890, y = -28068, z = 5000799, yaw = 357 },
+    -- The Realm of Mirage: the fight is at the entrance the game puts the player at, which depends on where it is
+    -- entered from (user decision 2026-11-18: no marked spot; run.lua go_to_arena).
+    { key = "jhsy",       kind = "jhsy",   zh = "镜花水月", en = "Realm of Mirage" },
 }
 
 local M = {}
