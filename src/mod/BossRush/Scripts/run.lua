@@ -277,13 +277,23 @@ local function go_to_arena()
         local out, cam = {}, {}
         tp:GetJhsyBellTeleportTransform(out, cam)
         run.land = { X = out.Translation.X, Y = out.Translation.Y, Z = out.Translation.Z }
-        if a.x then
-            run.center = { X = a.x, Y = a.y, Z = a.z }
+        local from = player_at()
+        U.log("run: Realm of Mirage entrance transform %.0f %.0f %.0f (%s m from the player)", run.land.X, run.land.Y,
+            run.land.Z, from and string.format("%.0f", U.dist(from.pos, run.land) / 100) or "?")
+        -- The entrance depends on where the Realm of Mirage is entered from: the spot was marked 8 m from the
+        -- entrance used then (2026-11-15), but entered from Xigu (Bell_NLES_001) the entrance lay 4185 m away and
+        -- the ground there was not loaded: the player fell into the void and died (2026-11-18, Nexus report by
+        -- sara1ovo). The spot is used only near this entrance; otherwise the fight is where the game puts the
+        -- player, facing the way they arrive.
+        local spot = a.x and { X = a.x, Y = a.y, Z = a.z }
+        if spot and U.dist(spot, run.land) <= config.in_place_radius then
+            run.center = spot
             run.face = a.yaw
         else
-            -- No spot marked yet: fight at the entrance.
+            U.log("run: the Realm of Mirage's spot is %s from this entrance: fighting at the entrance",
+                spot and string.format("%.0f m", U.dist(spot, run.land) / 100) or "not marked")
             run.center = run.land
-            run.face = U.pawn():K2_GetActorRotation().Yaw
+            run.face_on_arrival = true
         end
         tp:TeleportToJhsy(out)
     else
@@ -1279,6 +1289,15 @@ function wait_arrival()
     U.every(500, function()
         if not run or run.phase ~= "travelling" then return true end
         if placing then return false end
+        -- A death before the first boss (a fall: the health floor starts with the fight, and a fall out of the
+        -- world ignores it anyway) ends the run; left alone the run waited for an arrival that never came.
+        if death_counted() then
+            U.log("run: player died while travelling (death counter %s, at the start %s)",
+                tostring(U.game_system("DiedTimes")), tostring(run.died_at_start))
+            log_ledger("after the death")
+            finish("lose")
+            return true
+        end
         tries = tries + 1
         local busy = loading()
         local p = U.pawn()
@@ -1302,19 +1321,34 @@ function wait_arrival()
                 montage >= MONTAGE_TICKS and "still playing" or "none", bd and string.format("%.0f", bd / 100) or "?", tostring(bn))
             run.placed, placing = true, true
             -- In place (or 就近), the ground at the spot is checked; without it the player travels there instead.
+            -- In the Realm of Mirage too: the player stands at its entrance, and a fall puts them back there,
+            -- where the fight then takes place.
+            local jhsy = run.arena.kind == "jhsy"
             place_player(run.center, run.face, function(ok)
                 placing, stable = false, 0
-                if not ok and run and run.phase == "travelling" and run.in_place then
+                if ok or not (run and run.phase == "travelling") then return end
+                if run.in_place then
                     U.log("run: travelling to %s instead", run.arena.key)
                     run.in_place, tries, seen = false, 0, nil
                     go_to_arena()
+                elseif jhsy then
+                    local at = player_at()
+                    if at then
+                        U.log("run: fighting at the Realm of Mirage's entrance instead")
+                        run.center, run.face = at.pos, at.yaw
+                    end
                 end
-            end, run.in_place and player_at() or nil)
+            end, (run.in_place or jhsy) and player_at() or nil)
             return false
         end
         if stable >= 4 then
             local bd, bn = U.nearest_bell(pl)
             U.log("run: arrived, nearest bell %s m (%s)", bd and string.format("%.0f", bd / 100) or "?", tostring(bn))
+            if run.face_on_arrival then
+                local at = player_at()
+                if at then run.face = at.yaw end
+                U.log("run: fighting at the entrance, facing %s", at and string.format("%.0f", at.yaw) or "?")
+            end
             local natives = native_bosses_near(run.center)
             if #natives > 0 then arena_taken(natives) return true end
             phase("arrived")

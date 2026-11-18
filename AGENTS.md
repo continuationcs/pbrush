@@ -456,6 +456,15 @@ backspace (`\b`), twice on 2026-11-14 (caught only because the replacement asser
   always the run's starting bell: after a run moved there from an occupied arena it landed at that arena's bell,
   the return wait timed out and the player's state was never restored (2026-11-14). `go_home` makes a second trip
   once out, and restores the state even when the return times out. Never end a run without `restore`.
+- **The Realm of Mirage has more than one entrance**: where `TeleportToJhsy` lands depends on where it is entered
+  from. The arena spot was marked 8 m from the entrance used on 2026-11-15; entered from Xigu (`Bell_NLES_001`) the
+  entrance was 4185 m away, the ground at the spot was not loaded and the player fell into the void and died, a
+  game death (Nexus report by sara1ovo, 二周目, reproduced 2026-11-18). The run now uses the spot only within
+  `config.in_place_radius` of this entrance (else fights at the entrance), checks the ground after the move, and
+  ends a run on a death before the first boss (the player's health floor starts with the fight; a fall out of the
+  world would ignore it anyway). The entrance transform is logged (`Realm of Mirage entrance transform`). A first
+  theory ("the run took the player as arrived before the travel began") was wrong: that entrance transform is
+  right and the player was already at it; check distances in the log before blaming timing.
 - **In a new playthrough (二周目) a boss not yet beaten there stands at its own battlefield**: 彭猛 at 斧老大斩落处
   made a second 彭猛 in the fight (2026-11-14). On arrival `run.lua` looks for living roster bosses within 60 m;
   a scenic arena is swapped (then the Realm of Mirage), an own arena ends the run with a notice. Bells also reset
